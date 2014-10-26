@@ -1,0 +1,13 @@
+{
+  "actions": {
+    "deadbeef": {
+      "precall": [
+          "$this:0x30"
+        ],
+      "call": [],
+      "postcall": [],
+      "success": "$precall[0] > 0",
+      "result": ["$precall[0]"]
+    }
+  }
+}
