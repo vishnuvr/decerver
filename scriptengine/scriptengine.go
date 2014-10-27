@@ -60,8 +60,63 @@ func (se *ScriptEngine) init() {
 		return result
 	})
 	
+	se.otto.Set("GetModelHash", func(call otto.FunctionCall) otto.Value {
+		name, err0 := call.Argument(0).ToString()
+		if err0 != nil {
+			return otto.UndefinedValue()
+		}
+		
+		ret := se.GetModelHash(name);
+		if ret == "" {
+			return otto.UndefinedValue()
+		}
+		
+		if ret != "0x" {
+			ret = "0x" + ret
+		}
+		
+		result, err := se.otto.ToValue(ret)
+
+		if err != nil {
+			return otto.UndefinedValue()
+		}
+		return result
+	})
+	
+	se.otto.Set("GetChildAddress", func(call otto.FunctionCall) otto.Value {
+		account, err0 := call.Argument(0).ToString()
+		if err0 != nil {
+			return otto.UndefinedValue()
+		}
+		
+		address, err1 := call.Argument(1).ToString()
+		if err1 != nil {
+			return otto.UndefinedValue()
+		}
+		
+		ret := se.ethChain.GetStorageAt(account, address)
+		if ret != "0x" {
+			ret = "0x" + ret
+		}
+		result, err := se.otto.ToValue(ret)
+
+		if err != nil {
+			return otto.UndefinedValue()
+		}
+		return result
+	})
+	
 	// Inject the math stuff.
 	InjectSMath(se.otto)
+	
+	// Load init files. TODO get some global path object going.
+	bytes, lErr := se.LoadJSFile("./script/Init.js")
+	
+	if lErr != nil {
+		fmt.Println("Cannot import Init.js")
+	}
+	se.otto.Run(bytes)
+	
 }
 
 // Later, the hash will be checked against a hash in a contract.
@@ -88,7 +143,7 @@ func (se *ScriptEngine) LoadModelFromFile(name, fileName string) {
 }
 
 // Get an action model hash from its name.
-func (se *ScriptEngine) GetModelHash(modelName string) otto.Value {
+func (se *ScriptEngine) GetModelHash(modelName string) string {
 	// TODO make sure that each contract stores the action model name in the same place.
 	//modelName := se.ethChain.GetStorageAt(account, "0x19")
 	
@@ -96,12 +151,9 @@ func (se *ScriptEngine) GetModelHash(modelName string) otto.Value {
 	modelHash, ok := se.models[modelName]
 	if !ok {
 		// TODO Handle. This is always an error.
-		return otto.UndefinedValue()
+		return ""
 	}
-	
-	mh, _ := se.otto.ToValue(modelHash)
-	
-	return mh
+	return modelHash
 }
 
 // Run a command using the c3d tree parser.

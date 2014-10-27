@@ -39,7 +39,6 @@ func NewHandler() *GithubHandler{
 // Function that handles incoming github webhook-postings. It delegates the actual
 // handling based on the "X-github-event" type of the request.
 func (gh *GithubHandler) Handle(res http.ResponseWriter, req *http.Request) {
-	evt := req.
 	evt := req.Header.Get("X-github-event")
 	if( evt == ""){
 		glog.Errorf("Request is not a github event: %s\n", evt);
