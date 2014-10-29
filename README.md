@@ -1,22 +1,38 @@
 [![Stories in Ready](https://badge.waffle.io/eris-ltd/deCerver.png?label=ready&title=Ready)](https://waffle.io/eris-ltd/deCerver)
 
-## What's this?
+## The deCerver
 
-Generalized deCerver infrastructure for decentralized applications. The deCerver acts as the hub for DApps.
+A worker for a decentralized stack. The deCerver is **the** hub for Decentralized Applications (DAPPs).
 
-## Overview
+## What is This Thing?
 
-The `decerver` package defines the main types and interfaces. The following generalized interfaces are provided:
+Generalized worker and server for decentralized applications which utilize p2p messaging, file sharing, and blockchain based database technology.
 
-- API server (acts as the frontend for the deCerver)
-- decentralized database (eg. ethereum forked blockchain)
-- decentralized filesystem (eg. IPFS)
-- contracts integrator
-- user notifier (for two-factor authentication)
-- scripts runner (for running scheduled jobs)
-- p2p communications layer (TBD)
+## Overview of the deCerver
 
-For each of these packages, the deCerver acts as the hub for the entire system. The entire system operates in the manner shown below:
+The `decerver` package defines the main types and interfaces of the decentralized stack which the deCerver is built to manage.
+
+Out of the box, the following generalized interfaces are provided:
+
+- API server
+  - acts as the frontend for the deCerver so that the deCerver can always be accessed via a normal browser at localhost
+- decentralized databases
+  - three databases are compiled by default: bitcoin, ethereum, and [thelonius](https://github.com/eris-ltd/thelonius)
+  - if and when other blockchains come online we will happily accept pull requests for interfaces which wrap those packages
+- decentralized filesystem
+  - for now, only IPFS is supported
+  - if and when other decentralized file stores come online we will happily accept pull requests for interfaces which wrap those packages
+- legal integrator
+  - for integrating real world, [legalmarkdown](https://github.com/eris-ltd/legalmarkdown) based contracts into your smart contract or decentralized stack
+- scripts runner
+  - for running jobs either in response to an inbound API call, in response to an event within one of the decentralized stack modules, or on a schedule
+- p2p communications layer
+  - two p2p communications layers are compiled by default: tox and bitmessage
+  - if and when other mature p2p communications sysstems come online we will happily accept pull requests for interfaces which wrap those packages
+
+For each of these packages, the deCerver acts as the hub for the entire system allowing all of these layers to talk to one another via a mediated -- javascript based scripting layer. The entire system operates in the manner shown below:
+
+TODO-CSK: Fix this ====>
 
 ![deCerver architecture](docs/images/deCerver Structure.png)
 
