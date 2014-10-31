@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<button type="button" onclick="sendEvent()">Test</button>
+<div id="result"></div>
+ 
+<script>
+
+function sendEvent() {
+     postRPC("HelloService.Say","Test", 1);
+}
+
+function postRPC(method, param, id) {
+	pObj = {};
+	pObj["Who"] = param;
+	var req = {
+		"jsonrpc" : "2.0",
+		"method" : method,
+		"params" : pObj,
+		"id"     : id
+	}
+	var sfreq = JSON.stringify(req);
+	console.log(sfreq);
+	var xmlHttp = null;
+    xmlHttp = new XMLHttpRequest();
+    xmlHttp.open( "POST", "http://localhost:3000/httpapi", false );
+    xmlHttp.setRequestHeader("Content-type", "application/json");
+    xmlHttp.send( sfreq );
+    document.getElementById("result").innerHTML = xmlHttp.responseText;
+    return;
+}
+</script>
+ 
+</body>
+</html>
