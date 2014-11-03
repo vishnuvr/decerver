@@ -8,8 +8,7 @@ import (
 	"math/big"
 )
 
-// Enables math operations on strings using big.Int. Ops are not done mod 2^256, and
-// they are other things that hasn't been implemented yet.
+// Enables math operations on strings using big.Int.
 var BZERO *big.Int = big.NewInt(0)
 
 func isZero(i *big.Int) bool {

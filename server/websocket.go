@@ -75,12 +75,12 @@ func (wc *WsConn) Connection() *websocket.Conn {
 	return wc.conn
 }
 
-func (wc *WsConn) WriteMsgChannel() chan *Message {
-	return wc.writeMsgChannel
+func (wc *WsConn) WriteTextMsg(msg interface{}) {
+	wc.writeMsgChannel <- &Message{Data : msg, Type : websocket.TextMessage}
 }
 
-func (wc *WsConn) WriteCloseChannel() chan *Message {
-	return wc.writeCloseChannel
+func (wc *WsConn) WriteCloseMsg() {
+	wc.writeCloseChannel <- &Message{Data : "", Type : websocket.CloseMessage}
 }
 
 // Handle the reader

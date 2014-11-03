@@ -13,7 +13,7 @@ func AbsolutePath(Datadir string, filename string) string {
 	return path.Join(Datadir, filename)
 }
 
-func InitDirs(Datadir string) {
+func InitDir(Datadir string) {
 	_, err := os.Stat(Datadir)
 	if err != nil {
 		if os.IsNotExist(err) {

@@ -15,7 +15,6 @@ import (
 	"encoding/json"
 	"sync"
 	"errors"
-	"github.com/golang/glog"
 )
 
 // Function that handles a specific type of posting
@@ -41,13 +40,13 @@ func NewHandler() *GithubHandler{
 func (gh *GithubHandler) Handle(res http.ResponseWriter, req *http.Request) {
 	evt := req.Header.Get("X-github-event")
 	if( evt == ""){
-		glog.Errorf("Request is not a github event: %s\n", evt);
+		fmt.Errorf("Request is not a github event: %s\n", evt);
 		return
 	}
 	
 	gh.mutex.Lock()
 	if(gh.mappings[evt] == nil){
-		glog.Errorf("Request not supported: %s\n", evt);
+		fmt.Errorf("Request not supported: %s\n", evt);
 	} else {
 		gh.mappings[evt](res,req)	
 	}
@@ -63,7 +62,7 @@ func (gh *GithubHandler) AddPostHandler(eventType string, postHandler PostHandle
 			gh.mutex.Unlock()
 			return errors.New("Tried to overwrite an already existing function mapping.")	
 		} else {
-			glog.Info("Overwriting old handler for '" + eventType + "'.");
+			fmt.Println("Overwriting old handler for '" + eventType + "'.");
 		}
 		 		
 	}
@@ -76,7 +75,7 @@ func (gh *GithubHandler) AddPostHandler(eventType string, postHandler PostHandle
 func (gh *GithubHandler) RemovePostHandler(eventType string) {
 	gh.mutex.Lock()
 	if gh.mappings[eventType] == nil {
-		glog.Info("Removal failed. There is no handler for '" + eventType + "'.");
+		fmt.Println("Removal failed. There is no handler for '" + eventType + "'.");
 	} else {
 		delete(gh.mappings,eventType)
 	}

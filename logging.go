@@ -1,37 +1,25 @@
 package deCerver
 
 import (
-	"fmt"
-	"log"
-	"os"
 )
-
-const LOGGER_PREFIX = "[DECERVER] "
-const LOG_MINLEVEL = 0
-const LOG_MAXLEVEL = 5
-
-// For convenience.
-var logger *log.Logger
-
-var defaultLoggerFile *os.File = os.Stdout
-
+/*
 type LogSystem struct {
-	// Decerver Core
-	DCLogger *log.Logger
-	
-	Modules map[string]*log.Logger
+	Modules map[string]core.Logger
 	// TODO Implement
-	logLevel int
-	logFile string
+	logLevel core.LogLevel
+	logFile string	
+	logReader io.Reader
+	logWriter io.Writer
+	
+	subs      map[string]core.LogSub
+	
+	mutex *sync.Mutex
 }
 
 func (dc *DeCerver) initLogSystem() {
-	dc.logSys = &LogSystem{}
-	dc.logSys.logFile = dc.config.LogFile
-	logger = log.New(defaultLoggerFile,LOGGER_PREFIX, dc.config.LogLevel)
-	dc.logSys.DCLogger = logger
-	dc.logSys.Modules = make(map[string]*log.Logger)
-	dc.logSys.logLevel = dc.config.LogLevel
+	logSys := &LogSystem{}
+	logSys.logFile = dc.config.LogFile
+	dc.logSys = logSys
 }
 
 func (ls *LogSystem) openLogFile() *os.File {
@@ -70,3 +58,58 @@ func (ls *LogSystem) SetLogLevel(newLevel int){
 func (ls *LogSystem) LogLevel() int {
 	return ls.logLevel
 }
+
+func NewLogSub() core.LogSub {
+	ls := &LogSub{
+		Channel:  make(chan string),
+		SubId:    0,
+		LogLevel: 5,
+		Enabled:  true,
+	}
+	return ls
+}
+
+func NewEthLogger() *EthLogger {
+
+	el := &EthLogger{}
+	el.mutex = &sync.Mutex{};
+	el.logLevel = 5
+	el.logReader, el.logWriter = io.Pipe()
+
+	ethlog.AddLogSystem(ethlog.NewStdLogSystem(el.logWriter, log.LstdFlags, el.logLevel))
+
+	go func(el *EthLogger) {
+		scanner := bufio.NewScanner(el.logReader)
+		for scanner.Scan() {
+			text := scanner.Text()
+			el.mutex.Lock()
+			for _, sub := range el.subs {
+				sub.Channel <- text
+			}
+			el.mutex.Unlock()
+		}
+	}(el)
+	return el
+	return nil
+}
+
+func (el *EthLogger) AddSub(sub *LogSub) {
+	el.mutex.Lock()
+	el.subs = append(el.subs, sub)
+	el.mutex.Unlock()
+}
+
+func (el *EthLogger) RemoveSub(sub *LogSub) {
+	el.mutex.Lock()
+	theIdx := -1
+	for idx, s := range el.subs {
+		if sub.SubId == s.SubId {
+			theIdx = idx
+			break
+		}
+	}
+	if theIdx >= 0 {
+		el.subs = append(el.subs[:theIdx], el.subs[theIdx+1:]...)
+	}
+	el.mutex.Unlock()
+}*/

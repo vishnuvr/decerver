@@ -2,59 +2,64 @@ package ate
 
 import (
 	"fmt"
-	"github.com/eris-ltd/deCerver-interfaces/modules"
-	"github.com/eris-ltd/deCerver-interfaces/core"
 	"github.com/robertkrimen/otto"
+	"github.com/golang/glog"
 	"io/ioutil"
-	"log"
 	"strconv"
 )
 
-var logger *log.Logger
 
 type Ate struct {
 	vm      *otto.Otto
-	modules map[string]modules.Module
 }
 
-func NewAte(lgr *log.Logger) *Ate {
-	logger = lgr
+func NewAte() *Ate {
 	vm := otto.New()
 	ate := &Ate{}
 	ate.vm = vm
-	ate.modules = make(map[string]modules.Module)
 	ate.init()
 	return ate
 }
 
 func (ate *Ate) ShutDown() {
-	logger.Print("Atë shut down.")
+	glog.Infoln("Atë shut down.")
 }
 
 // Initialize the vm. Add some helper functions and other things.
 // TODO set up the interrupt channel.
 func (ate *Ate) init() {
 	LoadHelpers(ate.vm)
-	logger.Print("Atë started")
+	glog.Infoln("Atë started")
 }
 
-func (ate *Ate) AddModule(id string, md modules.Module) {
-	ate.modules[id] = md
+func (ate *Ate) LoadScriptFile(fileName string) error {
+	bytes, err := ioutil.ReadFile(fileName)
+
+	if err != nil {
+		return err
+	}
+	
+	_ , err = ate.vm.Run(bytes)
+	
+	return err
 }
 
-func (ate *Ate) LoadScript(fileName string) {
-
-}
-
-func (ate *Ate) InjectFunction(fName string, fun core.AteFunc){
-	ate.vm.Set(fName,fun)
-}
-
-func (ate *Ate) RunAction(path []string, actionName string, params interface{}) []string {
+func (ate *Ate) LoadScriptFiles(fileName ... string) error {
+	
+	
+	
 	return nil
 }
 
-func (ate *Ate) RunMethod(nameSpace, funcName string, params interface{}) []string {
+func (ate *Ate) BindScriptObject(name string, val interface{}) error {
+	return ate.vm.Set(name,val)
+}
+
+func (ate *Ate) RunAction(path []string, actionName string, params interface{}) ([]string, error){
+	return nil, nil
+}
+
+func (ate *Ate) RunMethod(nameSpace, funcName string, params interface{}) ([]string,error) {
 	
 	var prm string
 	var errPConv error
@@ -64,23 +69,31 @@ func (ate *Ate) RunMethod(nameSpace, funcName string, params interface{}) []stri
 		prm, errPConv = ate.convertParam(params)
 
 		if errPConv != nil {
-			return nil
+			return nil, fmt.Errorf("Error when converting parameters: %s\n", errPConv.Error())
 		}
 	} else {
 		prm = "null"
 	}
-	val, _ := ate.vm.Run(funcName + "(" + prm + ")")
+	val, runErr := ate.vm.Run(funcName + "(" + prm + ")")
+	
+	if runErr != nil {
+		return nil, fmt.Errorf("Error when running function '%s': %s\n", funcName, runErr.Error())
+	}
 
 	// Take the result and turn it into a go value.
 	obj, expErr := val.Export()
 
 	if expErr != nil {
-		return nil
+		return nil, fmt.Errorf("Error when exporting returned value: %s\n", expErr.Error())
 	}
 
-	ret, _ := ate.convertObj(obj)
+	ret, convErr := ate.convertObj(obj)
+	
+	if expErr != nil {
+		return nil, fmt.Errorf("Error when converting returned value: %s\n", convErr.Error())
+	}
 
-	return ret
+	return ret, nil
 }
 
 // Convert. We allow response to be a string, boolean, int, or an array.
@@ -195,19 +208,9 @@ func (ate *Ate) convertParam(param interface{}) (string, error) {
 	return "", nil
 }
 
-// Loads and compiles javascript.
-// TODO Add a folder where scripts are supposed to be.
-func (ate *Ate) LoadJSFile(fileName string) ([]byte, error) {
-	bytes, err := ioutil.ReadFile(fileName)
-
-	if err != nil {
-		panic(err)
-	}
-	return bytes, nil
-}
-
-// Use this to set up a new runtime. Should re-do init() and load every
-// model from the model->hash contract.
+// Use this to set up a new runtime. Should re-do init().
+// TODO implement
 func (ate *Ate) Recover() {
-
+	//ate.vm = otto.New()
+	//ate.init()
 }

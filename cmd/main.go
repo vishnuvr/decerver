@@ -2,15 +2,15 @@ package main
 
 import (
 	"github.com/eris-ltd/deCerver"
-	"github.com/eris-ltd/deCerver/testmodule"
+	"github.com/eris-ltd/deCerver-interfaces/monk"
 )
 
 func main() {
 	dc := deCerver.NewDeCerver()
 	dc.Init()
-	testMod := &testmodule.TestModule{}
-	dc.AddModule(testMod.Name(),testMod)
+	mm := monk.NewMonkModule()
+	dc.AddModule(mm.Name(),mm)
 	// Run deCerver
-	dc.Run()
+	dc.Start()
 }
 
