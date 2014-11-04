@@ -11,7 +11,7 @@ type WebHookHandler interface {
 }
 
 type WebServer struct {
-	Martini     *martini.ClassicMartini
+	Martini *martini.ClassicMartini
 }
 
 func NewWebServer() *WebServer {

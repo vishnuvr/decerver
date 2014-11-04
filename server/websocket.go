@@ -6,9 +6,9 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/eris-ltd/deCerver-interfaces/api"
 	"github.com/gorilla/websocket"
 	"time"
-	"github.com/eris-ltd/deCerver-interfaces/api"
 	//"bytes"
 )
 
@@ -76,11 +76,11 @@ func (wc *WsConn) Connection() *websocket.Conn {
 }
 
 func (wc *WsConn) WriteTextMsg(msg interface{}) {
-	wc.writeMsgChannel <- &Message{Data : msg, Type : websocket.TextMessage}
+	wc.writeMsgChannel <- &Message{Data: msg, Type: websocket.TextMessage}
 }
 
 func (wc *WsConn) WriteCloseMsg() {
-	wc.writeCloseChannel <- &Message{Data : "", Type : websocket.CloseMessage}
+	wc.writeCloseChannel <- &Message{Data: "", Type: websocket.CloseMessage}
 }
 
 // Handle the reader
@@ -132,16 +132,16 @@ func writer(sh *SessionHandler) {
 	fmt.Println("Waiting to write to socket.")
 	for {
 		message, ok := <-sh.wsConn.writeMsgChannel
-		
+
 		if !ok {
 			conn.WriteMessage(websocket.CloseMessage, []byte{})
 			return
 		}
-		
-		if(message.Data == nil){
-			return;
+
+		if message.Data == nil {
+			return
 		}
-		
+
 		if message.Type == websocket.CloseMessage {
 			conn.WriteMessage(websocket.CloseMessage, []byte{})
 			return

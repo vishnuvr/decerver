@@ -3,51 +3,51 @@ package ghhandler
 import ()
 
 type IssuePost struct {
-	Action     string 		`json:"action"`
-	Issue      *Issue 		`json:"issue"`
-	Assignee   *User  		`json:"assignee"`
-	Repository *Repository 	`json:"repository"`
-	Sender     *User 		`json:"sender"`
+	Action     string      `json:"action"`
+	Issue      *Issue      `json:"issue"`
+	Assignee   *User       `json:"assignee"`
+	Repository *Repository `json:"repository"`
+	Sender     *User       `json:"sender"`
 }
 
 type IssueCommentPost struct {
-	Action     string 		`json:"action"`
-	Issue      *Issue 		`json:"issue"`
-	Comment    *Comment  	`json:"comment"`
-	Repository *Repository 	`json:"repository"`
-	Sender     *User 		`json:"sender"`
+	Action     string      `json:"action"`
+	Issue      *Issue      `json:"issue"`
+	Comment    *Comment    `json:"comment"`
+	Repository *Repository `json:"repository"`
+	Sender     *User       `json:"sender"`
 }
 
 type Issue struct {
-	Url         string 		`json:"url"`
-	LabelsUrl   string 		`json:"labels_url"`
-	CommentsUrl string 		`json:"comments_url`
-	EventsUrl   string 		`json:"events_url"`
-	HtmlUrl     string 		`json:"html_url"`
-	Id          int 		`json:"id"`
-	Number      int 		`json:"number"`
-	Title       string 		`json:"title"`
-	User        *User 		`json:"user"`
-	Labels      []*Label 	`json:"labels"`
-	State       string 		`json:"state"`
-	Locked      bool 		`json:"locked"`
-	Assignee    *User 		`json:"assignee"`
-	Milestone   *Milestone 	`json:"milestone"`
-	CreatedAt   string 		`json:"created_at"`
-	UpdatedAt   string 		`json:"updated_at"`
-	ClosedAt    string 		`json:"closed_at"`
-	Body        string 		`json:"body"`
+	Url         string     `json:"url"`
+	LabelsUrl   string     `json:"labels_url"`
+	CommentsUrl string     `json:"comments_url`
+	EventsUrl   string     `json:"events_url"`
+	HtmlUrl     string     `json:"html_url"`
+	Id          int        `json:"id"`
+	Number      int        `json:"number"`
+	Title       string     `json:"title"`
+	User        *User      `json:"user"`
+	Labels      []*Label   `json:"labels"`
+	State       string     `json:"state"`
+	Locked      bool       `json:"locked"`
+	Assignee    *User      `json:"assignee"`
+	Milestone   *Milestone `json:"milestone"`
+	CreatedAt   string     `json:"created_at"`
+	UpdatedAt   string     `json:"updated_at"`
+	ClosedAt    string     `json:"closed_at"`
+	Body        string     `json:"body"`
 }
 
 type Repository struct {
-	Id               int	`json:"id"`
+	Id               int    `json:"id"`
 	Name             string `json:"name"`
 	FullName         string `json:"full_name"`
 	Owner            *User  `json:"owner"`
-	Private          bool	`json:"private"`
-	HtmlUrl          string	`json:"html_url"`
-	Description      string	`json:"description"`
-	Fork             bool	`json:"fork"`
+	Private          bool   `json:"private"`
+	HtmlUrl          string `json:"html_url"`
+	Description      string `json:"description"`
+	Fork             bool   `json:"fork"`
 	Url              string `json:"url"`
 	ForksUrl         string `json:"forks_url"`
 	KeysUrl          string `json:"keys_url"`
@@ -56,7 +56,7 @@ type Repository struct {
 	HooksUrl         string `json:"hooks_url"`
 	IssueEventsUrl   string `json:"issue_events_url"`
 	EventsUrl        string `json:"events_url"`
-	AssigneesUrl     string `json:"assignees_url"` 
+	AssigneesUrl     string `json:"assignees_url"`
 	BranchesUrl      string `json:"branches_url"`
 	TagsUrl          string `json:"tags_url"`
 	BlobsUrl         string `json:"blobs_url"`
@@ -92,26 +92,26 @@ type Repository struct {
 	CloneUrl         string `json:"clone_url"`
 	SvnUrl           string `json:"svn_url"`
 	Homepage         string `json:"homepage"`
-	Size             int	`json:"size"`
-	StargazersCount  int	`json:"stargazers_count"`
-	WatchersCount    int	`json:"watchers_count"`
-	Language         string	`json:"language"`
-	HasIssues        bool	`json:"has_issues"`
-	HasDownloads     bool	`json:"has_downloads"`
-	HasWiki          bool	`json:"has_wiki"`
-	HasPages         bool	`json:"has_pages"`
-	ForksCount       int	`json:"forks_count"`
-	MirrorUrl        string	`json:"mirror_url"`
-	OpenIssuesCount  int	`json:"open_issues_count"`
-	Forks            int	`json:"forks"`
-	OpenIssues       int	`json:"open_issues"`
-	Watchers         int	`json:"watchers"`
-	DefaultBranch    string	`json:"default_branch"`
+	Size             int    `json:"size"`
+	StargazersCount  int    `json:"stargazers_count"`
+	WatchersCount    int    `json:"watchers_count"`
+	Language         string `json:"language"`
+	HasIssues        bool   `json:"has_issues"`
+	HasDownloads     bool   `json:"has_downloads"`
+	HasWiki          bool   `json:"has_wiki"`
+	HasPages         bool   `json:"has_pages"`
+	ForksCount       int    `json:"forks_count"`
+	MirrorUrl        string `json:"mirror_url"`
+	OpenIssuesCount  int    `json:"open_issues_count"`
+	Forks            int    `json:"forks"`
+	OpenIssues       int    `json:"open_issues"`
+	Watchers         int    `json:"watchers"`
+	DefaultBranch    string `json:"default_branch"`
 }
 
 type User struct {
 	Login             string `json:"login"`
-	Id                int	 `json:"id"`
+	Id                int    `json:"id"`
 	AvatarUrl         string `json:"avatar_url"`
 	GravatarId        string `json:"gravatar_url"`
 	Url               string `json:"url"`
@@ -126,7 +126,7 @@ type User struct {
 	EventsUrl         string `json:"events_url"`
 	ReceivedEventsUrl string `json:"received_events_url"`
 	Type              string `json:"type"`
-	SiteAdmin         bool	 `json:"site_admin"`
+	SiteAdmin         bool   `json:"site_admin"`
 }
 
 type Label struct {
@@ -137,13 +137,13 @@ type Label struct {
 
 type Milestone struct {
 	Url          string `json:"url"`
-	Number       int	`json:"number"`
+	Number       int    `json:"number"`
 	State        string `json:"state"`
 	Title        string `json:"title"`
 	Description  string `json:"description"`
 	Creator      *User  `json:"creator"`
-	OpenIssues   int	`json:"open_issues"`
-	ClosedIssues int	`json:"closed_issues"`
+	OpenIssues   int    `json:"open_issues"`
+	ClosedIssues int    `json:"closed_issues"`
 	CreatedAt    string `json:"created_at"`
 	UpdatedAt    string `json:"updated_at"`
 	DueOn        string `json:"due_on"`
@@ -153,7 +153,7 @@ type Comment struct {
 	Url       string `json:"url"`
 	HtmlUrl   string `json:"html_url"`
 	IssueUrl  string `json:"issue_url"`
-	Id 		  int    `json:"id"`
+	Id        int    `json:"id"`
 	User      *User  `json:"user"`
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`

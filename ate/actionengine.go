@@ -1,4 +1,5 @@
 package ate
+
 /*
 import (
 	"encoding/hex"
@@ -42,12 +43,12 @@ func (se *ActionEngine) init() {
 		if err0 != nil {
 			return otto.UndefinedValue()
 		}
-		
+
 		address, err1 := call.Argument(1).ToString()
 		if err1 != nil {
 			return otto.UndefinedValue()
 		}
-		
+
 		ret := se.ethChain.GetStorageAt(account, address)
 		if ret != "0x" {
 			ret = "0x" + ret
@@ -59,22 +60,22 @@ func (se *ActionEngine) init() {
 		}
 		return result
 	})
-	
+
 	se.otto.Set("GetModelHash", func(call otto.FunctionCall) otto.Value {
 		name, err0 := call.Argument(0).ToString()
 		if err0 != nil {
 			return otto.UndefinedValue()
 		}
-		
+
 		ret := se.GetModelHash(name);
 		if ret == "" {
 			return otto.UndefinedValue()
 		}
-		
+
 		if ret != "0x" {
 			ret = "0x" + ret
 		}
-		
+
 		result, err := se.otto.ToValue(ret)
 
 		if err != nil {
@@ -82,18 +83,18 @@ func (se *ActionEngine) init() {
 		}
 		return result
 	})
-	
+
 	se.otto.Set("GetChildAddress", func(call otto.FunctionCall) otto.Value {
 		account, err0 := call.Argument(0).ToString()
 		if err0 != nil {
 			return otto.UndefinedValue()
 		}
-		
+
 		address, err1 := call.Argument(1).ToString()
 		if err1 != nil {
 			return otto.UndefinedValue()
 		}
-		
+
 		ret := se.ethChain.GetStorageAt(account, address)
 		if ret != "0x" {
 			ret = "0x" + ret
@@ -105,18 +106,18 @@ func (se *ActionEngine) init() {
 		}
 		return result
 	})
-	
+
 	// Inject the math stuff.
 	InjectSMath(se.otto)
-	
+
 	// Load init files. TODO get some global path object going.
 	bytes, lErr := se.LoadJSFile("./script/Init.js")
-	
+
 	if lErr != nil {
 		fmt.Println("Cannot import Init.js")
 	}
 	se.otto.Run(bytes)
-	
+
 }
 
 // Later, the hash will be checked against a hash in a contract.
@@ -131,13 +132,13 @@ func (se *ActionEngine) LoadModelFromFile(name, fileName string) {
 		fmt.Printf(err.Error())
 		return
 	}
-	
+
 	d := sha3.NewKeccak256()
 	d.Write(bytes)
 	sha := hex.EncodeToString(d.Sum(nil))
 	se.models[name] = sha
 	fmt.Printf("Script hash: %s\n", sha)
-	
+
 	se.otto.Run("actionModels['" + sha + "'] = new Model()")
 	se.otto.Set("Model",nil)
 }
@@ -146,7 +147,7 @@ func (se *ActionEngine) LoadModelFromFile(name, fileName string) {
 func (se *ActionEngine) GetModelHash(modelName string) string {
 	// TODO make sure that each contract stores the action model name in the same place.
 	//modelName := se.ethChain.GetStorageAt(account, "0x19")
-	
+
 	// TODO this would normally be a call to the model name->hash contract.
 	modelHash, ok := se.models[modelName]
 	if !ok {
@@ -250,7 +251,7 @@ func (se *ActionEngine) convertPath(path []string) string {
 		return "[]";
 	}
 	pt := "["
-	
+
 	for _, s := range path {
 		pt = pt + "'" + s + "',"
 	}
@@ -314,7 +315,7 @@ func (se *ActionEngine) convertParam(param interface{}) (string, error) {
 // TODO Add a folder where scripts are supposed to be.
 func (se *ActionEngine) LoadJSFile(fileName string) ([]byte, error) {
 	bytes, err := ioutil.ReadFile(fileName)
-	
+
 	if err != nil {
 		panic(err)
 	}

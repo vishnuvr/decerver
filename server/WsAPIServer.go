@@ -2,10 +2,10 @@ package server
 
 import (
 	"fmt"
-	"github.com/gorilla/websocket"
-	"github.com/eris-ltd/deCerver-interfaces/util"
 	"github.com/eris-ltd/deCerver-interfaces/api"
+	"github.com/eris-ltd/deCerver-interfaces/util"
 	"github.com/golang/glog"
+	"github.com/gorilla/websocket"
 	"net/http"
 	"reflect"
 	"strings"
@@ -59,12 +59,12 @@ func (srv *WsAPIServer) CreateSessionHandler(wsConn *WsConn) *SessionHandler {
 		sc.Init()
 		sh.services[v.ServiceName()] = sc
 	}
-	sh.server = srv;
+	sh.server = srv
 	srv.activeConnections++
 	id := srv.idPool.GetId()
-	sh.wsConn.sessionId = id;
+	sh.wsConn.sessionId = id
 	srv.activeHandlers[id] = sh
-	fmt.Printf("ACTIVE CONNECTIONS: %v\n",srv.activeHandlers);
+	fmt.Printf("ACTIVE CONNECTIONS: %v\n", srv.activeHandlers)
 	return sh
 }
 
@@ -98,7 +98,7 @@ func (srs *WsAPIServer) handleWs(w http.ResponseWriter, r *http.Request) {
 	}
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		glog.Error("Failed to upgrade to websockets (%s)\n",r.Host)
+		glog.Error("Failed to upgrade to websockets (%s)\n", r.Host)
 		return
 	}
 
@@ -109,20 +109,20 @@ func (srs *WsAPIServer) handleWs(w http.ResponseWriter, r *http.Request) {
 	sh := srs.CreateSessionHandler(wsConn)
 	go writer(sh)
 	reader(sh)
-	sh.wsConn.writeMsgChannel <- &Message{Data : nil}
-	sh.Close();
+	sh.wsConn.writeMsgChannel <- &Message{Data: nil}
+	sh.Close()
 }
 
 type SessionHandler struct {
-	server    *WsAPIServer
-	services  map[string]api.WsAPIService
-	wsConn    *WsConn
+	server   *WsAPIServer
+	services map[string]api.WsAPIService
+	wsConn   *WsConn
 }
 
 func (sh *SessionHandler) Close() {
 	fmt.Printf("CLOSING HANDLER: %d\n", sh.wsConn.SessionId)
 	// TODO run Close() on all services (and add that command).
-	for _ , srvc := range sh.services {
+	for _, srvc := range sh.services {
 		srvc.Shutdown()
 	}
 	sh.services = nil
@@ -183,7 +183,6 @@ func (sh *SessionHandler) handleRequest(rpcReq *api.Request) {
 		sh.wsConn.writeMsgChannel <- &Message{Data: getErrorResponse(err), Type: websocket.TextMessage}
 		return
 	}
-
 	if rpcResp.Result != nil {
 		// If there is a return value, pass to the write channel.
 		sh.wsConn.writeMsgChannel <- &Message{Data: rpcResp, Type: websocket.TextMessage}

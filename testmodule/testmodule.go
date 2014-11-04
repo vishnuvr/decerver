@@ -1,8 +1,8 @@
 package testmodule
 
 import (
-	"github.com/eris-ltd/deCerver-interfaces/core"
 	"github.com/eris-ltd/deCerver-interfaces/api"
+	"github.com/eris-ltd/deCerver-interfaces/core"
 	"github.com/robertkrimen/otto"
 	"log"
 	"net/http"
@@ -19,16 +19,16 @@ type HelloReply struct {
 	Message string
 }
 
-type HelloService struct{
-	ate	core.Runtime
+type HelloService struct {
+	ate core.Runtime
 }
 
 func (h *HelloService) Say(r *http.Request, args *HelloArgs, reply *HelloReply) error {
-	ret, err := h.ate.RunMethod("","test","world")
+	ret, err := h.ate.RunMethod("", "test", "world")
 	if err != nil {
 		return err
 	}
-	logger.Printf("Ret: %v\n",ret)
+	logger.Printf("Ret: %v\n", ret)
 	reply.Message = ret[0]
 	//reply.Message = "testvalue"
 	return nil
@@ -40,12 +40,12 @@ type TestModule struct {
 
 func (tm *TestModule) Register(fileIO core.FileIO, registry api.ApiRegistry, runtime core.Runtime) error {
 	logger = log.New(os.Stdout, "TestModule", 5)
-	
-	runtime.BindScriptObject("test",func (otto.FunctionCall) otto.Value {
+
+	runtime.BindScriptObject("test", func(otto.FunctionCall) otto.Value {
 		val, _ := otto.ToValue("It's working")
 		return val
 	})
-		
+
 	tm.helloService = &HelloService{}
 	tm.helloService.ate = runtime
 	registry.RegisterHttpServices(tm.helloService)
@@ -61,11 +61,11 @@ func (tm *TestModule) Start() error {
 }
 
 func (tm *TestModule) ReadConfig(config_file string) {
-	
+
 }
 
-func (tm *TestModule) WriteConfig(config_file string){
-	
+func (tm *TestModule) WriteConfig(config_file string) {
+
 }
 
 func (tm *TestModule) Name() string {
@@ -76,5 +76,3 @@ func (tm *TestModule) Shutdown() error {
 	logger.Println("Goodbye from TestModule")
 	return nil
 }
-
-

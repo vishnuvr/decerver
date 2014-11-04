@@ -1,18 +1,18 @@
 package deCerver
 
-import (
-)
+import ()
+
 /*
 type LogSystem struct {
 	Modules map[string]core.Logger
 	// TODO Implement
 	logLevel core.LogLevel
-	logFile string	
+	logFile string
 	logReader io.Reader
 	logWriter io.Writer
-	
+
 	subs      map[string]core.LogSub
-	
+
 	mutex *sync.Mutex
 }
 

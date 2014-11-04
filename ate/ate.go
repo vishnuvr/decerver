@@ -2,18 +2,19 @@ package ate
 
 import (
 	"fmt"
-	"github.com/robertkrimen/otto"
 	"github.com/golang/glog"
+	"github.com/robertkrimen/otto"
+	"github.com/eris-ltd/deCerver-interfaces/events"
 	"io/ioutil"
 	"strconv"
 )
 
-
 type Ate struct {
-	vm      *otto.Otto
+	vm *otto.Otto
+	subChan chan events.Event
 }
 
-func NewAte() *Ate {
+func NewAte(er events.EventRegistry) *Ate {
 	vm := otto.New()
 	ate := &Ate{}
 	ate.vm = vm
@@ -38,29 +39,27 @@ func (ate *Ate) LoadScriptFile(fileName string) error {
 	if err != nil {
 		return err
 	}
-	
-	_ , err = ate.vm.Run(bytes)
-	
+
+	_, err = ate.vm.Run(bytes)
+
 	return err
 }
 
-func (ate *Ate) LoadScriptFiles(fileName ... string) error {
-	
-	
-	
+func (ate *Ate) LoadScriptFiles(fileName ...string) error {
+
 	return nil
 }
 
 func (ate *Ate) BindScriptObject(name string, val interface{}) error {
-	return ate.vm.Set(name,val)
+	return ate.vm.Set(name, val)
 }
 
-func (ate *Ate) RunAction(path []string, actionName string, params interface{}) ([]string, error){
+func (ate *Ate) RunAction(path []string, actionName string, params interface{}) ([]string, error) {
 	return nil, nil
 }
 
-func (ate *Ate) RunMethod(nameSpace, funcName string, params interface{}) ([]string,error) {
-	
+func (ate *Ate) RunFunction(funcName string, params interface{}) ([]string, error) {
+
 	var prm string
 	var errPConv error
 
@@ -75,7 +74,7 @@ func (ate *Ate) RunMethod(nameSpace, funcName string, params interface{}) ([]str
 		prm = "null"
 	}
 	val, runErr := ate.vm.Run(funcName + "(" + prm + ")")
-	
+
 	if runErr != nil {
 		return nil, fmt.Errorf("Error when running function '%s': %s\n", funcName, runErr.Error())
 	}
@@ -88,7 +87,7 @@ func (ate *Ate) RunMethod(nameSpace, funcName string, params interface{}) ([]str
 	}
 
 	ret, convErr := ate.convertObj(obj)
-	
+
 	if expErr != nil {
 		return nil, fmt.Errorf("Error when converting returned value: %s\n", convErr.Error())
 	}

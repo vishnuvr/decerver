@@ -5,7 +5,6 @@ import (
 	"github.com/go-martini/martini"
 	"github.com/gorilla/rpc/v2"
 	"github.com/gorilla/rpc/v2/json2"
-	"github.com/golang/glog"
 )
 
 type WebServer struct {
@@ -25,42 +24,41 @@ func NewWebServer(maxConnections uint32, appDir string) *WebServer {
 	return ws
 }
 
-func (ws *WebServer) RegisterHttpServices(service ... interface{}) {
-	for _ , s := range service {
-		ws.httpAPIServices = append(ws.httpAPIServices, s)	
+func (ws *WebServer) RegisterHttpServices(service ...interface{}) {
+	for _, s := range service {
+		ws.httpAPIServices = append(ws.httpAPIServices, s)
 	}
 }
 
-func (ws *WebServer) RegisterWsServiceFactories(factory ... api.WsAPIServiceFactory) {
-	for _ , f := range factory {
+func (ws *WebServer) RegisterWsServiceFactories(factory ...api.WsAPIServiceFactory) {
+	for _, f := range factory {
 		ws.wsAPIServiceFactories = append(ws.wsAPIServiceFactories, f)
 	}
 }
 
 func (ws *WebServer) Start() {
-	
+
 	so := martini.StaticOptions{}
-	
+
 	so.Prefix = ws.appsDirectory
-	
+
 	ws.Martini = martini.Classic()
 	// TODO make this settable
 	ws.Martini.Use(martini.Static(ws.appsDirectory))
-	
+
 	// Change to production environment.
 	// martini.Env = martini.Prod
-	
+
 	// JSON RPC
 	if len(ws.httpAPIServices) > 0 {
 		rpcs := rpc.NewServer()
 		rpcs.RegisterCodec(json2.NewCodec(), "application/json")
 		for _, service := range ws.httpAPIServices {
 			rpcs.RegisterService(service, "")
-			glog.Infof("Say: %b\n",rpcs.HasMethod( "Say" ))
 		}
 		ws.Martini.Post("/httpapi", rpcs.ServeHTTP)
 	}
-	
+
 	// JSON Socket RPC
 	if len(ws.wsAPIServiceFactories) > 0 {
 		wsapis := NewWsAPIServer(ws.maxConnections)
@@ -69,9 +67,9 @@ func (ws *WebServer) Start() {
 		}
 		ws.Martini.Get("/wsapi", wsapis.handleWs)
 	}
-	
+
 	go func() {
 		ws.Martini.RunOnAddr("localhost:3000")
 	}()
-	
+
 }

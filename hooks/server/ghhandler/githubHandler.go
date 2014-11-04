@@ -10,23 +10,23 @@
 package ghhandler
 
 import (
-	"net/http"
-	"fmt"
 	"encoding/json"
-	"sync"
 	"errors"
+	"fmt"
+	"net/http"
+	"sync"
 )
 
 // Function that handles a specific type of posting
-type PostHandlerFunc func(http.ResponseWriter,*http.Request)
+type PostHandlerFunc func(http.ResponseWriter, *http.Request)
 
 type GithubHandler struct {
-	mutex *sync.Mutex
+	mutex    *sync.Mutex
 	mappings map[string]PostHandlerFunc
 }
 
 // Create a new handler
-func NewHandler() *GithubHandler{
+func NewHandler() *GithubHandler {
 	gh := &GithubHandler{}
 	gh.mutex = &sync.Mutex{}
 	gh.mappings = make(map[string]PostHandlerFunc)
@@ -39,18 +39,18 @@ func NewHandler() *GithubHandler{
 // handling based on the "X-github-event" type of the request.
 func (gh *GithubHandler) Handle(res http.ResponseWriter, req *http.Request) {
 	evt := req.Header.Get("X-github-event")
-	if( evt == ""){
-		fmt.Errorf("Request is not a github event: %s\n", evt);
+	if evt == "" {
+		fmt.Errorf("Request is not a github event: %s\n", evt)
 		return
 	}
-	
+
 	gh.mutex.Lock()
-	if(gh.mappings[evt] == nil){
-		fmt.Errorf("Request not supported: %s\n", evt);
+	if gh.mappings[evt] == nil {
+		fmt.Errorf("Request not supported: %s\n", evt)
 	} else {
-		gh.mappings[evt](res,req)	
+		gh.mappings[evt](res, req)
 	}
-	
+
 	gh.mutex.Unlock()
 }
 
@@ -60,11 +60,11 @@ func (gh *GithubHandler) AddPostHandler(eventType string, postHandler PostHandle
 	if gh.mappings[eventType] != nil {
 		if !replaceOld {
 			gh.mutex.Unlock()
-			return errors.New("Tried to overwrite an already existing function mapping.")	
+			return errors.New("Tried to overwrite an already existing function mapping.")
 		} else {
-			fmt.Println("Overwriting old handler for '" + eventType + "'.");
+			fmt.Println("Overwriting old handler for '" + eventType + "'.")
 		}
-		 		
+
 	}
 	gh.mappings[eventType] = postHandler
 	gh.mutex.Unlock()
@@ -75,9 +75,9 @@ func (gh *GithubHandler) AddPostHandler(eventType string, postHandler PostHandle
 func (gh *GithubHandler) RemovePostHandler(eventType string) {
 	gh.mutex.Lock()
 	if gh.mappings[eventType] == nil {
-		fmt.Println("Removal failed. There is no handler for '" + eventType + "'.");
+		fmt.Println("Removal failed. There is no handler for '" + eventType + "'.")
 	} else {
-		delete(gh.mappings,eventType)
+		delete(gh.mappings, eventType)
 	}
 	gh.mutex.Unlock()
 	return
@@ -86,21 +86,21 @@ func (gh *GithubHandler) RemovePostHandler(eventType string) {
 // Create an object from the body of a "issues" post.
 func handleIssues(res http.ResponseWriter, req *http.Request) {
 	post := &IssuePost{}
-  	json.NewDecoder(req.Body).Decode(post)
-  	fmt.Printf("%+v\n",post.Action)
-  	fmt.Printf("%+v\n",post.Issue)
-  	fmt.Printf("%+v\n",post.Assignee)
-  	fmt.Printf("%+v\n",post.Repository)
-  	fmt.Printf("%+v\n",post.Sender)
+	json.NewDecoder(req.Body).Decode(post)
+	fmt.Printf("%+v\n", post.Action)
+	fmt.Printf("%+v\n", post.Issue)
+	fmt.Printf("%+v\n", post.Assignee)
+	fmt.Printf("%+v\n", post.Repository)
+	fmt.Printf("%+v\n", post.Sender)
 }
 
 // Create an object from the body of a "issue_comment" post.
 func handleIssueComment(res http.ResponseWriter, req *http.Request) {
 	post := &IssueCommentPost{}
-  	json.NewDecoder(req.Body).Decode(post)
-  	fmt.Printf("%+v\n",post.Action)
-  	fmt.Printf("%+v\n",post.Issue)
-  	fmt.Printf("%+v\n",post.Comment)
-  	fmt.Printf("%+v\n",post.Repository)
-  	fmt.Printf("%+v\n",post.Sender)
+	json.NewDecoder(req.Body).Decode(post)
+	fmt.Printf("%+v\n", post.Action)
+	fmt.Printf("%+v\n", post.Issue)
+	fmt.Printf("%+v\n", post.Comment)
+	fmt.Printf("%+v\n", post.Repository)
+	fmt.Printf("%+v\n", post.Sender)
 }

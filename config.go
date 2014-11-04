@@ -31,7 +31,7 @@ var DefaultConfig = &DCConfig{
 	RootDir:    path.Join(usr.HomeDir, ".deCerver"),
 	LogFile:    "",
 	LogLevel:   5,
-	MaxClients : 10,
+	MaxClients: 10,
 }
 
 // can these methods be functions in decerver that take the modules as argument?
