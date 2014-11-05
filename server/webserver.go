@@ -38,12 +38,10 @@ func (ws *WebServer) RegisterWsServiceFactories(factory ...api.WsAPIServiceFacto
 
 func (ws *WebServer) Start() {
 
-	so := martini.StaticOptions{}
-
-	so.Prefix = ws.appsDirectory
-
 	ws.Martini = martini.Classic()
 	// TODO make this settable
+	//so := martini.StaticOptions{}
+	//so.Fallback = "./web"
 	ws.Martini.Use(martini.Static(ws.appsDirectory))
 
 	// Change to production environment.

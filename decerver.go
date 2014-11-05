@@ -56,14 +56,16 @@ func NewDeCerver() *DeCerver {
 	dc.ReadConfig("")
 	dc.createPaths()
 	dc.createNetwork()
-	dc.createEventProcessor()
 	dc.createAte()
+	dc.createEventProcessor()
+	dc.initAte()
 	dc.createModuleRegistry()
 	return dc
 }
 
 func (dc *DeCerver) Init() {
 	err := dc.moduleRegistry.Init()
+	fmt.Printf("AAATEEEEEEEE CHAN %v\n",dc.ate.Channel()) 
 	dc.ep.Subscribe(dc.ate)
 	if err != nil {
 		fmt.Printf("Module failed to load: %s. Shutting down.\n", err.Error())
@@ -109,6 +111,10 @@ func (dc *DeCerver) createEventProcessor() {
 
 func (dc *DeCerver) createAte() {
 	dc.ate = ate.NewAte(dc.ep)
+}
+
+func (dc *DeCerver) initAte() {
+	dc.ate.Init()
 }
 
 func (dc *DeCerver) createModuleRegistry() {

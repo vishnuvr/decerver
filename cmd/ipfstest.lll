@@ -1,0 +1,8 @@
+{
+	
+	(return 0x0 (lll{
+		[[0x0]] (CALLDATALOAD 0)
+		[[0x1]] (CALLDATALOAD 32) 
+	} 0x0) )
+	
+}

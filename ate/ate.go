@@ -2,15 +2,19 @@ package ate
 
 import (
 	"fmt"
-	"github.com/robertkrimen/otto"
 	"github.com/eris-ltd/deCerver-interfaces/events"
+	"github.com/robertkrimen/otto"
 	"io/ioutil"
 	"strconv"
 )
 
+type AteEventProcessor struct {
+	er events.EventRegistry
+}
+
 type Ate struct {
-	vm *otto.Otto
-	subChan chan events.Event
+	vm        *otto.Otto
+	subChan   chan events.Event
 	closeChan chan bool
 }
 
@@ -19,22 +23,37 @@ func NewAte(er events.EventRegistry) *Ate {
 	ate := &Ate{}
 	ate.vm = vm
 	ate.subChan = make(chan events.Event)
-	ate.init()
+
 	return ate
 }
 
 func (ate *Ate) ShutDown() {
 	fmt.Println("Atë shut down.")
+	ate.closeChan <- true
 }
 
 // Initialize the vm. Add some helper functions and other things.
 // TODO set up the interrupt channel.
-func (ate *Ate) init() {
-	LoadHelpers(ate.vm)
+func (ate *Ate) Init() {
+	BindDefaults(ate.vm)
 	fmt.Println("Atë started")
 	// Launch the sub channel.
-	// go func(){
-	// }() 
+	go func(ate *Ate) {
+		fmt.Println("RUNNING ATE EVENT LOOP")
+		for {
+			select {
+			case evt := <-ate.subChan:
+				_ , err := ate.vm.Call("EventProcessor.Post", evt)
+				if err != nil {
+					fmt.Printf(err.Error())
+				} else {
+					fmt.Printf("Event passed on to otto.\n")
+				}
+			case <-ate.closeChan:
+				return
+			}
+		}
+	}(ate)
 }
 
 func (ate *Ate) LoadScriptFile(fileName string) error {

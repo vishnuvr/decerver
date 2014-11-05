@@ -188,7 +188,7 @@
 									</div>
 								</div>
 								<div id="TxPoolBody" class="panel-body">
-									<ul id="TxPool" class="list-group ut_list_xl"></ul>
+									<ul id="TxPool" class="list-group ut_list"></ul>
 								</div>
 								<!-- Block Data Body -->
 							</div>

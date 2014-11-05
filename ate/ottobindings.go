@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/obscuren/sha3"
 	"github.com/robertkrimen/otto"
+	//"github.com/eris-ltd/deCerver-interfaces/events"
 	"math/big"
 )
 
@@ -15,8 +16,29 @@ func isZero(i *big.Int) bool {
 	return i.Cmp(BZERO) == 0
 }
 
-func LoadHelpers(vm *otto.Otto) {
+func BindDefaults(vm *otto.Otto) {
+	//bindEventProcessor(vm)
+	bindHelpers(vm)
+}
 
+/*
+func bindEventProcessor(vm *otto.Otto){
+	vm.Run(`
+		EventProcessor = {
+		
+			"Subscribe" : function(source,callback){
+				
+			}
+		
+			"Post" : function(evt){
+				
+			},
+		};
+	`)
+}
+*/
+
+func bindHelpers(vm *otto.Otto) {
 	vm.Set("Add", func(call otto.FunctionCall) otto.Value {
 		p0, p1, errP := parseBin(call)
 		if errP != nil {
@@ -107,7 +129,7 @@ func LoadHelpers(vm *otto.Otto) {
 		result, _ := vm.ToValue(hex.EncodeToString(d.Sum(nil)))
 
 		return result
-	})
+	})	
 }
 
 func parseUn(call otto.FunctionCall) (*big.Int, error) {
