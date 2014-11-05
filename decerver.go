@@ -6,8 +6,8 @@ import (
 	"github.com/eris-ltd/deCerver/events"
 	"github.com/eris-ltd/deCerver/moduleregistry"
 	"github.com/eris-ltd/deCerver/server"
-	"github.com/golang/glog"
 	"os"
+	"fmt"
 	"os/signal"
 )
 
@@ -52,7 +52,7 @@ type DeCerver struct {
 
 func NewDeCerver() *DeCerver {
 	dc := &DeCerver{}
-	glog.Infoln("Creating new decerver")
+	fmt.Println("Creating new decerver")
 	dc.ReadConfig("")
 	dc.createPaths()
 	dc.createNetwork()
@@ -64,26 +64,27 @@ func NewDeCerver() *DeCerver {
 
 func (dc *DeCerver) Init() {
 	err := dc.moduleRegistry.Init()
+	dc.ep.Subscribe(dc.ate)
 	if err != nil {
-		glog.Fatalf("Module failed to load: %s. Shutting down.", err.Error())
+		fmt.Printf("Module failed to load: %s. Shutting down.\n", err.Error())
 		os.Exit(-1)
 	}
 }
 
 func (dc *DeCerver) Start() {
 	dc.webServer.Start()
-	glog.Infof("Server started.")
+	fmt.Println("Server started.")
 
 	err := dc.moduleRegistry.Start()
 	if err != nil {
-		glog.Fatalf("Module failed to start: %s. Shutting down.", err.Error())
+		fmt.Printf("Module failed to start: %s. Shutting down.\n", err.Error())
 		os.Exit(-1)
 	}
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, os.Kill)
 	<-c
-	glog.Infof("Shutting down")
+	fmt.Println("Shutting down")
 }
 
 func (dc *DeCerver) createPaths() {
@@ -115,7 +116,7 @@ func (dc *DeCerver) createModuleRegistry() {
 }
 
 func (dc *DeCerver) AddModule(md modules.Module) {
-	md.Register(nil, dc.webServer, dc.ate)
+	md.Register(nil, dc.webServer, dc.ate, dc.ep)
 	dc.moduleRegistry.Add(md)
-	glog.Infof("Registering module '%s'.", md.Name())
+	fmt.Printf("Registering module '%s'.\n", md.Name())
 }

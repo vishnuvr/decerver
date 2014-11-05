@@ -2,7 +2,6 @@ package ate
 
 import (
 	"fmt"
-	"github.com/golang/glog"
 	"github.com/robertkrimen/otto"
 	"github.com/eris-ltd/deCerver-interfaces/events"
 	"io/ioutil"
@@ -12,25 +11,30 @@ import (
 type Ate struct {
 	vm *otto.Otto
 	subChan chan events.Event
+	closeChan chan bool
 }
 
 func NewAte(er events.EventRegistry) *Ate {
 	vm := otto.New()
 	ate := &Ate{}
 	ate.vm = vm
+	ate.subChan = make(chan events.Event)
 	ate.init()
 	return ate
 }
 
 func (ate *Ate) ShutDown() {
-	glog.Infoln("Atë shut down.")
+	fmt.Println("Atë shut down.")
 }
 
 // Initialize the vm. Add some helper functions and other things.
 // TODO set up the interrupt channel.
 func (ate *Ate) init() {
 	LoadHelpers(ate.vm)
-	glog.Infoln("Atë started")
+	fmt.Println("Atë started")
+	// Launch the sub channel.
+	// go func(){
+	// }() 
 }
 
 func (ate *Ate) LoadScriptFile(fileName string) error {
@@ -212,4 +216,12 @@ func (ate *Ate) convertParam(param interface{}) (string, error) {
 func (ate *Ate) Recover() {
 	//ate.vm = otto.New()
 	//ate.init()
+}
+
+func (ate *Ate) Channel() chan events.Event {
+	return ate.subChan
+}
+
+func (ate *Ate) Source() string {
+	return "*"
 }

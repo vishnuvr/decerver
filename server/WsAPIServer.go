@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/eris-ltd/deCerver-interfaces/api"
 	"github.com/eris-ltd/deCerver-interfaces/util"
-	"github.com/golang/glog"
 	"github.com/gorilla/websocket"
 	"net/http"
 	"reflect"
@@ -98,7 +97,7 @@ func (srs *WsAPIServer) handleWs(w http.ResponseWriter, r *http.Request) {
 	}
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		glog.Error("Failed to upgrade to websockets (%s)\n", r.Host)
+		fmt.Printf("Failed to upgrade to websockets (%s)\n", err.Error())
 		return
 	}
 

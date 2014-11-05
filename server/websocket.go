@@ -26,6 +26,7 @@ const (
 	maxMessageSize = 8192
 )
 
+// TODO lower these
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  8192,
 	WriteBufferSize: 8192,
@@ -108,6 +109,7 @@ func reader(sh *SessionHandler) {
 
 		if mType == websocket.TextMessage {
 			rpcReq := &api.Request{}
+			rpcReq.Id = int(sh.wsConn.sessionId)
 			umErr := json.NewDecoder(message).Decode(rpcReq)
 			if umErr == nil {
 				sh.handleRequest(rpcReq)

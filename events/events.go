@@ -4,6 +4,7 @@ import (
 	"github.com/eris-ltd/deCerver-interfaces/events"
 	"sync"
 	"strings"
+	"fmt"
 )
 
 type subscriptions struct {
@@ -59,18 +60,26 @@ func (ep *EventProcessor) Post(e events.Event) {
 }
 
 func (ep *EventProcessor) Subscribe(sub events.Subscriber) {
+	
 	src := sub.Source()
 	var split []string
 	
 	if strings.Trim(sub.Source()," ") == "*" {
 		ep.glob.srs = append(ep.glob.srs, sub)
+		fmt.Println("Subscriber added to globals")
 	}
 	
 	split = strings.Split(src,";")
 
 	for _ , s := range split {
 		subs := ep.channels[s]
+		if subs == nil {
+			newSubs := NewSubscriptions()
+			ep.channels[s] = newSubs
+			subs = newSubs
+		}
 		subs.srs = append(subs.srs, sub)
+		fmt.Printf("New subscriber added to: %s\n", sub.Source())
 	}
 
 	
@@ -90,6 +99,7 @@ func (ep *EventProcessor) Unsubscribe(sub events.Subscriber) {
 				break
 			}
 			if theIdx >= 0 {
+				fmt.Println("Subscriber removed from globals")
 				ep.glob.srs = append(ep.glob.srs[:theIdx], ep.glob.srs[theIdx+1:]...)
 			}
 		}
@@ -107,6 +117,7 @@ func (ep *EventProcessor) Unsubscribe(sub events.Subscriber) {
 				break
 			}
 			if theIdx >= 0 {
+				fmt.Printf("Subscriber removed from: %s\n", sub.Source())
 				subs.srs = append(subs.srs[:theIdx], subs.srs[theIdx+1:]...)
 			}
 		}

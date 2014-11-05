@@ -24,7 +24,7 @@ type HelloService struct {
 }
 
 func (h *HelloService) Say(r *http.Request, args *HelloArgs, reply *HelloReply) error {
-	ret, err := h.ate.RunMethod("", "test", "world")
+	ret, err := h.ate.RunFunction("test", "world")
 	if err != nil {
 		return err
 	}
