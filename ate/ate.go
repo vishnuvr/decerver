@@ -37,23 +37,6 @@ func (ate *Ate) ShutDown() {
 func (ate *Ate) Init() {
 	BindDefaults(ate.vm)
 	fmt.Println("Atë started")
-	// Launch the sub channel.
-	go func(ate *Ate) {
-		fmt.Println("RUNNING ATE EVENT LOOP")
-		for {
-			select {
-			case evt := <-ate.subChan:
-				_ , err := ate.vm.Call("EventProcessor.Post", evt)
-				if err != nil {
-					fmt.Printf(err.Error())
-				} else {
-					fmt.Printf("Event passed on to otto.\n")
-				}
-			case <-ate.closeChan:
-				return
-			}
-		}
-	}(ate)
 }
 
 func (ate *Ate) LoadScriptFile(fileName string) error {
@@ -116,6 +99,18 @@ func (ate *Ate) RunFunction(funcName string, params interface{}) ([]string, erro
 	}
 
 	return ret, nil
+}
+
+func (ate *Ate) CallFuncOnObj(objName, funcName string, params ... interface{}) {
+	val, err := ate.vm.Get(objName)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	_ , err = val.Object().Call(funcName,params)
+	
+	if err != nil {
+		fmt.Println(err.Error())
+	}
 }
 
 // Convert. We allow response to be a string, boolean, int, or an array.
@@ -241,6 +236,14 @@ func (ate *Ate) Channel() chan events.Event {
 	return ate.subChan
 }
 
+func (ate *Ate) Id() string {
+	return "Ate"
+}
+
 func (ate *Ate) Source() string {
 	return "*"
+}
+
+func (ate *Ate) Close() {
+	
 }

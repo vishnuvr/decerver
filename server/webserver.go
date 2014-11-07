@@ -41,7 +41,6 @@ func (ws *WebServer) Start() {
 	ws.Martini = martini.Classic()
 	// TODO make this settable
 	//so := martini.StaticOptions{}
-	//so.Fallback = "./web"
 	ws.Martini.Use(martini.Static(ws.appsDirectory))
 
 	// Change to production environment.
@@ -69,5 +68,5 @@ func (ws *WebServer) Start() {
 	go func() {
 		ws.Martini.RunOnAddr("localhost:3000")
 	}()
-
+	
 }

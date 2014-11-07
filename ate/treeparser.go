@@ -1,9 +1,7 @@
 package ate
 
 import (
-	"encoding/hex"
 	"fmt"
-	"github.com/eris-ltd/thelonious/ethchain"
 	"github.com/eris-ltd/thelonious/monk"
 	"math/big"
 )
@@ -40,14 +38,14 @@ func (n *Node) addChild(node *Node) {
 }
 
 type TreeParser struct {
-	ethChain *monk.EthChain
+	ethChain *monk.MonkModule
 	genDoug  string
 }
 
-func NewTreeParser(ethChain *monk.EthChain) *TreeParser {
+func NewTreeParser(ethChain *monk.MonkModule) *TreeParser {
 	tp := &TreeParser{}
 	tp.ethChain = ethChain
-	tp.genDoug = hex.EncodeToString(ethchain.GENDOUG)
+	tp.genDoug = ""
 	return tp
 }
 

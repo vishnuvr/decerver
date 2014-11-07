@@ -17,26 +17,9 @@ func isZero(i *big.Int) bool {
 }
 
 func BindDefaults(vm *otto.Otto) {
-	//bindEventProcessor(vm)
 	bindHelpers(vm)
 }
 
-/*
-func bindEventProcessor(vm *otto.Otto){
-	vm.Run(`
-		EventProcessor = {
-		
-			"Subscribe" : function(source,callback){
-				
-			}
-		
-			"Post" : function(evt){
-				
-			},
-		};
-	`)
-}
-*/
 
 func bindHelpers(vm *otto.Otto) {
 	vm.Set("Add", func(call otto.FunctionCall) otto.Value {

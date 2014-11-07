@@ -41,8 +41,8 @@ func NewEventProcessor() *EventProcessor {
 
 func (ep *EventProcessor) Post(e events.Event) {
 	ep.mutex.Lock()
-	fmt.Println("Posting stuff " + e.Target())
-	src := e.Source()
+	fmt.Println("Posting stuff " + e.Target)
+	src := e.Source
 	fmt.Println(src)
 
 	subs := ep.glob
@@ -102,7 +102,6 @@ func (ep *EventProcessor) Subscribe(sub events.Subscriber) {
 	if strings.Trim(sub.Source(), " ") == "*" {
 		ep.glob.srs = append(ep.glob.srs, sub)
 		fmt.Println("Subscriber added to globals")
-		fmt.Printf("SUUUUUBBBBBB %v\n",sub)
 		return
 	}
 
@@ -125,20 +124,21 @@ func (ep *EventProcessor) Unsubscribe(sub events.Subscriber) {
 	src := sub.Source()
 
 	var split []string
-	ch := sub.Channel()
+	id := sub.Id()
 	if strings.Trim(sub.Source(), " ") == "*" {
 		theIdx := -1
 		for i, sub := range ep.glob.srs {
-			if sub.Channel() == ch {
+			if sub.Id() == id {
 				theIdx = i
 				break
 			}
 			if theIdx >= 0 {
+				sub.Close()
 				fmt.Println("Subscriber removed from globals")
 				ep.glob.srs = append(ep.glob.srs[:theIdx], ep.glob.srs[theIdx+1:]...)
 			}
 		}
-
+		return
 	}
 
 	split = strings.Split(src, ";")
@@ -147,12 +147,12 @@ func (ep *EventProcessor) Unsubscribe(sub events.Subscriber) {
 		subs := ep.channels[s]
 		theIdx := -1
 		for i, sub := range subs.srs {
-			if sub.Channel() == ch {
+			if sub.Id() == id {
 				theIdx = i
 				break
 			}
 			if theIdx >= 0 {
-				fmt.Printf("Subscriber removed from: %s\n", sub.Source())
+				fmt.Printf("Subscriber removed from: %s, id: %s\n", sub.Source(), sub.Id())
 				subs.srs = append(subs.srs[:theIdx], subs.srs[theIdx+1:]...)
 			}
 		}
