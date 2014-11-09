@@ -108,7 +108,7 @@ func (tp *TreeParser) ParseTreeByPath(path []string, nodeAddress string) (*Node,
 func (tp *TreeParser) GetChildAddress(childId, nodeAddress string) (string, error) {
 	// This is a test of existence too.
 	idc := big.NewInt(1)
-	indicator := tp.ethChain.GetStorageAt(nodeAddress, (idc.Add(idc, top)).String())
+	indicator := tp.ethChain.StorageAt(nodeAddress, (idc.Add(idc, top)).String())
 	if indicator == "0x" {
 		return "", fmt.Errorf("Error: Node has no indicator. Address: %s\n", nodeAddress)
 	}
@@ -120,7 +120,7 @@ func (tp *TreeParser) GetChildAddress(childId, nodeAddress string) (string, erro
 	cr := big.NewInt(10)
 	cr.Add(cr, top)
 	// Current child
-	current := tp.ethChain.GetStorageAt(nodeAddress, cr.String())
+	current := tp.ethChain.StorageAt(nodeAddress, cr.String())
 
 	if current != "0x" {
 		current = "0x" + current
@@ -130,14 +130,14 @@ func (tp *TreeParser) GetChildAddress(childId, nodeAddress string) (string, erro
 
 	for current != "0x" {
 		id := current
-		addr := "0x" + tp.ethChain.GetStorageAt(nodeAddress, current)
+		addr := "0x" + tp.ethChain.StorageAt(nodeAddress, current)
 		if id == childId {
 			return addr, nil
 		}
 
 		bi := big.NewInt(2)
 		bi.Add(bi, atob(current))
-		current = tp.ethChain.GetStorageAt(nodeAddress, bi.String())
+		current = tp.ethChain.StorageAt(nodeAddress, bi.String())
 		if current != "0x" {
 			current = "0x" + current
 		}
@@ -175,7 +175,7 @@ func (tp *TreeParser) getNode(id, address string) (*Node, error) {
 
 	// This is a test of existence too.
 	idc := big.NewInt(1)
-	indicator := tp.ethChain.GetStorageAt(address, (idc.Add(idc, top)).String())
+	indicator := tp.ethChain.StorageAt(address, (idc.Add(idc, top)).String())
 	if indicator == "0x" {
 		return nil, fmt.Errorf("Error: Node has no indicator. Address: %s\n", address)
 	}
@@ -194,38 +194,38 @@ func (tp *TreeParser) getNode(id, address string) (*Node, error) {
 	// Load it up with c3d stuff
 	// Model
 	mod := big.NewInt(2)
-	nd.model = tp.ethChain.GetStorageAt(address, (mod.Add(mod, top)).String())
+	nd.model = tp.ethChain.StorageAt(address, (mod.Add(mod, top)).String())
 	// Time
 	time := big.NewInt(8)
-	nd.time = tp.ethChain.GetStorageAt(address, (time.Add(time, top)).String())
+	nd.time = tp.ethChain.StorageAt(address, (time.Add(time, top)).String())
 	// Parent
 	par := big.NewInt(5)
-	nd.parent = tp.ethChain.GetStorageAt(address, (par.Add(par, top)).String())
+	nd.parent = tp.ethChain.StorageAt(address, (par.Add(par, top)).String())
 	// Content
 	cnt := big.NewInt(4)
-	nd.content = tp.ethChain.GetStorageAt(address, (cnt.Add(cnt, top)).String())
+	nd.content = tp.ethChain.StorageAt(address, (cnt.Add(cnt, top)).String())
 	// Owner
 	onr := big.NewInt(6)
-	nd.owner = tp.ethChain.GetStorageAt(address, (onr.Add(onr, top)).String())
+	nd.owner = tp.ethChain.StorageAt(address, (onr.Add(onr, top)).String())
 	// Creator
 	cre := big.NewInt(7)
-	nd.creator = tp.ethChain.GetStorageAt(address, (cre.Add(cre, top)).String())
+	nd.creator = tp.ethChain.StorageAt(address, (cre.Add(cre, top)).String())
 	// Behavior
 	bhv := big.NewInt(9)
-	nd.behavior = tp.ethChain.GetStorageAt(address, (bhv.Add(bhv, top)).String())
+	nd.behavior = tp.ethChain.StorageAt(address, (bhv.Add(bhv, top)).String())
 
 	if !nd.leaf {
 		cr := big.NewInt(10)
 		cr.Add(cr, top)
 		// Current child
-		current := tp.ethChain.GetStorageAt(address, cr.String())
+		current := tp.ethChain.StorageAt(address, cr.String())
 		fmt.Printf("Current child: %s\n", current)
 		if current != "0x" {
 			current = "0x" + current
 		}
 		for current != "0x" {
 			id := current
-			addr := "0x" + tp.ethChain.GetStorageAt(address, current)
+			addr := "0x" + tp.ethChain.StorageAt(address, current)
 			fmt.Println(addr)
 			ch, err := tp.getNode(id, addr)
 			if err != nil {
@@ -236,7 +236,7 @@ func (tp *TreeParser) getNode(id, address string) (*Node, error) {
 			bi := big.NewInt(2)
 			bi.Add(bi, atob(current))
 			fmt.Printf("Current child: %s\n", current)
-			current = tp.ethChain.GetStorageAt(address, bi.String())
+			current = tp.ethChain.StorageAt(address, bi.String())
 			fmt.Printf("Current child 2: %s\n", current)
 			if current != "0x" {
 				current = "0x" + current
