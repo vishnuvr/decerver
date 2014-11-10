@@ -87,9 +87,6 @@ func (wc *WsConn) WriteCloseMsg() {
 // Handle the reader
 func reader(sh *SessionHandler) {
 	conn := sh.wsConn.conn
-	defer func() {
-		conn.Close()
-	}()
 
 	conn.SetReadLimit(maxMessageSize)
 	//wsc.conn.SetReadDeadline(time.Now().Add(pongWait))
@@ -128,9 +125,6 @@ func reader(sh *SessionHandler) {
 // Handle the writer
 func writer(sh *SessionHandler) {
 	conn := sh.wsConn.conn
-	defer func() {
-		conn.Close()
-	}()
 	fmt.Println("Waiting to write to socket.")
 	for {
 		message, ok := <-sh.wsConn.writeMsgChannel

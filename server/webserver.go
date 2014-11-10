@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"github.com/eris-ltd/deCerver-interfaces/api"
 	"github.com/go-martini/martini"
 	"github.com/gorilla/rpc/v2"
@@ -60,7 +61,8 @@ func (ws *WebServer) Start() {
 	if len(ws.wsAPIServiceFactories) > 0 {
 		wsapis := NewWsAPIServer(ws.maxConnections)
 		for _, factory := range ws.wsAPIServiceFactories {
-			wsapis.RegisterServiceFactory(factory, "")
+			wsapis.RegisterServiceFactory(factory)
+			fmt.Println("Registering new websocket API: " + factory.ServiceName())
 		}
 		ws.Martini.Get("/wsapi", wsapis.handleWs)
 	}

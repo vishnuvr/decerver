@@ -6,7 +6,6 @@ import (
 	"github.com/eris-ltd/deCerver-interfaces/util"
 	"github.com/gorilla/websocket"
 	"net/http"
-	"reflect"
 	"strings"
 )
 
@@ -53,10 +52,12 @@ func (srv *WsAPIServer) CreateSessionHandler(wsConn *WsConn) *SessionHandler {
 	sh.wsConn = wsConn
 	sh.services = make(map[string]api.WsAPIService)
 	for _, v := range srv.serviceFactories {
+		
 		sc := v.CreateService()
 		sc.SetConnection(wsConn)
 		sc.Init()
 		sh.services[v.ServiceName()] = sc
+		fmt.Printf("Adding service factory '%s' to session handler.\n")
 	}
 	sh.server = srv
 	srv.activeConnections++
@@ -67,21 +68,10 @@ func (srv *WsAPIServer) CreateSessionHandler(wsConn *WsConn) *SessionHandler {
 	return sh
 }
 
-func (srv *WsAPIServer) RegisterServiceFactory(factory api.WsAPIServiceFactory, factoryName string) {
-	sname := factoryName
-	// If name is "", get the name from the object type.
-	if factoryName == "" {
-		sname = reflect.Indirect(reflect.ValueOf(factory)).Type().Name()
-	}
-
-	fmt.Println("SERVICE FACTORY ADDED: " + sname)
-	var ok bool
-	srv.serviceFactories[sname] = factory
+func (srv *WsAPIServer) RegisterServiceFactory(factory api.WsAPIServiceFactory) {
+	
+	srv.serviceFactories[factory.ServiceName()] = factory
 	factory.Init()
-
-	if !ok {
-		return
-	}
 }
 
 // TODO do this properly.
@@ -120,13 +110,19 @@ type SessionHandler struct {
 
 func (sh *SessionHandler) Close() {
 	fmt.Printf("CLOSING HANDLER: %d\n", sh.wsConn.SessionId)
-	// TODO run Close() on all services (and add that command).
+	
 	for _, srvc := range sh.services {
 		srvc.Shutdown()
 	}
 	sh.services = nil
 	// Deregister ourselves.
 	sh.server.RemoveSessionHandler(sh)
+	if sh.wsConn.conn != nil {
+		err := sh.wsConn.conn.Close()
+		if err != nil {
+			fmt.Printf("Failed to close websocket connection, already removed: %d\n", sh.wsConn.sessionId)
+		}
+	}
 }
 
 func (sh *SessionHandler) handleRequest(rpcReq *api.Request) {

@@ -52,7 +52,7 @@ type DeCerver struct {
 
 func NewDeCerver() *DeCerver {
 	dc := &DeCerver{}
-	fmt.Println("Creating new decerver")
+	fmt.Println("Starting decerver bootstrapping sequence.")
 	dc.ReadConfig("")
 	dc.createPaths()
 	dc.createNetwork()
@@ -65,7 +65,6 @@ func NewDeCerver() *DeCerver {
 
 func (dc *DeCerver) Init() {
 	err := dc.moduleRegistry.Init()
-	fmt.Printf("AAATEEEEEEEE CHAN %v\n",dc.ate.Channel()) 
 	dc.ep.Subscribe(dc.ate)
 	if err != nil {
 		fmt.Printf("Module failed to load: %s. Shutting down.\n", err.Error())
