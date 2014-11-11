@@ -11,8 +11,8 @@ func main() {
 	dc := deCerver.NewDeCerver()
 	mm := monk.NewMonk(nil)
 	fm := ipfs.NewIpfs()
-	dc.AddModule(mm)
-	dc.AddModule(fm)
+	dc.LoadModule(mm)
+	dc.LoadModule(fm)
 	
 	dc.Init()
 	// Run deCerver

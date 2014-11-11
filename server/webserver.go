@@ -8,20 +8,28 @@ import (
 	"github.com/gorilla/rpc/v2/json2"
 )
 
+const defaultPort = 3000
+
 type WebServer struct {
 	Martini               *martini.ClassicMartini
 	maxConnections        uint32
 	httpAPIServices       []interface{}
 	wsAPIServiceFactories []api.WsAPIServiceFactory
 	appsDirectory         string
+	port                  int
 }
 
-func NewWebServer(maxConnections uint32, appDir string) *WebServer {
+func NewWebServer(maxConnections uint32, appDir string, port int) *WebServer {
 	ws := &WebServer{}
 	ws.maxConnections = maxConnections
 	ws.httpAPIServices = make([]interface{}, 0)
 	ws.wsAPIServiceFactories = make([]api.WsAPIServiceFactory, 0)
 	ws.appsDirectory = appDir
+	if port <= 0 {
+		port = defaultPort
+	}
+	ws.port = port
+	
 	return ws
 }
 
@@ -66,9 +74,15 @@ func (ws *WebServer) Start() {
 		}
 		ws.Martini.Get("/wsapi", wsapis.handleWs)
 	}
+	
+	// Decerver communication
+	ws.Martini.Get("/admin/decerver",handleDecerverGET)
+	ws.Martini.Post("/admin/decerver",handleDecerverPOST)
+	
+	//"decerver/config/update/"
 
 	go func() {
-		ws.Martini.RunOnAddr("localhost:3000")
+		ws.Martini.RunOnAddr("localhost:" + fmt.Sprintf("%d",ws.port))
 	}()
-	
+
 }

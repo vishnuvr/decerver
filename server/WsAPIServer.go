@@ -50,7 +50,16 @@ func (srv *WsAPIServer) RemoveSessionHandler(sh *SessionHandler) {
 func (srv *WsAPIServer) CreateSessionHandler(wsConn *WsConn) *SessionHandler {
 	sh := &SessionHandler{}
 	sh.wsConn = wsConn
+	
+	sh.server = srv
+	srv.activeConnections++
+	id := srv.idPool.GetId()
+	sh.wsConn.sessionId = id
+	srv.activeHandlers[id] = sh
+	fmt.Printf("ACTIVE CONNECTIONS: %v\n", srv.activeHandlers)
+	
 	sh.services = make(map[string]api.WsAPIService)
+	
 	for _, v := range srv.serviceFactories {
 		
 		sc := v.CreateService()
@@ -59,12 +68,7 @@ func (srv *WsAPIServer) CreateSessionHandler(wsConn *WsConn) *SessionHandler {
 		sh.services[v.ServiceName()] = sc
 		fmt.Printf("Adding service factory '%s' to session handler.\n")
 	}
-	sh.server = srv
-	srv.activeConnections++
-	id := srv.idPool.GetId()
-	sh.wsConn.sessionId = id
-	srv.activeHandlers[id] = sh
-	fmt.Printf("ACTIVE CONNECTIONS: %v\n", srv.activeHandlers)
+	
 	return sh
 }
 
@@ -113,7 +117,7 @@ func (sh *SessionHandler) Close() {
 	
 	for _, srvc := range sh.services {
 		srvc.Shutdown()
-	}
+	}	
 	sh.services = nil
 	// Deregister ourselves.
 	sh.server.RemoveSessionHandler(sh)

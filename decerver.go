@@ -1,21 +1,26 @@
 package deCerver
 
 import (
+	"fmt"
 	"github.com/eris-ltd/deCerver-interfaces/modules"
+	"github.com/eris-ltd/deCerver-interfaces/core"
 	"github.com/eris-ltd/deCerver/ate"
 	"github.com/eris-ltd/deCerver/events"
 	"github.com/eris-ltd/deCerver/moduleregistry"
 	"github.com/eris-ltd/deCerver/server"
+	"io/ioutil"
 	"os"
-	"fmt"
 	"os/signal"
+	"path"
 )
 
 type Paths struct {
-	root    string
-	modules string
-	log     string
-	apps    string
+	root        string
+	modules     string
+	log         string
+	blockchains string
+	filesystems string
+	apps        string
 }
 
 func (p *Paths) Root() string {
@@ -34,6 +39,29 @@ func (p *Paths) Apps() string {
 	return p.apps
 }
 
+func (p *Paths) Blockchains() string {
+	return p.blockchains
+}
+
+func (p *Paths) Filesystems() string {
+	return p.filesystems
+}
+
+func (p *Paths) ReadFile(directory, name string) ([]byte, error) {
+	if directory[len(directory) - 1] != '/' {
+		directory += "/"
+	}
+	return ioutil.ReadFile((path.Join(directory,name)))
+}
+
+
+func (p *Paths) WriteFile(directory, name string, data []byte) error {
+	if directory[len(directory) - 1] != '/' {
+		directory += "/"
+	}
+	return ioutil.WriteFile((path.Join(directory,name)),data,0600)
+}	
+
 // Creates a new directory for a module, and returns the path.
 func (p *Paths) CreateDirectory(moduleName string) string {
 	dir := p.modules + "/" + moduleName
@@ -42,7 +70,7 @@ func (p *Paths) CreateDirectory(moduleName string) string {
 }
 
 type DeCerver struct {
-	config         *DCConfig
+	config         *core.DCConfig
 	paths          *Paths
 	ep             *events.EventProcessor
 	ate            *ate.Ate
@@ -55,6 +83,8 @@ func NewDeCerver() *DeCerver {
 	fmt.Println("Starting decerver bootstrapping sequence.")
 	dc.ReadConfig("")
 	dc.createPaths()
+	dc.WriteConfig(dc.config)
+	server.Init(dc)
 	dc.createNetwork()
 	dc.createAte()
 	dc.createEventProcessor()
@@ -98,10 +128,14 @@ func (dc *DeCerver) createPaths() {
 	InitDir(dc.paths.modules)
 	dc.paths.apps = dc.paths.root + "/apps"
 	InitDir(dc.paths.apps)
+	dc.paths.filesystems = dc.paths.root + "/filesystems"
+	InitDir(dc.paths.apps)
+	dc.paths.blockchains = dc.paths.root + "/blockchains"
+	InitDir(dc.paths.apps)
 }
 
 func (dc *DeCerver) createNetwork() {
-	dc.webServer = server.NewWebServer(uint32(dc.config.MaxClients), dc.paths.Apps())
+	dc.webServer = server.NewWebServer(uint32(dc.config.MaxClients), dc.paths.Apps(),dc.config.Port)
 }
 
 func (dc *DeCerver) createEventProcessor() {
@@ -120,7 +154,7 @@ func (dc *DeCerver) createModuleRegistry() {
 	dc.moduleRegistry = moduleregistry.NewModuleRegistry()
 }
 
-func (dc *DeCerver) AddModule(md modules.Module) {
+func (dc *DeCerver) LoadModule(md modules.Module) {
 	md.Register(nil, dc.webServer, dc.ate, dc.ep)
 	dc.moduleRegistry.Add(md)
 	fmt.Printf("Registering module '%s'.\n", md.Name())

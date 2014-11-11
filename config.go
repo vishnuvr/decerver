@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/user"
 	"path"
+	"github.com/eris-ltd/deCerver-interfaces/core"
 )
 
 var (
@@ -16,34 +17,29 @@ var (
 	usr, _ = user.Current() // error?!
 )
 
-type DCConfig struct {
-	ConfigFile string `json:"config_file"`
-	RootDir    string `json:"root_dir"`
-	LogFile    string `json:"log_file"`
-	LogLevel   int    `json:"log_level"`
-	MaxClients int    `json:max_clients`
-	Port       int    `json:port`
-}
-
 // set default config object
-var DefaultConfig = &DCConfig{
-	ConfigFile: "config",
+var DefaultConfig = &core.DCConfig{
 	RootDir:    path.Join(usr.HomeDir, ".deCerver"),
 	LogFile:    "",
-	LogLevel:   5,
 	MaxClients: 10,
+	Port : 3000,
 }
 
-// can these methods be functions in decerver that take the modules as argument?
-func (dc *DeCerver) WriteConfig(config_file string) {
-	b, err := json.Marshal(dc.config)
+func (dc *DeCerver) WriteConfig(dcConfig *core.DCConfig) {
+	b, err := json.Marshal(dcConfig)
+	
 	if err != nil {
 		fmt.Println("error marshalling config:", err)
 		return
 	}
+	
 	var out bytes.Buffer
 	json.Indent(&out, b, "", "\t")
-	ioutil.WriteFile(config_file, out.Bytes(), 0600)
+	ioutil.WriteFile((path.Join(dc.paths.Root(),"config.json")),out.Bytes(),0600)
+}
+
+func (dc *DeCerver) GetConfig() *core.DCConfig{
+	return dc.config
 }
 
 func (dc *DeCerver) ReadConfig(config_file string) {
@@ -52,10 +48,9 @@ func (dc *DeCerver) ReadConfig(config_file string) {
 		fmt.Println("could not read config", err)
 		fmt.Println("resorting to defaults")
 		dc.config = DefaultConfig
-		dc.WriteConfig(config_file)
 		return
 	}
-	var config DCConfig
+	config := &core.DCConfig{}
 	err = json.Unmarshal(b, &config)
 	if err != nil {
 		fmt.Println("error unmarshalling config from file:", err)
@@ -63,14 +58,14 @@ func (dc *DeCerver) ReadConfig(config_file string) {
 		dc.config = DefaultConfig
 		return
 	}
-	dc.config = &config
+	dc.config = config
 }
 
 func (dc *DeCerver) SetConfig(config interface{}) error {
 	if s, ok := config.(string); ok {
 		dc.ReadConfig(s)
-	} else if s, ok := config.(DCConfig); ok {
-		dc.config = &s
+	} else if s, ok := config.(*core.DCConfig); ok {
+		dc.config = s
 	} else {
 		return errors.New("could not set config")
 	}
