@@ -7,6 +7,7 @@ import (
 	"github.com/eris-ltd/deCerver/ate"
 	"github.com/eris-ltd/deCerver/events"
 	"github.com/eris-ltd/deCerver/moduleregistry"
+	"github.com/eris-ltd/deCerver/dappregistry"
 	"github.com/eris-ltd/deCerver/server"
 	"io/ioutil"
 	"os"
@@ -76,6 +77,7 @@ type DeCerver struct {
 	ate            *ate.Ate
 	webServer      *server.WebServer
 	moduleRegistry *moduleregistry.ModuleRegistry
+	dappRegistry   *dappregistry.DappRegistry
 }
 
 func NewDeCerver() *DeCerver {
@@ -90,6 +92,7 @@ func NewDeCerver() *DeCerver {
 	dc.createEventProcessor()
 	dc.initAte()
 	dc.createModuleRegistry()
+	dc.createDappRegistry()
 	return dc
 }
 
@@ -100,6 +103,7 @@ func (dc *DeCerver) Init() {
 		fmt.Printf("Module failed to load: %s. Shutting down.\n", err.Error())
 		os.Exit(-1)
 	}
+	dc.initDapps()
 }
 
 func (dc *DeCerver) Start() {
@@ -154,8 +158,30 @@ func (dc *DeCerver) createModuleRegistry() {
 	dc.moduleRegistry = moduleregistry.NewModuleRegistry()
 }
 
+func (dc *DeCerver) createDappRegistry() {
+	dc.dappRegistry = dappregistry.NewDappRegistry()
+}
+
 func (dc *DeCerver) LoadModule(md modules.Module) {
 	md.Register(nil, dc.webServer, dc.ate, dc.ep)
 	dc.moduleRegistry.Add(md)
 	fmt.Printf("Registering module '%s'.\n", md.Name())
+}
+
+func (dc *DeCerver) initDapps() {
+	fmt.Println("Loading dapps")
+	err := dc.dappRegistry.LoadDapps(dc.paths.Apps())
+	
+	if err != nil {
+		fmt.Println("Error loading dapps: " + err.Error())
+		os.Exit(0)
+	}
+}
+
+func (dc *DeCerver) initDapp(){
+	
+}
+
+func (dc *DeCerver) GetPaths() core.FileIO {
+	return dc.paths
 }

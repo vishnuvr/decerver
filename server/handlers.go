@@ -8,6 +8,7 @@ import (
 	"strings"
 	"io/ioutil"
 	"encoding/json"
+	"path"
 	"github.com/eris-ltd/deCerver-interfaces/core"
 )
 
@@ -21,7 +22,12 @@ func handleDecerverGET(w http.ResponseWriter, r *http.Request){
 	fmt.Println("Decerver GET")
 	cfg := deCerver.GetConfig()
 	
-	bts, _ := json.Marshal(cfg)
+	bts, err := json.Marshal(cfg)
+	
+	if err != nil {
+		writeError(w, 500, err.Error())
+		return
+	}
 	
 	w.WriteHeader(200)
 	w.Header().Set("Content-Type", "application/json")
@@ -45,7 +51,7 @@ func handleDecerverPOST(w http.ResponseWriter, r *http.Request){
 	bts, err := ioutil.ReadAll(r.Body)
 	
 	if err != nil {
-		fmt.Println(err.Error())
+		writeError(w, 400, err.Error())
 		return
 	}
 	cfg := &core.DCConfig{}
@@ -65,24 +71,23 @@ func handleDecerverPOST(w http.ResponseWriter, r *http.Request){
 
 // Modules
 func handleModuleGET(w http.ResponseWriter, r *http.Request){
-	
-	path := r.URL.String()
-	if path[len(path) - 1] != '/' {
-		path = path[:len(path) - 1]
-	}
-	
-	segs := strings.Split(path,"/")
-	if segs == nil || len(segs) == 0 {
+	url := r.URL.String()
+	mName := path.Base(url)
+	if mName == "." || mName == "/" {
 		writeError(w, 404, "Malformed URL")
 		return
 	}
 	
-	mName := segs[len(segs) - 1]
-	fmt.Println(mName)
+	fio := deCerver.GetPaths()
 	
-	cfg := deCerver.GetConfig()
+	pt := fio.Modules() + "/" + mName
 	
-	bts, _ := json.Marshal(cfg)
+	bts, err := fio.ReadFile(pt,"config.json")
+	
+	if err != nil {
+		writeError(w, 500, err.Error())
+		return
+	}
 	
 	w.WriteHeader(200)
 	w.Header().Set("Content-Type", "application/json")
@@ -103,20 +108,23 @@ func handleModulePOST(w http.ResponseWriter, r *http.Request){
 		return
 	}
 	
+	url := r.URL.String()
+	mName := path.Base(url)
+	if mName == "." || mName == "/" {
+		writeError(w, 404, "Malformed URL")
+		return
+	}
+	
 	bts, err := ioutil.ReadAll(r.Body)
 	
 	if err != nil {
-		fmt.Fprintf(w, "%s", err)
-	}
-	cfg := &core.DCConfig{}
-	
-	err = json.Unmarshal(bts,cfg)
-	
-	if err != nil {
-		writeError(w,422,err.Error())
+		writeError(w, 400, err.Error())
+		return
 	}
 	
-	deCerver.WriteConfig(cfg)
+	fio := deCerver.GetPaths()
+	pt := fio.Modules() + "/" + mName
+	fio.WriteFile(pt,"config.json",bts)
 	
 	w.WriteHeader(204)
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8") 
