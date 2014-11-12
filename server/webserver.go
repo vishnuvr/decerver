@@ -29,7 +29,7 @@ func NewWebServer(maxConnections uint32, appDir string, port int) *WebServer {
 		port = defaultPort
 	}
 	ws.port = port
-	
+
 	return ws
 }
 
@@ -74,12 +74,14 @@ func (ws *WebServer) Start() {
 		}
 		ws.Martini.Get("/wsapi", wsapis.handleWs)
 	}
-	
-	// Decerver communication
+
+	// Decerver configuration
 	ws.Martini.Get("/admin/decerver",handleDecerverGET)
 	ws.Martini.Post("/admin/decerver",handleDecerverPOST)
-	
-	//"decerver/config/update/"
+
+	// Module configuration
+	ws.Martini.Get("/admin/modules/(.*)",handleModuleGET)
+	ws.Martini.Post("/admin/modules/(.*)",handleModulePOST)
 
 	go func() {
 		ws.Martini.RunOnAddr("localhost:" + fmt.Sprintf("%d",ws.port))

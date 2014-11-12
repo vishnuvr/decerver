@@ -83,7 +83,7 @@ func handleModuleGET(w http.ResponseWriter, r *http.Request){
 	pt := fio.Modules() + "/" + mName
 	fmt.Printf("[martini] GET %s config\n", mName)
 
-	bts, err := fio.ReadFile(pt,"config.json")
+	bts, err := fio.ReadFile(pt,"config")
 
 	if err != nil {
 		writeError(w, 500, err.Error())
@@ -115,6 +115,7 @@ func handleModulePOST(w http.ResponseWriter, r *http.Request){
 		writeError(w, 404, "Malformed URL")
 		return
 	}
+	fmt.Printf("[martini] POST %s config\n", mName)
 
 	bts, err := ioutil.ReadAll(r.Body)
 
@@ -125,7 +126,7 @@ func handleModulePOST(w http.ResponseWriter, r *http.Request){
 
 	fio := deCerver.GetPaths()
 	pt := fio.Modules() + "/" + mName
-	fio.WriteFile(pt,"config.json",bts)
+	fio.WriteFile(pt,"config",bts)
 
 	w.WriteHeader(204)
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
