@@ -52,12 +52,22 @@ func (ate *Ate) LoadScriptFile(fileName string) error {
 }
 
 func (ate *Ate) LoadScriptFiles(fileName ...string) error {
-
+	for _ , sf := range fileName {
+		err := ate.LoadScriptFile(sf)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
 func (ate *Ate) BindScriptObject(name string, val interface{}) error {
 	return ate.vm.Set(name, val)
+}
+
+func (ate *Ate) AddScript(script string) error {
+	_ , err := ate.vm.Run(script)
+	return err
 }
 
 func (ate *Ate) RunAction(path []string, actionName string, params interface{}) ([]string, error) {
