@@ -64,7 +64,7 @@ func handleDecerverPOST(w http.ResponseWriter, r *http.Request){
 
 	deCerver.WriteConfig(cfg)
 
-	w.WriteHeader(200)
+	w.WriteHeader(204)
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 }
 
@@ -139,7 +139,7 @@ func handleModulePOST(w http.ResponseWriter, r *http.Request){
 	}
 
 	fio.WriteFile(pt,"config",bts)
-	w.WriteHeader(200)
+	w.WriteHeader(204)
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 }
 
