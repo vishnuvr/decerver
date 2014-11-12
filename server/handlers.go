@@ -118,7 +118,6 @@ func handleModulePOST(w http.ResponseWriter, r *http.Request){
 	fmt.Printf("[martini] POST %s config\n", mName)
 
 	bts, err := ioutil.ReadAll(r.Body)
-
 	if err != nil {
 		writeError(w, 400, err.Error())
 		return
@@ -126,6 +125,22 @@ func handleModulePOST(w http.ResponseWriter, r *http.Request){
 
 	fio := deCerver.GetPaths()
 	pt := fio.Modules() + "/" + mName
+
+	var tmp_int interface{}
+	err = json.Unmarshal(bts,&tmp_int)
+
+	if err != nil {
+		writeError(w, 400, err.Error())
+		return
+	}
+
+	bts, err = json.MarshalIndent(tmp_int, "", "    ")
+
+	if err != nil {
+		writeError(w, 400, err.Error())
+		return
+	}
+
 	fio.WriteFile(pt,"config",bts)
 
 	w.WriteHeader(204)
