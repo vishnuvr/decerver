@@ -1,7 +1,5 @@
 package server
 
-
-
 import (
 	"fmt"
 	"net/http"
@@ -36,6 +34,7 @@ func handleDecerverGET(w http.ResponseWriter, r *http.Request){
 func handleDecerverPOST(w http.ResponseWriter, r *http.Request){
 	fmt.Println("[martini] POST deCerver config")
 	contentType := r.Header.Get("Content-Type")
+
 	idx := strings.Index(contentType, ";")
 	if idx != -1 {
 		contentType = contentType[:idx]
@@ -64,7 +63,7 @@ func handleDecerverPOST(w http.ResponseWriter, r *http.Request){
 
 	deCerver.WriteConfig(cfg)
 
-	w.WriteHeader(204)
+	w.WriteHeader(200)
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 }
 
@@ -117,7 +116,6 @@ func handleModulePOST(w http.ResponseWriter, r *http.Request){
 	fmt.Printf("[martini] POST %s config\n", mName)
 
 	bts, err := ioutil.ReadAll(r.Body)
-
 	if err != nil {
 		writeError(w, 400, err.Error())
 		return
@@ -125,9 +123,22 @@ func handleModulePOST(w http.ResponseWriter, r *http.Request){
 
 	fio := deCerver.GetPaths()
 	pt := fio.Modules() + "/" + mName
-	fio.WriteFile(pt,"config",bts)
 
-	w.WriteHeader(204)
+	var tmp_int interface{}
+	err = json.Unmarshal(bts,&tmp_int)
+	if err != nil {
+		writeError(w, 400, err.Error())
+		return
+	}
+
+	bts, err = json.MarshalIndent(tmp_int, "", "    ")
+	if err != nil {
+		writeError(w, 400, err.Error())
+		return
+	}
+
+	fio.WriteFile(pt,"config",bts)
+	w.WriteHeader(200)
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 }
 
