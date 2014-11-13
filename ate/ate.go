@@ -2,7 +2,7 @@ package ate
 
 import (
 	"fmt"
-	"github.com/eris-ltd/deCerver-interfaces/events"
+	"github.com/eris-ltd/decerver-interfaces/events"
 	"github.com/robertkrimen/otto"
 	"github.com/robertkrimen/otto/parser"
 	"io/ioutil"

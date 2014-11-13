@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/obscuren/sha3"
 	"github.com/robertkrimen/otto"
-	//"github.com/eris-ltd/deCerver-interfaces/events"
+	//"github.com/eris-ltd/decerver-interfaces/events"
 	"math/big"
 )
 

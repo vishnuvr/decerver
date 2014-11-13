@@ -1,14 +1,14 @@
-package deCerver
+package decerver
 
 import (
 	"fmt"
-	"github.com/eris-ltd/deCerver-interfaces/core"
-	"github.com/eris-ltd/deCerver-interfaces/modules"
-	"github.com/eris-ltd/deCerver/ate"
-	"github.com/eris-ltd/deCerver/dappregistry"
-	"github.com/eris-ltd/deCerver/events"
-	"github.com/eris-ltd/deCerver/moduleregistry"
-	"github.com/eris-ltd/deCerver/server"
+	"github.com/eris-ltd/decerver-interfaces/core"
+	"github.com/eris-ltd/decerver-interfaces/modules"
+	"github.com/eris-ltd/decerver/ate"
+	"github.com/eris-ltd/decerver/dappregistry"
+	"github.com/eris-ltd/decerver/events"
+	"github.com/eris-ltd/decerver/moduleregistry"
+	"github.com/eris-ltd/decerver/server"
 	"io/ioutil"
 	"os"
 	"os/signal"

@@ -1,4 +1,4 @@
-package deCerver
+package decerver
 
 import (
 	"fmt"

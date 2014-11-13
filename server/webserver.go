@@ -2,7 +2,7 @@ package server
 
 import (
 	"fmt"
-	"github.com/eris-ltd/deCerver-interfaces/api"
+	"github.com/eris-ltd/decerver-interfaces/api"
 	"github.com/go-martini/martini"
 	"github.com/gorilla/rpc/v2"
 	"github.com/gorilla/rpc/v2/json2"

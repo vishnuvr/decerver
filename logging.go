@@ -1,4 +1,4 @@
-package deCerver
+package decerver
 
 import ()
 
@@ -76,7 +76,7 @@ func NewEthLogger() *EthLogger {
 	el.logLevel = 5
 	el.logReader, el.logWriter = io.Pipe()
 
-	ethlog.AddLogSystem(ethlog.NewStdLogSystem(el.logWriter, log.LstdFlags, el.logLevel))
+	monklog.AddLogSystem(monklog.NewStdLogSystem(el.logWriter, log.LstdFlags, el.logLevel))
 
 	go func(el *EthLogger) {
 		scanner := bufio.NewScanner(el.logReader)

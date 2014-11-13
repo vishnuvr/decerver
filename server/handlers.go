@@ -7,18 +7,18 @@ import (
 	"io/ioutil"
 	"encoding/json"
 	"path"
-	"github.com/eris-ltd/deCerver-interfaces/core"
+	"github.com/eris-ltd/decerver-interfaces/core"
 )
 
-var deCerver core.DeCerver
+var decerver core.DeCerver
 
 func Init(dc core.DeCerver) {
-	deCerver = dc
+	decerver = dc
 }
 
 func handleDecerverGET(w http.ResponseWriter, r *http.Request){
-	fmt.Println("[martini] GET deCerver config")
-	cfg := deCerver.GetConfig()
+	fmt.Println("[martini] GET decerver config")
+	cfg := decerver.GetConfig()
 
 	bts, err := json.Marshal(cfg)
 
@@ -32,7 +32,7 @@ func handleDecerverGET(w http.ResponseWriter, r *http.Request){
 }
 
 func handleDecerverPOST(w http.ResponseWriter, r *http.Request){
-	fmt.Println("[martini] POST deCerver config")
+	fmt.Println("[martini] POST decerver config")
 	contentType := r.Header.Get("Content-Type")
 
 	idx := strings.Index(contentType, ";")
@@ -61,7 +61,7 @@ func handleDecerverPOST(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
-	deCerver.WriteConfig(cfg)
+	decerver.WriteConfig(cfg)
 
 	w.WriteHeader(200)
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
@@ -76,7 +76,7 @@ func handleModuleGET(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
-	fio := deCerver.GetPaths()
+	fio := decerver.GetPaths()
 
 	pt := fio.Modules() + "/" + mName
 	fmt.Printf("[martini] GET %s config\n", mName)
@@ -121,7 +121,7 @@ func handleModulePOST(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
-	fio := deCerver.GetPaths()
+	fio := decerver.GetPaths()
 	pt := fio.Modules() + "/" + mName
 
 	var tmp_int interface{}

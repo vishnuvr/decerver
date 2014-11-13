@@ -1,8 +1,8 @@
 package testmodule
 
 import (
-	"github.com/eris-ltd/deCerver-interfaces/api"
-	"github.com/eris-ltd/deCerver-interfaces/core"
+	"github.com/eris-ltd/decerver-interfaces/api"
+	"github.com/eris-ltd/decerver-interfaces/core"
 	"github.com/robertkrimen/otto"
 	"log"
 	"net/http"

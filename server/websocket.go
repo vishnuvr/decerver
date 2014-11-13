@@ -6,7 +6,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/eris-ltd/deCerver-interfaces/api"
+	"github.com/eris-ltd/decerver-interfaces/api"
 	"github.com/gorilla/websocket"
 	"time"
 	//"bytes"
