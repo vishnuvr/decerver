@@ -2,7 +2,7 @@ package moduleregistry
 
 import (
 	"errors"
-	"github.com/eris-ltd/deCerver-interfaces/modules"
+	"github.com/eris-ltd/decerver-interfaces/modules"
 )
 
 // The module registry is where the different modules are kept. Currently, modules has

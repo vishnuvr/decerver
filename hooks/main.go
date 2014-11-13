@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/eris-ltd/deCerver/hooks/server"
-	ghh "github.com/eris-ltd/deCerver/hooks/server/ghhandler"
+	"github.com/eris-ltd/decerver/hooks/server"
+	ghh "github.com/eris-ltd/decerver/hooks/server/ghhandler"
 )
 
 // This program will create a webserver and handler for github webhooks.

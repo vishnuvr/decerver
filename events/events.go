@@ -2,7 +2,7 @@ package events
 
 import (
 	"fmt"
-	"github.com/eris-ltd/deCerver-interfaces/events"
+	"github.com/eris-ltd/decerver-interfaces/events"
 	"strings"
 	"sync"
 )

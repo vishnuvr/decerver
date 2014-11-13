@@ -1,4 +1,4 @@
-package deCerver
+package decerver
 
 import (
 	"bytes"
@@ -9,7 +9,7 @@ import (
 	"os"
 	"os/user"
 	"path"
-	"github.com/eris-ltd/deCerver-interfaces/core"
+	"github.com/eris-ltd/decerver-interfaces/core"
 )
 
 var (
@@ -19,7 +19,7 @@ var (
 
 // set default config object
 var DefaultConfig = &core.DCConfig{
-	RootDir:    path.Join(usr.HomeDir, ".deCerver"),
+	RootDir:    path.Join(usr.HomeDir, ".decerver"),
 	LogFile:    "",
 	MaxClients: 10,
 	Port : 3000,

@@ -4,7 +4,7 @@ package ate
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/eris-ltd/thelonious/ethchain"
+	"github.com/eris-ltd/thelonious/monkchain"
 	"github.com/eris-ltd/thelonious/monk"
 	"github.com/obscuren/sha3"
 	"github.com/robertkrimen/otto"
@@ -33,7 +33,7 @@ func NewActionEngine(ec *monk.EthChain) *ActionEngine {
 // will be used when doing calls.
 func (se *ActionEngine) init() {
 	// Address of gendoug.
-	gd := hex.EncodeToString(ethchain.GENDOUG)
+	gd := hex.EncodeToString(monkchain.GENDOUG)
 	se.genDoug = gd
 	se.otto.Set("GENDOUG", gd)
 
