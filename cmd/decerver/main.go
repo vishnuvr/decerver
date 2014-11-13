@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/eris-ltd/decerver"
 	"github.com/eris-ltd/thelonious/monk"
-	"github.com/eris-ltd/glululemon/ipfs"
+	"github.com/eris-ltd/decerver-interfaces/glue/ipfs"
 )
 
 func main() {
