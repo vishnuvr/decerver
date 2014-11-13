@@ -3,6 +3,7 @@ package decerver
 import (
 	"fmt"
 	"github.com/eris-ltd/decerver-interfaces/core"
+	"github.com/eris-ltd/decerver-interfaces/blockchain"
 	"github.com/eris-ltd/decerver-interfaces/modules"
 	"github.com/eris-ltd/decerver/ate"
 	"github.com/eris-ltd/decerver/dappregistry"
@@ -176,6 +177,14 @@ func (dc *DeCerver) createDappRegistry() {
 
 func (dc *DeCerver) LoadModule(md modules.Module) {
 	md.Register(nil, dc.webServer, dc.ate, dc.ep)
+	// Add rpc services.
+	switch mod := md.(type) {
+		case modules.Blockchain:
+			fact := blockchain.NewWebSocketAPIFactory(mod)
+			dc.webServer.RegisterWsServiceFactories(fact)
+	}
+	// Bind to Atë
+	dc.ate.BindScriptObject(md.Name(), md)
 	dc.moduleRegistry.Add(md)
 	fmt.Printf("Registering module '%s'.\n", md.Name())
 }
