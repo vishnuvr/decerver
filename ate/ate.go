@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/eris-ltd/deCerver-interfaces/events"
 	"github.com/robertkrimen/otto"
+	"github.com/robertkrimen/otto/parser"
 	"io/ioutil"
 	"strconv"
 )
@@ -67,6 +68,11 @@ func (ate *Ate) BindScriptObject(name string, val interface{}) error {
 
 func (ate *Ate) AddScript(script string) error {
 	_ , err := ate.vm.Run(script)
+	return err
+}
+
+func (ate *Ate) ParseScript(script string) error {
+	_ , err := parser.ParseFile(nil,"",script,0)
 	return err
 }
 

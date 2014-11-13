@@ -28,7 +28,6 @@ func handleDecerverGET(w http.ResponseWriter, r *http.Request){
 		writeError(w, 500, err.Error())
 		return
 	}
-
 	w.WriteHeader(200)
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprint(w, string(bts))

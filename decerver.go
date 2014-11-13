@@ -2,20 +2,22 @@ package deCerver
 
 import (
 	"fmt"
-	"github.com/eris-ltd/deCerver-interfaces/modules"
 	"github.com/eris-ltd/deCerver-interfaces/core"
+	"github.com/eris-ltd/deCerver-interfaces/modules"
 	"github.com/eris-ltd/deCerver/ate"
+	"github.com/eris-ltd/deCerver/dappregistry"
 	"github.com/eris-ltd/deCerver/events"
 	"github.com/eris-ltd/deCerver/moduleregistry"
-	"github.com/eris-ltd/deCerver/dappregistry"
 	"github.com/eris-ltd/deCerver/server"
 	"io/ioutil"
 	"os"
 	"os/signal"
 	"path"
+	"sync"
 )
 
 type Paths struct {
+	mutex       *sync.Mutex
 	root        string
 	modules     string
 	log         string
@@ -48,20 +50,29 @@ func (p *Paths) Filesystems() string {
 	return p.filesystems
 }
 
+// Thread safe read file function. Reads an entire file and returns the bytes.
 func (p *Paths) ReadFile(directory, name string) ([]byte, error) {
-	if directory[len(directory) - 1] != '/' {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	if directory[len(directory)-1] != '/' {
 		directory += "/"
 	}
-	return ioutil.ReadFile((path.Join(directory,name)))
+	bts, err := ioutil.ReadFile((path.Join(directory, name)))
+	
+	return bts,err
 }
 
-
+// Thread safe write file function. Writes the provided byte slice into the file 'name' 
+// in directory 'directory'. Uses filemode 0600.
 func (p *Paths) WriteFile(directory, name string, data []byte) error {
-	if directory[len(directory) - 1] != '/' {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	if directory[len(directory)-1] != '/' {
 		directory += "/"
 	}
-	return ioutil.WriteFile((path.Join(directory,name)),data,0600)
-}	
+	err := ioutil.WriteFile((path.Join(directory, name)), data, 0600)
+	return err
+}
 
 // Creates a new directory for a module, and returns the path.
 func (p *Paths) CreateDirectory(moduleName string) string {
@@ -124,6 +135,7 @@ func (dc *DeCerver) Start() {
 
 func (dc *DeCerver) createPaths() {
 	dc.paths = &Paths{}
+	dc.paths.mutex = &sync.Mutex{}
 	dc.paths.root = dc.config.RootDir
 	InitDir(dc.paths.root)
 	dc.paths.log = dc.paths.root + "/logs"
@@ -139,7 +151,7 @@ func (dc *DeCerver) createPaths() {
 }
 
 func (dc *DeCerver) createNetwork() {
-	dc.webServer = server.NewWebServer(uint32(dc.config.MaxClients), dc.paths.Apps(),dc.config.Port)
+	dc.webServer = server.NewWebServer(uint32(dc.config.MaxClients), dc.paths.Apps(), dc.config.Port)
 }
 
 func (dc *DeCerver) createEventProcessor() {
@@ -159,7 +171,7 @@ func (dc *DeCerver) createModuleRegistry() {
 }
 
 func (dc *DeCerver) createDappRegistry() {
-	dc.dappRegistry = dappregistry.NewDappRegistry()
+	dc.dappRegistry = dappregistry.NewDappRegistry(dc.ate)
 }
 
 func (dc *DeCerver) LoadModule(md modules.Module) {
@@ -169,17 +181,16 @@ func (dc *DeCerver) LoadModule(md modules.Module) {
 }
 
 func (dc *DeCerver) initDapps() {
-	fmt.Println("Loading dapps")
 	err := dc.dappRegistry.LoadDapps(dc.paths.Apps())
-	
+
 	if err != nil {
 		fmt.Println("Error loading dapps: " + err.Error())
 		os.Exit(0)
 	}
 }
 
-func (dc *DeCerver) initDapp(){
-	
+func (dc *DeCerver) initDapp() {
+
 }
 
 func (dc *DeCerver) GetPaths() core.FileIO {
