@@ -12,6 +12,7 @@ go install
 go get -u -d github.com/eris-ltd/epm-go
 cd $GOPATH/src/github.com/eris-ltd/epm-go/cmd/epm
 go install
+
 cd $GOPATH/src/github.com/eris-ltd/epm-go/cmd/iepm
 go install
 
@@ -20,18 +21,18 @@ go install
 Will get the primary executable and dependencies.
 
 ```
-sudo mv $GOPATH/bin/decerver /usr/bin/.
-sudo mv $GOPATH/bin/epm /usr/bin/.
-sudo mv $GOPATH/bin/iepm /usr/bin/.
+sudo mv $GOPATH/bin/decerver /usr/local/bin/.
+sudo mv $GOPATH/bin/epm /usr/local/bin/.
+sudo mv $GOPATH/bin/iepm /usr/local/bin/.
 ```
 
 #### If user does not have golang installed
 
 Download latest binaries for platform from:
 
-https://dl.erisindustries.com/decerver/latest
-https://dl.erisindustries.com/epm/latest
-https://dl.erisindustries.com/iepm/latest
+* https://dl.erisindustries.com/decerver/latest
+* https://dl.erisindustries.com/epm/latest
+* https://dl.erisindustries.com/iepm/latest
 
 #### Binary Population
 
