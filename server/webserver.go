@@ -2,89 +2,87 @@ package server
 
 import (
 	"fmt"
-	"github.com/eris-ltd/decerver-interfaces/api"
+	"github.com/eris-ltd/decerver-interfaces/core"
 	"github.com/go-martini/martini"
-	"github.com/gorilla/rpc/v2"
-	"github.com/gorilla/rpc/v2/json2"
 )
 
-const defaultPort = 3000
+const DEFAULT_PORT = 3000 // For communicating with dapps (the atom browser).
+const DECERVER_PORT = 3005 // For communication with the atom client back-end.
 
-type WebServer struct {
-	Martini               *martini.ClassicMartini
-	maxConnections        uint32
-	httpAPIServices       []interface{}
-	wsAPIServiceFactories []api.WsAPIServiceFactory
-	appsDirectory         string
-	port                  int
+const HTTP_BASE = "/http/"
+const WS_BASE = "/ws/"
+
+type endpoint struct {
+	method  string
+	route   string
+	handler interface{}
 }
 
-func NewWebServer(maxConnections uint32, appDir string, port int) *WebServer {
+type WebServer struct {
+	webServer             *martini.ClassicMartini
+	maxConnections        uint32
+	appsDirectory         string
+	port                  int
+	ate                   core.RuntimeManager
+	decerver              core.DeCerver
+	was					  *WsAPIServer
+	has                   *HttpAPIServer
+	das					  *DecerverAPIServer
+}
+
+func NewWebServer(maxConnections uint32, appDir string, port int, ate core.RuntimeManager, dc core.DeCerver) *WebServer {
 	ws := &WebServer{}
 	ws.maxConnections = maxConnections
-	ws.httpAPIServices = make([]interface{}, 0)
-	ws.wsAPIServiceFactories = make([]api.WsAPIServiceFactory, 0)
 	ws.appsDirectory = appDir
 	if port <= 0 {
-		port = defaultPort
+		port = DEFAULT_PORT
 	}
 	ws.port = port
-
+	ws.ate = ate
+	ws.decerver = dc
+	
+	ws.was = NewWsAPIServer(ws.ate, ws.maxConnections)
+	ws.has = NewHttpAPIServer(ws.ate)
+	
+	ws.webServer = martini.Classic()
+	// TODO remember to change to martini.Prod 
+	martini.Env = martini.Dev
+	
 	return ws
 }
 
-func (ws *WebServer) RegisterHttpServices(service ...interface{}) {
-	for _, s := range service {
-		ws.httpAPIServices = append(ws.httpAPIServices, s)
-	}
+func (ws *WebServer) RegisterDapp(dappId string){
+	fmt.Println("Adding routes for: " + dappId)
+	// Use Router.Any(...)?
+	ws.webServer.Get("/http/" + dappId, ws.has.handleHttp)
+	ws.webServer.Post("/http/" + dappId, ws.has.handleHttp)
+	wsRoute := "/ws/" + dappId
+	fmt.Println(wsRoute)
+	ws.webServer.Get(wsRoute, ws.was.handleWs)
+	
+	// serve := ws.appsDirectory + "/" + dappId + "/"
+	// fmt.Println(serve)
+	// ws.webServer.Use(martini.Static(serve))
+	
 }
 
-func (ws *WebServer) RegisterWsServiceFactories(factory ...api.WsAPIServiceFactory) {
-	for _, f := range factory {
-		ws.wsAPIServiceFactories = append(ws.wsAPIServiceFactories, f)
-	}
-}
+func (ws *WebServer) Start() error {
+	
+	ws.webServer.Use(martini.Static(ws.appsDirectory))
 
-func (ws *WebServer) Start() {
-
-	ws.Martini = martini.Classic()
-	// TODO make this settable
-	//so := martini.StaticOptions{}
-	ws.Martini.Use(martini.Static(ws.appsDirectory))
-
-	// Change to production environment.
-	// martini.Env = martini.Prod
-
-	// JSON RPC
-	if len(ws.httpAPIServices) > 0 {
-		rpcs := rpc.NewServer()
-		rpcs.RegisterCodec(json2.NewCodec(), "application/json")
-		for _, service := range ws.httpAPIServices {
-			rpcs.RegisterService(service, "")
-		}
-		ws.Martini.Post("/httpapi", rpcs.ServeHTTP)
-	}
-
-	// JSON Socket RPC
-	if len(ws.wsAPIServiceFactories) > 0 {
-		wsapis := NewWsAPIServer(ws.maxConnections)
-		for _, factory := range ws.wsAPIServiceFactories {
-			wsapis.RegisterServiceFactory(factory)
-			fmt.Println("Registering new websocket API: " + factory.ServiceName())
-		}
-		ws.Martini.Get("/wsapi", wsapis.handleWs)
-	}
+	das := NewDecerverAPIServer(ws.decerver)
 
 	// Decerver configuration
-	ws.Martini.Get("/admin/decerver",handleDecerverGET)
-	ws.Martini.Post("/admin/decerver",handleDecerverPOST)
+	ws.webServer.Get("/admin/decerver", das.handleDecerverGET)
+	ws.webServer.Post("/admin/decerver", das.handleDecerverPOST)
 
 	// Module configuration
-	ws.Martini.Get("/admin/modules/(.*)",handleModuleGET)
-	ws.Martini.Post("/admin/modules/(.*)",handleModulePOST)
+	ws.webServer.Get("/admin/modules/(.*)", das.handleModuleGET)
+	ws.webServer.Post("/admin/modules/(.*)", das.handleModulePOST)
 
 	go func() {
-		ws.Martini.RunOnAddr("localhost:" + fmt.Sprintf("%d",ws.port))
+		ws.webServer.RunOnAddr("localhost:" + fmt.Sprintf("%d", ws.port))
 	}()
 
+	return nil
 }

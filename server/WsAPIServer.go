@@ -1,35 +1,38 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/eris-ltd/decerver-interfaces/api"
+	"github.com/eris-ltd/decerver-interfaces/core"
 	"github.com/eris-ltd/decerver-interfaces/util"
 	"github.com/gorilla/websocket"
 	"net/http"
-	"strings"
+	"path"
 )
 
-func getErrorResponse(err *api.Error) *api.Response {
+func getErrorResponse(err *api.Error) []byte {
 	rsp := &api.Response{}
 	rsp.Error = err
-	return rsp
+	bts, _ := json.Marshal(rsp)
+	return bts
 }
 
-// The websocket RPC server
+// The websocket server handles connections.
 type WsAPIServer struct {
+	ate               core.RuntimeManager
 	activeConnections uint32
 	maxConnections    uint32
 	idPool            *util.IdPool
-	serviceFactories  map[string]api.WsAPIServiceFactory
-	activeHandlers    map[uint32]*SessionHandler
+	sessions          map[uint32]*Session
 }
 
-func NewWsAPIServer(maxConnections uint32) *WsAPIServer {
+func NewWsAPIServer(ate core.RuntimeManager, maxConnections uint32) *WsAPIServer {
 	srv := &WsAPIServer{}
-	srv.serviceFactories = make(map[string]api.WsAPIServiceFactory)
-	srv.activeHandlers = make(map[uint32]*SessionHandler)
+	srv.sessions = make(map[uint32]*Session)
 	srv.maxConnections = maxConnections
 	srv.idPool = util.NewIdPool(maxConnections)
+	srv.ate = ate
 	return srv
 }
 
@@ -41,149 +44,127 @@ func (srv *WsAPIServer) MaxConnections() uint32 {
 	return srv.maxConnections
 }
 
-func (srv *WsAPIServer) RemoveSessionHandler(sh *SessionHandler) {
+func (srv *WsAPIServer) RemoveSession(ss *Session) {
 	srv.activeConnections--
-	srv.idPool.ReleaseId(sh.wsConn.SessionId())
-	delete(srv.activeHandlers, sh.wsConn.SessionId())
+	srv.idPool.ReleaseId(ss.wsConn.SessionId())
+	delete(srv.sessions, ss.wsConn.SessionId())
 }
 
-func (srv *WsAPIServer) CreateSessionHandler(wsConn *WsConn) *SessionHandler {
-	sh := &SessionHandler{}
-	sh.wsConn = wsConn
-	
-	sh.server = srv
+func (srv *WsAPIServer) CreateSession(caller string, rt core.Runtime, wsConn *WsConn) *Session {
+	fmt.Printf("Runtime: %v\n", rt)
+	ss := &Session{}
+	ss.wsConn = wsConn
+	ss.server = srv
+	ss.caller = caller
+	ss.runtime = rt
 	srv.activeConnections++
 	id := srv.idPool.GetId()
-	sh.wsConn.sessionId = id
-	srv.activeHandlers[id] = sh
-	fmt.Printf("ACTIVE CONNECTIONS: %v\n", srv.activeHandlers)
-	
-	sh.services = make(map[string]api.WsAPIService)
-	
-	for _, v := range srv.serviceFactories {
-		
-		sc := v.CreateService()
-		sc.SetConnection(wsConn)
-		sc.Init()
-		sh.services[v.ServiceName()] = sc
-		fmt.Printf("Adding service factory '%s' to session handler.\n")
-	}
-	
-	return sh
-}
-
-func (srv *WsAPIServer) RegisterServiceFactory(factory api.WsAPIServiceFactory) {
-	
-	srv.serviceFactories[factory.ServiceName()] = factory
-	factory.Init()
-}
-
-// TODO do this properly.
-func (srv *WsAPIServer) DeregisterServiceFactory(serviceFactoryName string) {
-	delete(srv.serviceFactories, serviceFactoryName)
+	ss.wsConn.sessionId = id
+	srv.sessions[id] = ss
+	fmt.Printf("ACTIVE CONNECTIONS: %v\n", srv.sessions)
+	return ss
 }
 
 // This is passed to the Martini server.
-func (srs *WsAPIServer) handleWs(w http.ResponseWriter, r *http.Request) {
+// Find out what endpoint they called and create a session based on that.
+func (srv *WsAPIServer) handleWs(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("New connection.")
-	if srs.activeConnections == srs.maxConnections {
+	if srv.activeConnections == srv.maxConnections {
 		fmt.Println("Connection failed: Already at capacity.")
 	}
+	u := r.URL
+	p := u.Path
+	caller := path.Base(p)
+	fmt.Println("Caller: " + caller)
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		fmt.Printf("Failed to upgrade to websockets (%s)\n", err.Error())
+		fmt.Printf("Failed to upgrade to websocket (%s)\n", err.Error())
 		return
 	}
-
-	wsConn := &WsConn{conn: conn,
+	wsConn := &WsConn{
+		conn:              conn,
 		writeMsgChannel:   make(chan *Message, 256),
 		writeCloseChannel: make(chan *Message, 256),
 	}
-	sh := srs.CreateSessionHandler(wsConn)
-	go writer(sh)
-	reader(sh)
-	sh.wsConn.writeMsgChannel <- &Message{Data: nil}
-	sh.Close()
-}
-
-type SessionHandler struct {
-	server   *WsAPIServer
-	services map[string]api.WsAPIService
-	wsConn   *WsConn
-}
-
-func (sh *SessionHandler) Close() {
-	fmt.Printf("CLOSING HANDLER: %d\n", sh.wsConn.SessionId)
+	rt := srv.ate.GetRuntime(caller)
+	ss := srv.CreateSession(caller, rt, wsConn)
+	// We add this session to the callers (dapps) runtime.
+	err = rt.BindScriptObject("tempObj", NewSessionJs(ss))
 	
-	for _, srvc := range sh.services {
-		srvc.Shutdown()
-	}	
-	sh.services = nil
+	if err != nil {
+		panic(err.Error())
+	}
+	
+	// TODO expose toValue in runtime?
+	rt.AddScript("network.newWsSession(tempObj); tempObj = null;");
+	//rt.CallFuncOnObj("network", "newWsSession", val)
+	go writer(ss)
+	reader(ss)
+	ss.wsConn.writeMsgChannel <- &Message{Data: nil}
+	ss.Close()
+}
+
+type Session struct {
+	caller    string
+	runtime   core.Runtime
+	server    *WsAPIServer
+	wsConn    *WsConn
+	sessionJs *SessionJs
+}
+
+func (ss *Session) SessionId() uint32 {
+	return ss.wsConn.sessionId
+}
+
+func (ss *Session) WriteCloseMsg() {
+	ss.wsConn.WriteCloseMsg()
+}
+
+func (ss *Session) Close() {
+	fmt.Printf("CLOSING SESSION: %d\n", ss.wsConn.sessionId)
 	// Deregister ourselves.
-	sh.server.RemoveSessionHandler(sh)
-	if sh.wsConn.conn != nil {
-		err := sh.wsConn.conn.Close()
+	ss.server.RemoveSession(ss)
+	if ss.wsConn.conn != nil {
+		err := ss.wsConn.conn.Close()
 		if err != nil {
-			fmt.Printf("Failed to close websocket connection, already removed: %d\n", sh.wsConn.sessionId)
+			fmt.Printf("Failed to close websocket connection, already removed: %d\n", ss.wsConn.sessionId)
 		}
 	}
 }
 
-func (sh *SessionHandler) handleRequest(rpcReq *api.Request) {
-
-	mtd := rpcReq.Method
-	if mtd == "" {
+func (ss *Session) handleRequest(rpcReq string) {
+	fmt.Println("RPC Message: " + rpcReq)
+	ret, err := ss.runtime.CallFuncOnObj("network", "incomingWsMsg", int(ss.wsConn.sessionId), rpcReq)
+	
+	if err != nil {
 		err := &api.Error{
-			Code:    api.E_NO_METHOD,
-			Message: "Method name is empty.",
+			Code:    api.E_SERVER,
+			Message: "Js runtime error: " + ss.caller,
 			Data:    rpcReq,
 		}
-		sh.wsConn.writeMsgChannel <- &Message{Data: getErrorResponse(err), Type: websocket.TextMessage}
+		ss.wsConn.writeMsgChannel <- &Message{Data: getErrorResponse(err), Type: websocket.TextMessage}
 		return
 	}
-
-	mtdfrm := strings.Split(mtd, ".")
-	if len(mtdfrm) != 2 {
-		err := &api.Error{
-			Code:    api.E_NO_METHOD,
-			Message: "Method name malformed. Need to be on the form 'Service.Method': " + mtd,
-			Data:    rpcReq,
-		}
-		sh.wsConn.writeMsgChannel <- &Message{Data: getErrorResponse(err), Type: websocket.TextMessage}
+	if ret == nil {
 		return
 	}
+	retStr := ret.(string)
+	// If there is a return value, pass to the write channel.
+	ss.wsConn.writeMsgChannel <- &Message{Data: []byte(retStr), Type: websocket.TextMessage}
+}
 
-	serviceName := mtdfrm[0]
+type SessionJs struct {
+	session *Session
+}
 
-	if serviceName == "" || sh.services[serviceName] == nil {
-		err := &api.Error{
-			Code:    api.E_NO_METHOD,
-			Message: "No service with name: " + serviceName,
-			Data:    rpcReq,
-		}
-		sh.wsConn.writeMsgChannel <- &Message{Data: getErrorResponse(err), Type: websocket.TextMessage}
-		return
-	}
+func NewSessionJs(ss *Session) *SessionJs {
+	return &SessionJs{ss}
+}
 
-	methodName := mtdfrm[1]
-	rpcReq.Method = methodName // Replace now that we know which service to use.
-	service := sh.services[serviceName]
+func (sjs *SessionJs) WriteJson(msg string) {
+	sjs.session.wsConn.WriteJsonMsg([]byte(msg))
+}
 
-	// TODO add a way to divide responses up into multiple messages without
-	// passing the connection object.
-	rpcResp, handleErr := service.HandleRPC(rpcReq)
-
-	if handleErr != nil {
-		err := &api.Error{
-			Code:    api.E_NO_METHOD,
-			Message: "No method with name: " + methodName,
-			Data:    rpcReq,
-		}
-		sh.wsConn.writeMsgChannel <- &Message{Data: getErrorResponse(err), Type: websocket.TextMessage}
-		return
-	}
-	if rpcResp.Result != nil {
-		// If there is a return value, pass to the write channel.
-		sh.wsConn.writeMsgChannel <- &Message{Data: rpcResp, Type: websocket.TextMessage}
-	}
+func (sjs *SessionJs) SessionId() int {
+	return int(sjs.session.SessionId())
 }

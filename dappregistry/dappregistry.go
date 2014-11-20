@@ -8,6 +8,7 @@ import (
 	//"crypto/sha1"
 	//"bytes"
 	"encoding/json"
+	"github.com/eris-ltd/decerver-interfaces/api"
 	"github.com/eris-ltd/decerver-interfaces/core"
 	"github.com/eris-ltd/decerver-interfaces/dapps"
 	"path"
@@ -27,18 +28,20 @@ func NewDapp() *Dapp {
 }
 
 type DappRegistry struct {
-	mutex *sync.Mutex
-	keys  map[string]string
-	dapps map[string]*Dapp
-	ate   core.Runtime
+	mutex  *sync.Mutex
+	keys   map[string]string
+	dapps  map[string]*Dapp
+	ate    core.RuntimeManager
+	server api.Server
 }
 
-func NewDappRegistry(ate core.Runtime) *DappRegistry {
+func NewDappRegistry(ate core.RuntimeManager, server api.Server) *DappRegistry {
 	dr := &DappRegistry{}
 	dr.keys = make(map[string]string)
 	dr.dapps = make(map[string]*Dapp)
 	dr.mutex = &sync.Mutex{}
 	dr.ate = ate
+	dr.server = server
 	return dr
 }
 
@@ -48,7 +51,6 @@ func (dc *DappRegistry) LoadDapps(directory string) error {
 	if err != nil {
 		return err
 	}
-
 	if len(files) == 0 {
 		fmt.Println("[Dapp Registry] No dapps has been downloaded")
 		return nil
@@ -60,9 +62,8 @@ func (dc *DappRegistry) LoadDapps(directory string) error {
 			pth := path.Join(directory, fileInfo.Name())
 			dc.LoadDapp(pth)
 		}
-
 	}
-
+	fmt.Println("[Dapp Registry] Done loading.")
 	return nil
 }
 
@@ -77,23 +78,7 @@ func (dc *DappRegistry) LoadDapp(dir string) {
 		fmt.Println(err1.Error())
 		return
 	}
-	/*
-		idxDir := path.Join(dir,dapps.INDEX_FILE_NAME)
-		_ , err1 = os.Stat(idxDir)
-		if err1 != nil {
-			fmt.Printf("Error loading 'index.html' for dapp '%s'. Skipping...\n", dir)
-			fmt.Println(err1.Error())
-			return
-		}
-	*/
-
-	/*
-		mdFi , err3 := os.Stat(mdDir)
-		if err3 != nil || os.IsNotExist(mdFi) {
-			fmt.Printf("Dapp '%s' does not have a 'package.json' file. Skipping...\n", dir)
-			return err2
-		}*/
-
+	
 	pkBts, errP := ioutil.ReadFile(pkDir)
 
 	if errP != nil {
@@ -110,18 +95,18 @@ func (dc *DappRegistry) LoadDapp(dir string) {
 		fmt.Println(pkUnmErr.Error())
 	}
 
-	dapp := NewDapp()
-	dapp.path = dir
-	dapp.packageFile = packageFile
-
-	// TODO the hashing thing.
-
-	dc.dapps[packageFile.Name] = dapp
+	idxDir := path.Join(dir, dapps.INDEX_FILE_NAME)
+	_, err1 = os.Stat(idxDir)
+	if err1 != nil {
+		fmt.Printf("Cannot find an 'index.html' file for dapp '%s'. Skipping...\n", dir)
+		fmt.Println(err1.Error())
+		return
+	}
 
 	modelDir := path.Join(dir, dapps.MODELS_FOLDER_NAME)
 
 	modelFi, errMfi := os.Stat(modelDir)
-
+	fmt.Println("[Dapp Registry] ## Loading dapp: " + packageFile.Name + " ##")
 	if errMfi != nil {
 		fmt.Printf("[Dapp Registry] Error loading 'Models' directory for dapp '%s'. Skipping models\n.", dir)
 		fmt.Println(errMfi.Error())
@@ -133,7 +118,6 @@ func (dc *DappRegistry) LoadDapp(dir string) {
 		return
 	}
 
-	fmt.Println("[Dapp Registry] Dapp module directory: " + modelDir)
 	files, err := ioutil.ReadDir(modelDir)
 	if err != nil {
 		fmt.Printf("[Dapp Registry] Error loading 'Models' directory for dapp '%s': Not a directory.\n", dir)
@@ -145,6 +129,20 @@ func (dc *DappRegistry) LoadDapp(dir string) {
 		return
 	}
 
+	dapp := NewDapp()
+	dapp.path = dir
+	dapp.packageFile = packageFile
+
+	// TODO the hashing thing.
+
+	dc.dapps[packageFile.Id] = dapp
+
+	// Create a new javascript runtime
+	id := dapp.packageFile.Id
+
+	rt := dc.ate.CreateRuntime(id)
+	dc.server.RegisterDapp(id)
+
 	for _, fileInfo := range files {
 		fp := path.Join(modelDir, fileInfo.Name())
 		if fileInfo.IsDir() {
@@ -152,9 +150,9 @@ func (dc *DappRegistry) LoadDapp(dir string) {
 			// Skip for now.
 			continue
 		}
-		
+
 		if strings.ToLower(path.Ext(fp)) != ".js" {
-			fmt.Println("[Dapp Registry] Skipping non .js file: " + fp)
+			//fmt.Println("[Dapp Registry] Skipping non .js file: " + fp)
 			continue
 		}
 
@@ -162,31 +160,18 @@ func (dc *DappRegistry) LoadDapp(dir string) {
 		if errFile != nil {
 			fmt.Println("[Dapp Registry] Error reading javascript file: " + fp)
 		}
-		
+
 		jsFile := string(fileBts)
-		
-		
-		
-		parseErr := dc.ate.ParseScript(jsFile)
-		
-		if parseErr != nil {
-			fmt.Printf("[Dapp Registry] Error parsing javascript file: %s\nDUMP: \n%s\n", jsFile, parseErr.Error())
+
+		addErr := rt.AddScript(jsFile)
+
+		if addErr != nil {
+			fmt.Printf("[Dapp Registry] Error running javascript file: \n%s\n%s\n", jsFile, addErr.Error())
 			continue
 		}
-		
-		addErr := dc.ate.AddScript(jsFile)
-		
-		if addErr != nil {
-			fmt.Printf("[Dapp Registry] Error running javascript file: %s\nDUMP: \n%s\n", jsFile, addErr.Error())
-		}
-		
-		result, erk := dc.ate.RunFunction("Shitty.CreateFile","nothing");
-		
-		if erk != nil {
-			fmt.Println(erk.Error())	
-		} else {
-			fmt.Printf("%v\n",result)
-		}
+
+		fmt.Printf("[Dapp Registry] Loaded javascript file '%s'\n", path.Base(fp))
+
 	}
 
 	return

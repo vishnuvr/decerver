@@ -1,29 +1,31 @@
 package server
 
 import (
-	"fmt"
-	"net/http"
-	"strings"
-	"io/ioutil"
 	"encoding/json"
-	"path"
+	"fmt"
 	"github.com/eris-ltd/decerver-interfaces/core"
+	"io/ioutil"
+	"net/http"
+	"path"
+	"strings"
 )
 
-var decerver core.DeCerver
-
-func Init(dc core.DeCerver) {
-	decerver = dc
+type DecerverAPIServer struct {
+	decerver core.DeCerver
 }
 
-func handleDecerverGET(w http.ResponseWriter, r *http.Request){
+func NewDecerverAPIServer(dc core.DeCerver) *DecerverAPIServer {
+	return &DecerverAPIServer{dc}
+}
+
+func (das *DecerverAPIServer) handleDecerverGET(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("[martini] GET decerver config")
-	cfg := decerver.GetConfig()
+	cfg := das.decerver.GetConfig()
 
 	bts, err := json.Marshal(cfg)
 
 	if err != nil {
-		writeError(w, 500, err.Error())
+		das.writeError(w, 500, err.Error())
 		return
 	}
 	w.WriteHeader(200)
@@ -31,7 +33,7 @@ func handleDecerverGET(w http.ResponseWriter, r *http.Request){
 	fmt.Fprint(w, string(bts))
 }
 
-func handleDecerverPOST(w http.ResponseWriter, r *http.Request){
+func (das *DecerverAPIServer) handleDecerverPOST(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("[martini] POST decerver config")
 	contentType := r.Header.Get("Content-Type")
 
@@ -42,49 +44,49 @@ func handleDecerverPOST(w http.ResponseWriter, r *http.Request){
 	ct := strings.ToLower(contentType)
 
 	if ct != "application/json" {
-		writeError(w, 415, "unrecognized Content-Type: " + contentType)
+		das.writeError(w, 415, "unrecognized Content-Type: "+contentType)
 		return
 	}
 
 	bts, err := ioutil.ReadAll(r.Body)
 
 	if err != nil {
-		writeError(w, 400, err.Error())
+		das.writeError(w, 400, err.Error())
 		return
 	}
 	cfg := &core.DCConfig{}
 	fmt.Print(string(bts))
-	err = json.Unmarshal(bts,cfg)
+	err = json.Unmarshal(bts, cfg)
 
 	if err != nil {
-		writeError(w,422,err.Error())
+		das.writeError(w, 422, err.Error())
 		return
 	}
 
-	decerver.WriteConfig(cfg)
+	das.decerver.WriteConfig(cfg)
 
 	w.WriteHeader(204)
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 }
 
 // Modules
-func handleModuleGET(w http.ResponseWriter, r *http.Request){
+func (das *DecerverAPIServer) handleModuleGET(w http.ResponseWriter, r *http.Request) {
 	url := r.URL.String()
 	mName := path.Base(url)
 	if mName == "." || mName == "/" {
-		writeError(w, 404, "Malformed URL")
+		das.writeError(w, 404, "Malformed URL")
 		return
 	}
 
-	fio := decerver.GetPaths()
+	fio := das.decerver.GetPaths()
 
 	pt := fio.Modules() + "/" + mName
 	fmt.Printf("[martini] GET %s config\n", mName)
 
-	bts, err := fio.ReadFile(pt,"config")
+	bts, err := fio.ReadFile(pt, "config")
 
 	if err != nil {
-		writeError(w, 500, err.Error())
+		das.writeError(w, 500, err.Error())
 		return
 	}
 
@@ -93,7 +95,7 @@ func handleModuleGET(w http.ResponseWriter, r *http.Request){
 	fmt.Fprint(w, string(bts))
 }
 
-func handleModulePOST(w http.ResponseWriter, r *http.Request){
+func (das *DecerverAPIServer) handleModulePOST(w http.ResponseWriter, r *http.Request) {
 
 	contentType := r.Header.Get("Content-Type")
 	idx := strings.Index(contentType, ";")
@@ -103,46 +105,46 @@ func handleModulePOST(w http.ResponseWriter, r *http.Request){
 	ct := strings.ToLower(contentType)
 
 	if ct != "application/json" {
-		writeError(w, 415, "unrecognized Content-Type: " + contentType)
+		das.writeError(w, 415, "unrecognized Content-Type: "+contentType)
 		return
 	}
 
 	url := r.URL.String()
 	mName := path.Base(url)
 	if mName == "." || mName == "/" {
-		writeError(w, 404, "Malformed URL")
+		das.writeError(w, 404, "Malformed URL")
 		return
 	}
 	fmt.Printf("[martini] POST %s config\n", mName)
 
 	bts, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		writeError(w, 400, err.Error())
+		das.writeError(w, 400, err.Error())
 		return
 	}
 
-	fio := decerver.GetPaths()
+	fio := das.decerver.GetPaths()
 	pt := fio.Modules() + "/" + mName
 
 	var tmp_int interface{}
-	err = json.Unmarshal(bts,&tmp_int)
+	err = json.Unmarshal(bts, &tmp_int)
 	if err != nil {
-		writeError(w, 400, err.Error())
+		das.writeError(w, 400, err.Error())
 		return
 	}
 
 	bts, err = json.MarshalIndent(tmp_int, "", "    ")
 	if err != nil {
-		writeError(w, 400, err.Error())
+		das.writeError(w, 400, err.Error())
 		return
 	}
 
-	fio.WriteFile(pt,"config",bts)
+	fio.WriteFile(pt, "config", bts)
 	w.WriteHeader(204)
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 }
 
-func writeError(w http.ResponseWriter, status int, msg string) {
+func (das *DecerverAPIServer) writeError(w http.ResponseWriter, status int, msg string) {
 	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	fmt.Fprint(w, msg)

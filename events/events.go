@@ -2,6 +2,7 @@ package events
 
 import (
 	"fmt"
+	"github.com/eris-ltd/decerver-interfaces/core"
 	"github.com/eris-ltd/decerver-interfaces/events"
 	"strings"
 	"sync"
@@ -23,12 +24,14 @@ type EventProcessor struct {
 	// Sorts by source, then by event name.
 	channels map[string]*subscriptions
 	glob     *subscriptions
+	ate      core.RuntimeManager
 }
 
-func NewEventProcessor() *EventProcessor {
+func NewEventProcessor(ate core.RuntimeManager) *EventProcessor {
 	ep := &EventProcessor{}
 	ep.channels = make(map[string]*subscriptions)
 	ep.glob = NewSubscriptions()
+	ep.ate = ate
 	/*
 		for _ , mod := range modules {
 			ep.channels[mod] = NewSubscriptions()
@@ -48,7 +51,7 @@ func (ep *EventProcessor) Post(e events.Event) {
 	subs := ep.glob
 	for _, sub := range subs.srs {
 		fmt.Println("Found service")
-		fmt.Printf("Chan: %v\n",sub)
+		fmt.Printf("Chan: %v\n", sub)
 		sub.Channel() <- e
 	}
 
@@ -65,11 +68,12 @@ func (ep *EventProcessor) Post(e events.Event) {
 
 	ep.mutex.Unlock()
 }
+
 /*
 func (ep *EventProcessor) SubscribeNoChan(source string, callback string) {
-	
+
 }
-	
+
 	src := sub.Source()
 	var split []string
 
@@ -95,7 +99,7 @@ func (ep *EventProcessor) SubscribeNoChan(source string, callback string) {
 }
 */
 func (ep *EventProcessor) Subscribe(sub events.Subscriber) {
-	
+
 	src := sub.Source()
 	var split []string
 

@@ -3,7 +3,6 @@ package decerver
 import (
 	"fmt"
 	"github.com/eris-ltd/decerver-interfaces/core"
-	"github.com/eris-ltd/decerver-interfaces/blockchain"
 	"github.com/eris-ltd/decerver-interfaces/modules"
 	"github.com/eris-ltd/decerver/ate"
 	"github.com/eris-ltd/decerver/dappregistry"
@@ -55,24 +54,15 @@ func (p *Paths) Filesystems() string {
 func (p *Paths) ReadFile(directory, name string) ([]byte, error) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
-	if directory[len(directory)-1] != '/' {
-		directory += "/"
-	}
-	bts, err := ioutil.ReadFile((path.Join(directory, name)))
-	
-	return bts,err
+	return ioutil.ReadFile((path.Join(directory, name)))
 }
 
-// Thread safe write file function. Writes the provided byte slice into the file 'name' 
+// Thread safe write file function. Writes the provided byte slice into the file 'name'
 // in directory 'directory'. Uses filemode 0600.
 func (p *Paths) WriteFile(directory, name string, data []byte) error {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
-	if directory[len(directory)-1] != '/' {
-		directory += "/"
-	}
-	err := ioutil.WriteFile((path.Join(directory, name)), data, 0600)
-	return err
+	return ioutil.WriteFile((path.Join(directory, name)), data, 0600)
 }
 
 // Creates a new directory for a module, and returns the path.
@@ -98,11 +88,9 @@ func NewDeCerver() *DeCerver {
 	dc.ReadConfig("")
 	dc.createPaths()
 	dc.WriteConfig(dc.config)
-	server.Init(dc)
-	dc.createNetwork()
 	dc.createAte()
+	dc.createNetwork()
 	dc.createEventProcessor()
-	dc.initAte()
 	dc.createModuleRegistry()
 	dc.createDappRegistry()
 	return dc
@@ -110,7 +98,6 @@ func NewDeCerver() *DeCerver {
 
 func (dc *DeCerver) Init() {
 	err := dc.moduleRegistry.Init()
-	dc.ep.Subscribe(dc.ate)
 	if err != nil {
 		fmt.Printf("Module failed to load: %s. Shutting down.\n", err.Error())
 		os.Exit(-1)
@@ -152,11 +139,11 @@ func (dc *DeCerver) createPaths() {
 }
 
 func (dc *DeCerver) createNetwork() {
-	dc.webServer = server.NewWebServer(uint32(dc.config.MaxClients), dc.paths.Apps(), dc.config.Port)
+	dc.webServer = server.NewWebServer(uint32(dc.config.MaxClients), dc.paths.Apps(), dc.config.Port, dc.ate, dc)
 }
 
 func (dc *DeCerver) createEventProcessor() {
-	dc.ep = events.NewEventProcessor()
+	dc.ep = events.NewEventProcessor(dc.ate)
 }
 
 func (dc *DeCerver) createAte() {
@@ -164,7 +151,7 @@ func (dc *DeCerver) createAte() {
 }
 
 func (dc *DeCerver) initAte() {
-	dc.ate.Init()
+	
 }
 
 func (dc *DeCerver) createModuleRegistry() {
@@ -172,19 +159,12 @@ func (dc *DeCerver) createModuleRegistry() {
 }
 
 func (dc *DeCerver) createDappRegistry() {
-	dc.dappRegistry = dappregistry.NewDappRegistry(dc.ate)
+	dc.dappRegistry = dappregistry.NewDappRegistry(dc.ate, dc.webServer)
 }
 
 func (dc *DeCerver) LoadModule(md modules.Module) {
-	md.Register(nil, dc.webServer, dc.ate, dc.ep)
-	// Add rpc services.
-	switch mod := md.(type) {
-		case modules.Blockchain:
-			fact := blockchain.NewWebSocketAPIFactory(mod)
-			dc.webServer.RegisterWsServiceFactories(fact)
-	}
-	// Bind to Atë
-	dc.ate.BindScriptObject(md.Name(), md)
+	// TODO re-add
+	md.Register(dc.paths, nil, dc.ate, dc.ep)
 	dc.moduleRegistry.Add(md)
 	fmt.Printf("Registering module '%s'.\n", md.Name())
 }
