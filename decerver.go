@@ -143,7 +143,7 @@ func (dc *DeCerver) createNetwork() {
 }
 
 func (dc *DeCerver) createEventProcessor() {
-	dc.ep = events.NewEventProcessor(dc.ate)
+	dc.ep = events.NewEventProcessor()
 }
 
 func (dc *DeCerver) createAte() {

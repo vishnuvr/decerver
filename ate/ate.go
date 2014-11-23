@@ -1,6 +1,7 @@
 package ate
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/eris-ltd/decerver-interfaces/core"
 	"github.com/eris-ltd/decerver-interfaces/events"
@@ -81,6 +82,8 @@ func (jsr *JsRuntime) Shutdown() {
 
 // TODO set up the interrupt channel.
 func (jsr *JsRuntime) Init() {
+	jsr.vm.Set("RegEvtSub", jsr.RegisterSub)
+	jsr.vm.Set("DeregEvtSub", jsr.DeregisterSub)
 	BindDefaults(jsr.vm)
 }
 
@@ -183,23 +186,113 @@ func (jsr *JsRuntime) CallFunc(funcName string, param ...interface{}) (interface
 	return obj, nil
 }
 
+func (jsr *JsRuntime) RegisterSub(call otto.FunctionCall) otto.Value {
+	// Event manager.
+
+	evtSource, err0 := call.Argument(0).ToString()
+	if err0 != nil {
+		return otto.UndefinedValue()
+	}
+	evtType, err1 := call.Argument(1).ToString()
+	if err1 != nil {
+		return otto.UndefinedValue()
+	}
+	evtTarget, err2 := call.Argument(2).ToString()
+	if err2 != nil {
+		return otto.UndefinedValue()
+	}
+	subId, err3 := call.Argument(3).ToString()
+	if err3 != nil {
+		return otto.UndefinedValue()
+	}
+
+	// Now we have all the data we need.
+	sub := NewAteSub(evtSource, evtType, evtTarget, subId, jsr)
+	jsr.er.Subscribe(sub)
+	return otto.TrueValue()
+}
+
+func (jsr *JsRuntime) DeregisterSub(call otto.FunctionCall) otto.Value {
+	// Event manager.
+
+	id, err0 := call.Argument(0).ToString()
+	if err0 != nil {
+		return otto.UndefinedValue()
+	}
+
+	// Now we have all the data we need.
+	jsr.er.Unsubscribe(id)
+	return otto.TrueValue()
+}
+
 // Use this to set up a new runtime. Should re-do init().
 // TODO implement
 func (jsr *JsRuntime) Recover() {
 }
 
-func (jsr *JsRuntime) Channel() chan events.Event {
-	return jsr.subChan
+type AteSub struct {
+	eventChan chan events.Event
+	closeChan chan bool
+	source    string
+	tpe       string
+	tgt       string
+	id        string
+	rt        core.Runtime
 }
 
-func (jsr *JsRuntime) Id() string {
-	return "Ate"
+func NewAteSub(eventSource, eventType, eventTarget, subId string, rt core.Runtime) *AteSub {
+	as := &AteSub{}
+	as.eventChan = make(chan events.Event)
+	as.closeChan = make(chan bool)
+	as.source = eventSource
+	as.tpe = eventType
+	as.tgt = eventTarget
+	as.id = subId
+	as.rt = rt
+
+	// Launch the sub channel.
+	go func(as *AteSub) {
+		fmt.Println("RUNNING ATE EVENT LOOP")
+		for {
+			select {
+			case evt, ok := <-as.eventChan:
+				if !ok {
+					return
+				}
+				jsonString, err := json.Marshal(evt)
+				if err != nil {
+					fmt.Println("Error when posting event to ate: " + err.Error())
+				}
+				as.rt.CallFuncOnObj("events", "post", string(jsonString))
+			case <-as.closeChan:
+				return
+			}
+		}
+	}(as)
+
+	return as
 }
 
-func (jsr *JsRuntime) Source() string {
-	return "*"
+func (as *AteSub) Channel() chan events.Event {
+	return as.eventChan
 }
 
-func (jsr *JsRuntime) Close() {
+func (as *AteSub) Source() string {
+	return as.source
+}
 
+func (as *AteSub) Id() string {
+	return as.id
+}
+
+func (as *AteSub) Target() string {
+	return as.tgt
+}
+
+func (as *AteSub) Event() string {
+	return as.tpe
+}
+
+func (as *AteSub) Close() {
+	as.closeChan <- true
 }

@@ -18,9 +18,9 @@ func isZero(i *big.Int) bool {
 
 func BindDefaults(vm *otto.Otto) {
 	var err error
-	
+
 	// Networking.
-	_ , err = vm.Run(`
+	_, err = vm.Run(`
 	
 		var jsonErrors = {
 			"E_PARSE"       : -32700,
@@ -125,26 +125,25 @@ func BindDefaults(vm *otto.Otto) {
 		}
 		
 	`)
-	
+
 	if err != nil {
 		fmt.Println("[Atë] Error while bootstrapping js networking: " + err.Error())
 	} else {
 		fmt.Println("[Atë] Networking script loaded.")
 	}
-	
-	// Event manager.
-	_ , err = vm.Run(`
+
+	_, err = vm.Run(`
 	
 		var events = {};
 		
 		events.callbacks = {};
 		
-		events.registerCallback = function(eventSource, eventType, target, callbackName, callbackFn){
+		events.registerCallback = function(eventSource, eventType, eventTarget, eventId, callbackName, callbackFn){
 			if(typeof(callbackFn) !== "function"){
 				throw Error("Trying to register a non callback function as callback.");
 			}
 			/*
-			val res = RegEvtSub(eventSource,eventType);
+			val res = RegEvtSub(eventSource, eventType, eventTarget, eventId);
 			if (res) {
 				this.callbacks[callbackFn.toString()] = callbackFn;
 			} else {
@@ -154,7 +153,8 @@ func BindDefaults(vm *otto.Otto) {
 			*/
 		}
 		
-		events.unregisterCallback = function(callbackName){
+		events.unregisterCallback = function(callbackName, subId){
+			UnregEvtSub(subId);
 			events.callbacks[callbackName] = null;
 		}
 		
@@ -171,7 +171,7 @@ func BindDefaults(vm *otto.Otto) {
 	} else {
 		fmt.Println("[Atë] Event processing script loaded.")
 	}
-	
+
 	bindHelpers(vm)
 }
 
