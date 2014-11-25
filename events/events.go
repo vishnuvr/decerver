@@ -3,8 +3,11 @@ package events
 import (
 	"fmt"
 	"github.com/eris-ltd/decerver-interfaces/events"
+	"github.com/eris-ltd/decerver-interfaces/modules"
 	"sync"
 )
+
+type SubMap map[string]*subscriptions
 
 type subscriptions struct {
 	srs []events.Subscriber
@@ -40,18 +43,23 @@ func NewSubscriptions() *subscriptions {
 }
 
 type EventProcessor struct {
-	mutex    sync.Mutex
+	mutex    *sync.Mutex
 	postChan chan events.Event
 	// Sorts by source, then by event name.
-	channels map[string]map[string]*subscriptions
-	byId map[string]events.Subscriber
+	channels       map[string]SubMap
+	byId           map[string]events.Subscriber
+	moduleRegistry modules.ModuleRegistry
 }
 
-func NewEventProcessor() *EventProcessor {
+func NewEventProcessor(mr modules.ModuleRegistry) *EventProcessor {
 	ep := &EventProcessor{}
-	ep.channels = make(map[string]map[string]*subscriptions)
+	ep.mutex = &sync.Mutex{}
+	ep.channels = make(map[string]SubMap)
+	// DEBUG
+	fmt.Printf("[Events] Subscriber map created: %v\n", ep.channels)
 	ep.byId = make(map[string]events.Subscriber)
 	ep.postChan = make(chan events.Event)
+	ep.moduleRegistry = mr
 	return ep
 }
 
@@ -60,8 +68,8 @@ func (ep *EventProcessor) Post(e events.Event) {
 	defer ep.mutex.Unlock()
 
 	src := e.Source
-
-	fmt.Println("Posting stuff " + e.Target)
+	// DEBUG
+	fmt.Println("Receiving event '" + e.Event + "' from '" + e.Source + "'.")
 
 	sourceSubs := ep.channels[src]
 	if sourceSubs == nil {
@@ -85,26 +93,32 @@ func (ep *EventProcessor) Post(e events.Event) {
 }
 
 func (ep *EventProcessor) Subscribe(sub events.Subscriber) {
+	ep.mutex.Lock()
+	defer ep.mutex.Unlock()
 	src := sub.Source()
-	srcSubs := ep.channels[src]
-	if srcSubs == nil {
-		srcSubs := make(map[string]*subscriptions)
+	fmt.Println("[Events] New subscription registering: " + src)
+	srcSubs, okSrc := ep.channels[src]
+	if !okSrc {
+		srcSubs = make(SubMap)
 		ep.channels[src] = srcSubs
-		
 	}
 	evt := sub.Event()
-	evts := srcSubs[evt]
-	
-	if evts == nil {
-		evts := NewSubscriptions()
+	evts, okEvt := srcSubs[evt]
+
+	if !okEvt {
+		evts = NewSubscriptions()
 		srcSubs[evt] = evts
 	}
 	evts.add(sub)
 	ep.byId[sub.Id()] = sub
+
+	ep.moduleRegistry.GetModules()[src].Subscribe(sub.Id(), sub.Event(), sub.Target())
 	fmt.Printf("New subscriber added to: %s (%s)\n", sub.Source(), sub.Event())
 }
 
 func (ep *EventProcessor) Unsubscribe(id string) {
+	ep.mutex.Lock()
+	defer ep.mutex.Unlock()
 	sub, ok := ep.byId[id]
 	if !ok {
 		fmt.Println("No subscriber with id: " + id)

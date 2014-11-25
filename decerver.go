@@ -24,6 +24,7 @@ type Paths struct {
 	blockchains string
 	filesystems string
 	apps        string
+	system		string
 }
 
 func (p *Paths) Root() string {
@@ -48,6 +49,10 @@ func (p *Paths) Blockchains() string {
 
 func (p *Paths) Filesystems() string {
 	return p.filesystems
+}
+
+func (p *Paths) System() string {
+	return p.system
 }
 
 // Thread safe read file function. Reads an entire file and returns the bytes.
@@ -88,10 +93,10 @@ func NewDeCerver() *DeCerver {
 	dc.ReadConfig("")
 	dc.createPaths()
 	dc.WriteConfig(dc.config)
+	dc.createModuleRegistry()
+	dc.createEventProcessor()
 	dc.createAte()
 	dc.createNetwork()
-	dc.createEventProcessor()
-	dc.createModuleRegistry()
 	dc.createDappRegistry()
 	return dc
 }
@@ -136,6 +141,8 @@ func (dc *DeCerver) createPaths() {
 	InitDir(dc.paths.apps)
 	dc.paths.blockchains = dc.paths.root + "/blockchains"
 	InitDir(dc.paths.apps)
+	dc.paths.system = dc.paths.root + "/system"
+	InitDir(dc.paths.system)
 }
 
 func (dc *DeCerver) createNetwork() {
@@ -143,7 +150,7 @@ func (dc *DeCerver) createNetwork() {
 }
 
 func (dc *DeCerver) createEventProcessor() {
-	dc.ep = events.NewEventProcessor()
+	dc.ep = events.NewEventProcessor(dc.moduleRegistry)
 }
 
 func (dc *DeCerver) createAte() {
@@ -170,7 +177,7 @@ func (dc *DeCerver) LoadModule(md modules.Module) {
 }
 
 func (dc *DeCerver) initDapps() {
-	err := dc.dappRegistry.LoadDapps(dc.paths.Apps())
+	err := dc.dappRegistry.LoadDapps(dc.paths.Apps(),dc.paths.System())
 
 	if err != nil {
 		fmt.Println("Error loading dapps: " + err.Error())

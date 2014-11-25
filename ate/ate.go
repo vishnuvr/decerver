@@ -33,11 +33,16 @@ func (ate *Ate) ShutdownRuntimes() {
 func (ate *Ate) CreateRuntime(name string) core.Runtime {
 	rt := newJsRuntime(name, ate.er)
 	ate.runtimes[name] = rt
+	rt.jsrEvents = NewJsrEvents(rt)
+	// TODO add a "runtime" or "os" object with more stuff in it?
+	
+	rt.Init(name)
 	for k, v := range ate.apis {
-		// TODO error checking
+		// TODO error checking!
 		rt.BindScriptObject(k, v)
 	}
-	fmt.Printf("Regging new runtime: " + name)
+	fmt.Printf("Creating new runtime: " + name)
+	// DEBUG
 	fmt.Printf("Runtimes: %v\n", ate.runtimes)
 	return rt
 }
@@ -62,6 +67,7 @@ type JsRuntime struct {
 	closeChan chan bool
 	er        events.EventRegistry
 	name      string
+	jsrEvents *JsrEvents
 }
 
 func newJsRuntime(name string, er events.EventRegistry) *JsRuntime {
@@ -69,9 +75,9 @@ func newJsRuntime(name string, er events.EventRegistry) *JsRuntime {
 	jsr := &JsRuntime{}
 	jsr.vm = vm
 	jsr.subChan = make(chan events.Event)
+	jsr.closeChan = make(chan bool)
 	jsr.er = er
 	jsr.name = name
-	jsr.Init()
 	return jsr
 }
 
@@ -81,21 +87,21 @@ func (jsr *JsRuntime) Shutdown() {
 }
 
 // TODO set up the interrupt channel.
-func (jsr *JsRuntime) Init() {
-	jsr.vm.Set("RegEvtSub", jsr.RegisterSub)
-	jsr.vm.Set("DeregEvtSub", jsr.DeregisterSub)
-	BindDefaults(jsr.vm)
+func (jsr *JsRuntime) Init(name string) {
+	jsr.vm.Set("jsr_events",jsr.jsrEvents)
+	jsr.BindScriptObject("RuntimeId", func(otto.FunctionCall) otto.Value {
+		ret, _ := otto.ToValue(name)
+		return ret
+	})
+	BindDefaults(jsr)
 }
 
 func (jsr *JsRuntime) LoadScriptFile(fileName string) error {
 	bytes, err := ioutil.ReadFile(fileName)
-
 	if err != nil {
 		return err
 	}
-
 	_, err = jsr.vm.Run(bytes)
-
 	return err
 }
 
@@ -186,48 +192,28 @@ func (jsr *JsRuntime) CallFunc(funcName string, param ...interface{}) (interface
 	return obj, nil
 }
 
-func (jsr *JsRuntime) RegisterSub(call otto.FunctionCall) otto.Value {
-	// Event manager.
-
-	evtSource, err0 := call.Argument(0).ToString()
-	if err0 != nil {
-		return otto.UndefinedValue()
-	}
-	evtType, err1 := call.Argument(1).ToString()
-	if err1 != nil {
-		return otto.UndefinedValue()
-	}
-	evtTarget, err2 := call.Argument(2).ToString()
-	if err2 != nil {
-		return otto.UndefinedValue()
-	}
-	subId, err3 := call.Argument(3).ToString()
-	if err3 != nil {
-		return otto.UndefinedValue()
-	}
-
-	// Now we have all the data we need.
-	sub := NewAteSub(evtSource, evtType, evtTarget, subId, jsr)
-	jsr.er.Subscribe(sub)
-	return otto.TrueValue()
-}
-
-func (jsr *JsRuntime) DeregisterSub(call otto.FunctionCall) otto.Value {
-	// Event manager.
-
-	id, err0 := call.Argument(0).ToString()
-	if err0 != nil {
-		return otto.UndefinedValue()
-	}
-
-	// Now we have all the data we need.
-	jsr.er.Unsubscribe(id)
-	return otto.TrueValue()
-}
-
 // Use this to set up a new runtime. Should re-do init().
 // TODO implement
 func (jsr *JsRuntime) Recover() {
+}
+
+// Used to call the event processor from inside the javascript vm
+type JsrEvents struct {
+	jsr *JsRuntime
+}
+
+func NewJsrEvents(jsr *JsRuntime) *JsrEvents {
+	return &JsrEvents{jsr}
+}
+
+func (jsre *JsrEvents) Subscribe(evtSource, evtType, evtTarget, subId string) {
+
+	sub := NewAteSub(evtSource, evtType, evtTarget, subId, jsre.jsr)
+	jsre.jsr.er.Subscribe(sub)
+}
+
+func (jsre *JsrEvents) Unsubscribe(subId string) {
+	jsre.jsr.er.Unsubscribe(subId)
 }
 
 type AteSub struct {
@@ -242,7 +228,6 @@ type AteSub struct {
 
 func NewAteSub(eventSource, eventType, eventTarget, subId string, rt core.Runtime) *AteSub {
 	as := &AteSub{}
-	as.eventChan = make(chan events.Event)
 	as.closeChan = make(chan bool)
 	as.source = eventSource
 	as.tpe = eventType
@@ -277,6 +262,10 @@ func (as *AteSub) Channel() chan events.Event {
 	return as.eventChan
 }
 
+func (as *AteSub) SetChannel(ec chan events.Event) {
+	as.eventChan = ec
+}
+
 func (as *AteSub) Source() string {
 	return as.source
 }
@@ -294,5 +283,6 @@ func (as *AteSub) Event() string {
 }
 
 func (as *AteSub) Close() {
-	as.closeChan <- true
+	close(as.closeChan)
+	close(as.eventChan)
 }

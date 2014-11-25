@@ -2,15 +2,17 @@ package dappregistry
 
 import (
 	// "path/filepath"
-	"fmt"
-	"io/ioutil"
-	"os"
-	//"crypto/sha1"
-	//"bytes"
+	"bytes"
+	"crypto/sha1"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"github.com/eris-ltd/decerver-interfaces/api"
 	"github.com/eris-ltd/decerver-interfaces/core"
 	"github.com/eris-ltd/decerver-interfaces/dapps"
+	"github.com/syndtr/goleveldb/leveldb"
+	"io/ioutil"
+	"os"
 	"path"
 	"strings"
 	"sync"
@@ -33,6 +35,7 @@ type DappRegistry struct {
 	dapps  map[string]*Dapp
 	ate    core.RuntimeManager
 	server api.Server
+	hashDB *leveldb.DB
 }
 
 func NewDappRegistry(ate core.RuntimeManager, server api.Server) *DappRegistry {
@@ -45,17 +48,22 @@ func NewDappRegistry(ate core.RuntimeManager, server api.Server) *DappRegistry {
 	return dr
 }
 
-func (dc *DappRegistry) LoadDapps(directory string) error {
+func (dc *DappRegistry) LoadDapps(directory, dbDir string) error {
+	dbDir = path.Join(dbDir,"dapp_stored_hashes")
+	dc.hashDB, _ = leveldb.OpenFile(dbDir,nil)
+	defer dc.hashDB.Close()
 	fmt.Println("[Dapp Registry] Loading dapps")
 	files, err := ioutil.ReadDir(directory)
+	
 	if err != nil {
 		return err
 	}
+	
 	if len(files) == 0 {
 		fmt.Println("[Dapp Registry] No dapps has been downloaded")
 		return nil
 	}
-
+	
 	for _, fileInfo := range files {
 		if fileInfo.IsDir() {
 			// This is a dapp
@@ -78,7 +86,7 @@ func (dc *DappRegistry) LoadDapp(dir string) {
 		fmt.Println(err1.Error())
 		return
 	}
-	
+
 	pkBts, errP := ioutil.ReadFile(pkDir)
 
 	if errP != nil {
@@ -108,19 +116,19 @@ func (dc *DappRegistry) LoadDapp(dir string) {
 	modelFi, errMfi := os.Stat(modelDir)
 	fmt.Println("[Dapp Registry] ## Loading dapp: " + packageFile.Name + " ##")
 	if errMfi != nil {
-		fmt.Printf("[Dapp Registry] Error loading 'Models' directory for dapp '%s'. Skipping models\n.", dir)
+		fmt.Printf("[Dapp Registry] Error loading 'models' directory for dapp '%s'. Skipping.\n", dir)
 		fmt.Println(errMfi.Error())
 		return
 	}
 
 	if !modelFi.IsDir() {
-		fmt.Printf("[Dapp Registry] Error loading 'Models' directory for dapp '%s': Not a directory.\n", dir)
+		fmt.Printf("[Dapp Registry] Error loading 'models' directory for dapp '%s': Not a directory.\n", dir)
 		return
 	}
 
 	files, err := ioutil.ReadDir(modelDir)
 	if err != nil {
-		fmt.Printf("[Dapp Registry] Error loading 'Models' directory for dapp '%s': Not a directory.\n", dir)
+		fmt.Printf("[Dapp Registry] Error loading 'models' directory for dapp '%s': Not a directory.\n", dir)
 		return
 	}
 
@@ -133,7 +141,28 @@ func (dc *DappRegistry) LoadDapp(dir string) {
 	dapp.path = dir
 	dapp.packageFile = packageFile
 
-	// TODO the hashing thing.
+	// Hash the dapp files and check.
+	hash := dc.HashApp(dir)
+
+	if hash == nil {
+		fmt.Println("Failed to get hash of dapp files, skipping. Dapp: " + dir)
+		return
+	}
+	
+	oldHash, errH := dc.hashDB.Get([]byte(dapp.path), nil)
+	
+	if errH != nil {
+		// TODO this is an old dapp
+		fmt.Printf("Adding new hash '%s' to folder '%s'.\n",hex.EncodeToString(hash),dir)
+		dc.hashDB.Put([]byte(dapp.path),hash,nil)
+	}
+	
+	if errH == nil && !bytes.Equal(hash,oldHash) {
+		// TODO this is an old but updated dapp.
+		fmt.Printf("Hash mismatch: New: '%s', Old: '%s'.\n",hex.EncodeToString(hash),hex.EncodeToString(oldHash))
+	} else {
+		fmt.Printf("Hash of '%s' matches the stored value: '%s'.\n", dir, hex.EncodeToString(hash))
+	}
 
 	dc.dapps[packageFile.Id] = dapp
 
@@ -178,6 +207,46 @@ func (dc *DappRegistry) LoadDapp(dir string) {
 }
 
 func (dc *DappRegistry) HashApp(dir string) []byte {
+	fmt.Println("[Dapp Registry] Hashing app folder: " + dir)
+	hashes := dc.HashDir(dir)
+	if hashes == nil {
+		return nil
+	}
+	hash := sha1.Sum(hashes)
+	return hash[:]
+}
 
-	return nil
+func (dc *DappRegistry) HashDir(directory string) []byte {
+	files, err := ioutil.ReadDir(directory)
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil
+	}
+	if len(files) == 0 {
+		fmt.Println("No files in directory: " + directory)
+		return nil
+	}
+	hashes := make([]byte, 0)
+	for _, fileInfo := range files {
+		if fileInfo.IsDir() {
+			// This is a dapp
+			pth := path.Join(directory, fileInfo.Name())
+			hs := dc.HashDir(pth)
+			if hs != nil {
+				hashes = append(hashes, hs...)
+			} else {
+				return nil
+			}
+		} else {
+			fBts, errF := ioutil.ReadFile(path.Join(directory, fileInfo.Name()))
+			if errF != nil {
+				fmt.Printf("[Dapp Registry] Error loading '%s', skipping...\n", fileInfo.Name())
+				fmt.Println(errF.Error())
+				return nil
+			}
+			hash := sha1.Sum(fBts)
+			hashes = append(hashes, hash[:]...)
+		}
+	}
+	return hashes
 }

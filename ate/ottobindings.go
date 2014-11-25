@@ -9,16 +9,17 @@ import (
 	"math/big"
 )
 
-// Enables math operations on strings using big.Int.
 var BZERO *big.Int = big.NewInt(0)
 
 func isZero(i *big.Int) bool {
 	return i.Cmp(BZERO) == 0
 }
 
-func BindDefaults(vm *otto.Otto) {
+func BindDefaults(runtime *JsRuntime) {
+	vm := runtime.vm
+	
 	var err error
-
+	
 	// Networking.
 	_, err = vm.Run(`
 	
@@ -138,31 +139,30 @@ func BindDefaults(vm *otto.Otto) {
 		
 		events.callbacks = {};
 		
-		events.registerCallback = function(eventSource, eventType, eventTarget, eventId, callbackName, callbackFn){
+		events.subscribe = function(eventSource, eventType, eventTarget, eventId, callbackFn){
 			if(typeof(callbackFn) !== "function"){
-				throw Error("Trying to register a non callback function as callback.");
+				throw new Error("Trying to register a non callback function as callback.");
 			}
-			/*
-			val res = RegEvtSub(eventSource, eventType, eventTarget, eventId);
-			if (res) {
-				this.callbacks[callbackFn.toString()] = callbackFn;
-			} else {
-				console.log("Failed to register event. (Source: " + eventSource + ") (" + eventType + ") (Callback: " + callbackFn.toString() + ")");
-			}
+			// The jsr_events object has the go bindings to actually subscribe.
+			jsr_events.Subscribe(eventSource, eventType, eventTarget, eventId);
+			
+			this.callbacks[eventId] = callbackFn;
 			return res;
-			*/
+			
 		}
 		
-		events.unregisterCallback = function(callbackName, subId){
-			UnregEvtSub(subId);
-			events.callbacks[callbackName] = null;
+		events.unsubscribe = function(subId){
+			jsr_events.Unsubscribe(subId);
+			events.callbacks[subId] = null;
 		}
 		
 		// Called by the go event processor.
 		events.post = function(eventJson){
 			var event = JSON.parse(eventJson);
-			var fnName = event.Id;
-			this.callbacks[fnName](event);
+			var cfn = this.callbacks[event.Id];
+			if (typeof(cfn) === "function"){
+				cfn(event);
+			}
 		}
 	`)
 
