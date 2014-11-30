@@ -139,7 +139,7 @@ func (ss *Session) handleRequest(rpcReq string) {
 	if err != nil {
 		err := &api.Error{
 			Code:    api.E_SERVER,
-			Message: "Js runtime error: " + ss.caller,
+			Message: "Js runtime error: " + ss.caller + " (Error: " + err.Error() + ")",
 			Data:    rpcReq,
 		}
 		ss.wsConn.writeMsgChannel <- &Message{Data: getErrorResponse(err), Type: websocket.TextMessage}

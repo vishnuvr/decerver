@@ -1,0 +1,811 @@
+==================
+WARNING: DATA RACE
+Read by goroutine 52:
+  github.com/eris-ltd/thelonious/monkchain.(*BlockManager).CurrentState()
+      /home/andreas/go/src/github.com/eris-ltd/thelonious/monkchain/block_manager.go:114 +0x79
+  github.com/eris-ltd/thelonious/monkpipe.(*World).State()
+      /home/andreas/go/src/github.com/eris-ltd/thelonious/monkpipe/world.go:26 +0x5f
+  github.com/eris-ltd/thelonious/monkpipe.(*World).safeGet()
+      /home/andreas/go/src/github.com/eris-ltd/thelonious/monkpipe/world.go:38 +0x34
+  github.com/eris-ltd/thelonious/monkpipe.(*World).SafeGet()
+      /home/andreas/go/src/github.com/eris-ltd/thelonious/monkpipe/world.go:34 +0x52
+  github.com/eris-ltd/thelonious/monk.(*Monk).Account()
+      /home/andreas/go/src/github.com/eris-ltd/thelonious/monk/monk.go:322 +0xd6
+  github.com/eris-ltd/thelonious/monk.(*MonkModule).Account()
+      /home/andreas/go/src/github.com/eris-ltd/thelonious/monk/monk.go:170 +0x59
+  github.com/eris-ltd/decerver-interfaces/glue/monk.(*MonkJs).Account()
+      /home/andreas/go/src/github.com/eris-ltd/decerver-interfaces/glue/monk/monkjs.go:79 +0x59
+  runtime.call32()
+      /usr/local/go/src/pkg/runtime/asm_amd64.s:361 +0x31
+  reflect.Value.Call()
+      /usr/local/go/src/pkg/reflect/value.go:411 +0xed
+  github.com/robertkrimen/otto.func·039()
+      /home/andreas/go/src/github.com/robertkrimen/otto/runtime.go:225 +0x2c5
+  github.com/robertkrimen/otto.(*_object).call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/type_function.go:140 +0x561
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeCallExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:240 +0x92c
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:44 +0xa76
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeVariableExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:450 +0x182
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:100 +0x93c
+  github.com/robertkrimen/otto.func·019()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:203 +0x461
+  github.com/robertkrimen/otto.objectEnumerate()
+      /home/andreas/go/src/github.com/robertkrimen/otto/object_class.go:25 +0x206
+  github.com/robertkrimen/otto.(*_object).enumerate()
+      /home/andreas/go/src/github.com/robertkrimen/otto/object.go:118 +0x7a
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeForInStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:222 +0x63d
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:62 +0x1559
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatementList()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:118 +0xf7
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:30 +0x5da
+  github.com/robertkrimen/otto.(*_runtime).cmpl_call_nodeFunction()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate.go:61 +0x72e
+  github.com/robertkrimen/otto.(*_object).call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/type_function.go:154 +0x2c6
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeCallExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:240 +0x92c
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:44 +0xa76
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeAssignExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:124 +0x108
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:31 +0xc34
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:59 +0x14c1
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatementList()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:118 +0xf7
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:30 +0x5da
+  github.com/robertkrimen/otto.(*_runtime).cmpl_call_nodeFunction()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate.go:61 +0x72e
+  github.com/robertkrimen/otto.(*_object).call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/type_function.go:154 +0x2c6
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeCallExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:240 +0x92c
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:44 +0xa76
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:59 +0x14c1
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatementList()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:118 +0xf7
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:30 +0x5da
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeIfStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:289 +0x15b
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:68 +0x13f2
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatementList()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:118 +0xf7
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:30 +0x5da
+  github.com/robertkrimen/otto.(*_runtime).cmpl_call_nodeFunction()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate.go:61 +0x72e
+  github.com/robertkrimen/otto.(*_object).call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/type_function.go:154 +0x2c6
+  github.com/robertkrimen/otto.Value.call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/value.go:123 +0x1b4
+  github.com/robertkrimen/otto.func·044()
+      /home/andreas/go/src/github.com/robertkrimen/otto/value.go:112 +0xdb
+  github.com/robertkrimen/otto.catchPanic()
+      /home/andreas/go/src/github.com/robertkrimen/otto/error.go:243 +0xb1
+  github.com/robertkrimen/otto.Value.Call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/value.go:113 +0x119
+  github.com/robertkrimen/otto.Object.Call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/otto.go:514 +0x1c0
+  github.com/eris-ltd/decerver/ate.(*JsRuntime).CallFuncOnObj()
+      /home/andreas/go/src/github.com/eris-ltd/decerver/ate/ate.go:172 +0x2d4
+  github.com/eris-ltd/decerver/ate.func·001()
+      /home/andreas/go/src/github.com/eris-ltd/decerver/ate/ate.go:247 +0x615
+
+Previous write by goroutine 55:
+  [failed to restore the stack]
+
+Goroutine 52 (running) created at:
+  github.com/eris-ltd/decerver/ate.(*JsrEvents).Subscribe()
+      /home/andreas/go/src/github.com/eris-ltd/decerver/ate/ate.go:252 +0x379
+  runtime.call128()
+      /usr/local/go/src/pkg/runtime/asm_amd64.s:363 +0x40
+  reflect.Value.Call()
+      /usr/local/go/src/pkg/reflect/value.go:411 +0xed
+  github.com/robertkrimen/otto.func·039()
+      /home/andreas/go/src/github.com/robertkrimen/otto/runtime.go:225 +0x2c5
+  github.com/robertkrimen/otto.(*_object).call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/type_function.go:140 +0x561
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeCallExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:240 +0x92c
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:44 +0xa76
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:59 +0x14c1
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatementList()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:118 +0xf7
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:30 +0x5da
+  github.com/robertkrimen/otto.(*_runtime).cmpl_call_nodeFunction()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate.go:61 +0x72e
+  github.com/robertkrimen/otto.(*_object).call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/type_function.go:154 +0x2c6
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeCallExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:240 +0x92c
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:44 +0xa76
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:59 +0x14c1
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatementList()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:118 +0xf7
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:30 +0x5da
+  github.com/robertkrimen/otto.(*_runtime).cmpl_call_nodeFunction()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate.go:61 +0x72e
+  github.com/robertkrimen/otto.(*_object).call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/type_function.go:154 +0x2c6
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeCallExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:240 +0x92c
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:44 +0xa76
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:59 +0x14c1
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatementList()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:118 +0xf7
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:30 +0x5da
+  github.com/robertkrimen/otto.(*_runtime).cmpl_call_nodeFunction()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate.go:61 +0x72e
+  github.com/robertkrimen/otto.(*_object).call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/type_function.go:154 +0x2c6
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeCallExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:240 +0x92c
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:44 +0xa76
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeAssignExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:124 +0x108
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:31 +0xc34
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:59 +0x14c1
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatementList()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:118 +0xf7
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:30 +0x5da
+  github.com/robertkrimen/otto.(*_runtime).cmpl_call_nodeFunction()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate.go:61 +0x72e
+  github.com/robertkrimen/otto.(*_object).call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/type_function.go:154 +0x2c6
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeCallExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:240 +0x92c
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:44 +0xa76
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:59 +0x14c1
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatementList()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:118 +0xf7
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeProgram()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate.go:17 +0x1d5
+  github.com/robertkrimen/otto.func·040()
+      /home/andreas/go/src/github.com/robertkrimen/otto/runtime.go:293 +0x7b
+  github.com/robertkrimen/otto.catchPanic()
+      /home/andreas/go/src/github.com/robertkrimen/otto/error.go:243 +0xb1
+  github.com/robertkrimen/otto.(*_runtime).cmpl_run()
+      /home/andreas/go/src/github.com/robertkrimen/otto/runtime.go:294 +0x1a4
+  github.com/robertkrimen/otto.Otto.Run()
+      /home/andreas/go/src/github.com/robertkrimen/otto/otto.go:292 +0x89
+  github.com/eris-ltd/decerver/ate.(*JsRuntime).AddScript()
+      /home/andreas/go/src/github.com/eris-ltd/decerver/ate/ate.go:132 +0x120
+  github.com/eris-ltd/decerver/server.(*WsAPIServer).handleWs()
+      /home/andreas/go/src/github.com/eris-ltd/decerver/server/WsAPIServer.go:99 +0x76b
+  github.com/eris-ltd/decerver/server.*WsAPIServer.(github.com/eris-ltd/decerver/server.handleWs)·fm()
+      /home/andreas/go/src/github.com/eris-ltd/decerver/server/webserver.go:61 +0x51
+  runtime.call32()
+      /usr/local/go/src/pkg/runtime/asm_amd64.s:361 +0x31
+  reflect.Value.Call()
+      /usr/local/go/src/pkg/reflect/value.go:411 +0xed
+  github.com/codegangsta/inject.(*injector).Invoke()
+      /home/andreas/go/src/github.com/codegangsta/inject/inject.go:102 +0x443
+  github.com/go-martini/martini.(*context).Invoke()
+      <autogenerated>:30 +0xc6
+  github.com/go-martini/martini.(*routeContext).run()
+      /home/andreas/go/src/github.com/go-martini/martini/router.go:350 +0x190
+  github.com/go-martini/martini.(*route).Handle()
+      /home/andreas/go/src/github.com/go-martini/martini/router.go:229 +0x16f
+  github.com/go-martini/martini.(*router).Handle()
+      /home/andreas/go/src/github.com/go-martini/martini/router.go:112 +0x20e
+  github.com/go-martini/martini.Router.Handle·fm()
+      /home/andreas/go/src/github.com/go-martini/martini/martini.go:119 +0x77
+  runtime.call64()
+      /usr/local/go/src/pkg/runtime/asm_amd64.s:362 +0x31
+  reflect.Value.Call()
+      /usr/local/go/src/pkg/reflect/value.go:411 +0xed
+  github.com/codegangsta/inject.(*injector).Invoke()
+      /home/andreas/go/src/github.com/codegangsta/inject/inject.go:102 +0x443
+  github.com/go-martini/martini.(*context).run()
+      /home/andreas/go/src/github.com/go-martini/martini/martini.go:173 +0xe0
+  github.com/go-martini/martini.(*context).Next()
+      /home/andreas/go/src/github.com/go-martini/martini/martini.go:164 +0x6f
+  github.com/go-martini/martini.func·004()
+      /home/andreas/go/src/github.com/go-martini/martini/recovery.go:140 +0xbc
+  runtime.call32()
+      /usr/local/go/src/pkg/runtime/asm_amd64.s:361 +0x31
+  reflect.Value.Call()
+      /usr/local/go/src/pkg/reflect/value.go:411 +0xed
+  github.com/codegangsta/inject.(*injector).Invoke()
+      /home/andreas/go/src/github.com/codegangsta/inject/inject.go:102 +0x443
+  github.com/go-martini/martini.(*context).run()
+      /home/andreas/go/src/github.com/go-martini/martini/martini.go:173 +0xe0
+  github.com/go-martini/martini.(*context).Next()
+      /home/andreas/go/src/github.com/go-martini/martini/martini.go:164 +0x6f
+  github.com/go-martini/martini.func·001()
+      /home/andreas/go/src/github.com/go-martini/martini/logger.go:25 +0x34a
+  runtime.call64()
+      /usr/local/go/src/pkg/runtime/asm_amd64.s:362 +0x31
+  reflect.Value.Call()
+      /usr/local/go/src/pkg/reflect/value.go:411 +0xed
+  github.com/codegangsta/inject.(*injector).Invoke()
+      /home/andreas/go/src/github.com/codegangsta/inject/inject.go:102 +0x443
+  github.com/go-martini/martini.(*context).run()
+      /home/andreas/go/src/github.com/go-martini/martini/martini.go:173 +0xe0
+  github.com/go-martini/martini.(*Martini).ServeHTTP()
+      /home/andreas/go/src/github.com/go-martini/martini/martini.go:69 +0x60
+  net/http.serverHandler.ServeHTTP()
+      /usr/local/go/src/pkg/net/http/server.go:1673 +0x1fc
+  net/http.(*conn).serve()
+      /usr/local/go/src/pkg/net/http/server.go:1174 +0xf9e
+
+Goroutine 55 (running) created at:
+  github.com/eris-ltd/thelonious/monkminer.(*Miner).Start()
+      /home/andreas/go/src/github.com/eris-ltd/thelonious/monkminer/miner.go:62 +0x2a0
+  github.com/eris-ltd/thelonious/monk.func·022()
+      /home/andreas/go/src/github.com/eris-ltd/thelonious/monk/utils.go:266 +0x3a8
+==================
+==================
+WARNING: DATA RACE
+Write by goroutine 55:
+  runtime.mapassign1()
+      /usr/local/go/src/pkg/runtime/hashmap.goc:925 +0x0
+  github.com/eris-ltd/thelonious/monkstate.(*State).GetStateObject()
+      /home/andreas/go/src/github.com/eris-ltd/thelonious/monkstate/state.go:97 +0x2be
+  github.com/eris-ltd/eris-std-lib/go-tests.GetSingle()
+      /home/andreas/go/src/github.com/eris-ltd/eris-std-lib/go-tests/vars.go:30 +0x7e
+  github.com/eris-ltd/thelonious/monkdoug.(*StdLibModel).consensus()
+      /home/andreas/go/src/github.com/eris-ltd/thelonious/monkdoug/blockchain.go:13 +0x9a
+  github.com/eris-ltd/thelonious/monkdoug.(*StdLibModel).Difficulty()
+      /home/andreas/go/src/github.com/eris-ltd/thelonious/monkdoug/models.go:255 +0x5d
+  github.com/eris-ltd/thelonious/monkchain.(*ChainManager).NewBlock()
+      /home/andreas/go/src/github.com/eris-ltd/thelonious/monkchain/chain_manager.go:109 +0x315
+  github.com/eris-ltd/thelonious/monkminer.(*Miner).mineNewBlock()
+      /home/andreas/go/src/github.com/eris-ltd/thelonious/monkminer/miner.go:169 +0x12d
+  github.com/eris-ltd/thelonious/monkminer.(*Miner).listener()
+      /home/andreas/go/src/github.com/eris-ltd/thelonious/monkminer/miner.go:96 +0x307
+
+Previous read by goroutine 52:
+  runtime.mapaccess1_faststr()
+      /usr/local/go/src/pkg/runtime/hashmap_fast.c:15 +0x0
+  github.com/eris-ltd/thelonious/monkstate.(*State).GetStateObject()
+      /home/andreas/go/src/github.com/eris-ltd/thelonious/monkstate/state.go:86 +0xed
+  github.com/eris-ltd/thelonious/monkpipe.(*World).safeGet()
+      /home/andreas/go/src/github.com/eris-ltd/thelonious/monkpipe/world.go:38 +0x60
+  github.com/eris-ltd/thelonious/monkpipe.(*World).SafeGet()
+      /home/andreas/go/src/github.com/eris-ltd/thelonious/monkpipe/world.go:34 +0x52
+  github.com/eris-ltd/thelonious/monk.(*Monk).Account()
+      /home/andreas/go/src/github.com/eris-ltd/thelonious/monk/monk.go:322 +0xd6
+  github.com/eris-ltd/thelonious/monk.(*MonkModule).Account()
+      /home/andreas/go/src/github.com/eris-ltd/thelonious/monk/monk.go:170 +0x59
+  github.com/eris-ltd/decerver-interfaces/glue/monk.(*MonkJs).Account()
+      /home/andreas/go/src/github.com/eris-ltd/decerver-interfaces/glue/monk/monkjs.go:79 +0x59
+  runtime.call32()
+      /usr/local/go/src/pkg/runtime/asm_amd64.s:361 +0x31
+  reflect.Value.Call()
+      /usr/local/go/src/pkg/reflect/value.go:411 +0xed
+  github.com/robertkrimen/otto.func·039()
+      /home/andreas/go/src/github.com/robertkrimen/otto/runtime.go:225 +0x2c5
+  github.com/robertkrimen/otto.(*_object).call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/type_function.go:140 +0x561
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeCallExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:240 +0x92c
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:44 +0xa76
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeVariableExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:450 +0x182
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:100 +0x93c
+  github.com/robertkrimen/otto.func·019()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:203 +0x461
+  github.com/robertkrimen/otto.objectEnumerate()
+      /home/andreas/go/src/github.com/robertkrimen/otto/object_class.go:25 +0x206
+  github.com/robertkrimen/otto.(*_object).enumerate()
+      /home/andreas/go/src/github.com/robertkrimen/otto/object.go:118 +0x7a
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeForInStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:222 +0x63d
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:62 +0x1559
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatementList()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:118 +0xf7
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:30 +0x5da
+  github.com/robertkrimen/otto.(*_runtime).cmpl_call_nodeFunction()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate.go:61 +0x72e
+  github.com/robertkrimen/otto.(*_object).call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/type_function.go:154 +0x2c6
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeCallExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:240 +0x92c
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:44 +0xa76
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeAssignExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:124 +0x108
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:31 +0xc34
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:59 +0x14c1
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatementList()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:118 +0xf7
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:30 +0x5da
+  github.com/robertkrimen/otto.(*_runtime).cmpl_call_nodeFunction()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate.go:61 +0x72e
+  github.com/robertkrimen/otto.(*_object).call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/type_function.go:154 +0x2c6
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeCallExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:240 +0x92c
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:44 +0xa76
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:59 +0x14c1
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatementList()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:118 +0xf7
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:30 +0x5da
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeIfStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:289 +0x15b
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:68 +0x13f2
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatementList()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:118 +0xf7
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:30 +0x5da
+  github.com/robertkrimen/otto.(*_runtime).cmpl_call_nodeFunction()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate.go:61 +0x72e
+  github.com/robertkrimen/otto.(*_object).call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/type_function.go:154 +0x2c6
+  github.com/robertkrimen/otto.Value.call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/value.go:123 +0x1b4
+  github.com/robertkrimen/otto.func·044()
+      /home/andreas/go/src/github.com/robertkrimen/otto/value.go:112 +0xdb
+  github.com/robertkrimen/otto.catchPanic()
+      /home/andreas/go/src/github.com/robertkrimen/otto/error.go:243 +0xb1
+  github.com/robertkrimen/otto.Value.Call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/value.go:113 +0x119
+  github.com/robertkrimen/otto.Object.Call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/otto.go:514 +0x1c0
+  github.com/eris-ltd/decerver/ate.(*JsRuntime).CallFuncOnObj()
+      /home/andreas/go/src/github.com/eris-ltd/decerver/ate/ate.go:172 +0x2d4
+  github.com/eris-ltd/decerver/ate.func·001()
+      /home/andreas/go/src/github.com/eris-ltd/decerver/ate/ate.go:247 +0x615
+
+Goroutine 55 (running) created at:
+  github.com/eris-ltd/thelonious/monkminer.(*Miner).Start()
+      /home/andreas/go/src/github.com/eris-ltd/thelonious/monkminer/miner.go:62 +0x2a0
+  github.com/eris-ltd/thelonious/monk.func·022()
+      /home/andreas/go/src/github.com/eris-ltd/thelonious/monk/utils.go:266 +0x3a8
+
+Goroutine 52 (running) created at:
+  github.com/eris-ltd/decerver/ate.(*JsrEvents).Subscribe()
+      /home/andreas/go/src/github.com/eris-ltd/decerver/ate/ate.go:252 +0x379
+  runtime.call128()
+      /usr/local/go/src/pkg/runtime/asm_amd64.s:363 +0x40
+  reflect.Value.Call()
+      /usr/local/go/src/pkg/reflect/value.go:411 +0xed
+  github.com/robertkrimen/otto.func·039()
+      /home/andreas/go/src/github.com/robertkrimen/otto/runtime.go:225 +0x2c5
+  github.com/robertkrimen/otto.(*_object).call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/type_function.go:140 +0x561
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeCallExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:240 +0x92c
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:44 +0xa76
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:59 +0x14c1
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatementList()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:118 +0xf7
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:30 +0x5da
+  github.com/robertkrimen/otto.(*_runtime).cmpl_call_nodeFunction()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate.go:61 +0x72e
+  github.com/robertkrimen/otto.(*_object).call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/type_function.go:154 +0x2c6
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeCallExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:240 +0x92c
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:44 +0xa76
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:59 +0x14c1
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatementList()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:118 +0xf7
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:30 +0x5da
+  github.com/robertkrimen/otto.(*_runtime).cmpl_call_nodeFunction()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate.go:61 +0x72e
+  github.com/robertkrimen/otto.(*_object).call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/type_function.go:154 +0x2c6
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeCallExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:240 +0x92c
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:44 +0xa76
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:59 +0x14c1
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatementList()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:118 +0xf7
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:30 +0x5da
+  github.com/robertkrimen/otto.(*_runtime).cmpl_call_nodeFunction()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate.go:61 +0x72e
+  github.com/robertkrimen/otto.(*_object).call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/type_function.go:154 +0x2c6
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeCallExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:240 +0x92c
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:44 +0xa76
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeAssignExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:124 +0x108
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:31 +0xc34
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:59 +0x14c1
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatementList()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:118 +0xf7
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:30 +0x5da
+  github.com/robertkrimen/otto.(*_runtime).cmpl_call_nodeFunction()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate.go:61 +0x72e
+  github.com/robertkrimen/otto.(*_object).call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/type_function.go:154 +0x2c6
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeCallExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:240 +0x92c
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:44 +0xa76
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:59 +0x14c1
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatementList()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:118 +0xf7
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeProgram()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate.go:17 +0x1d5
+  github.com/robertkrimen/otto.func·040()
+      /home/andreas/go/src/github.com/robertkrimen/otto/runtime.go:293 +0x7b
+  github.com/robertkrimen/otto.catchPanic()
+      /home/andreas/go/src/github.com/robertkrimen/otto/error.go:243 +0xb1
+  github.com/robertkrimen/otto.(*_runtime).cmpl_run()
+      /home/andreas/go/src/github.com/robertkrimen/otto/runtime.go:294 +0x1a4
+  github.com/robertkrimen/otto.Otto.Run()
+      /home/andreas/go/src/github.com/robertkrimen/otto/otto.go:292 +0x89
+  github.com/eris-ltd/decerver/ate.(*JsRuntime).AddScript()
+      /home/andreas/go/src/github.com/eris-ltd/decerver/ate/ate.go:132 +0x120
+  github.com/eris-ltd/decerver/server.(*WsAPIServer).handleWs()
+      /home/andreas/go/src/github.com/eris-ltd/decerver/server/WsAPIServer.go:99 +0x76b
+  github.com/eris-ltd/decerver/server.*WsAPIServer.(github.com/eris-ltd/decerver/server.handleWs)·fm()
+      /home/andreas/go/src/github.com/eris-ltd/decerver/server/webserver.go:61 +0x51
+  runtime.call32()
+      /usr/local/go/src/pkg/runtime/asm_amd64.s:361 +0x31
+  reflect.Value.Call()
+      /usr/local/go/src/pkg/reflect/value.go:411 +0xed
+  github.com/codegangsta/inject.(*injector).Invoke()
+      /home/andreas/go/src/github.com/codegangsta/inject/inject.go:102 +0x443
+  github.com/go-martini/martini.(*context).Invoke()
+      <autogenerated>:30 +0xc6
+  github.com/go-martini/martini.(*routeContext).run()
+      /home/andreas/go/src/github.com/go-martini/martini/router.go:350 +0x190
+  github.com/go-martini/martini.(*route).Handle()
+      /home/andreas/go/src/github.com/go-martini/martini/router.go:229 +0x16f
+  github.com/go-martini/martini.(*router).Handle()
+      /home/andreas/go/src/github.com/go-martini/martini/router.go:112 +0x20e
+  github.com/go-martini/martini.Router.Handle·fm()
+      /home/andreas/go/src/github.com/go-martini/martini/martini.go:119 +0x77
+  runtime.call64()
+      /usr/local/go/src/pkg/runtime/asm_amd64.s:362 +0x31
+  reflect.Value.Call()
+      /usr/local/go/src/pkg/reflect/value.go:411 +0xed
+  github.com/codegangsta/inject.(*injector).Invoke()
+      /home/andreas/go/src/github.com/codegangsta/inject/inject.go:102 +0x443
+  github.com/go-martini/martini.(*context).run()
+      /home/andreas/go/src/github.com/go-martini/martini/martini.go:173 +0xe0
+  github.com/go-martini/martini.(*context).Next()
+      /home/andreas/go/src/github.com/go-martini/martini/martini.go:164 +0x6f
+  github.com/go-martini/martini.func·004()
+      /home/andreas/go/src/github.com/go-martini/martini/recovery.go:140 +0xbc
+  runtime.call32()
+      /usr/local/go/src/pkg/runtime/asm_amd64.s:361 +0x31
+  reflect.Value.Call()
+      /usr/local/go/src/pkg/reflect/value.go:411 +0xed
+  github.com/codegangsta/inject.(*injector).Invoke()
+      /home/andreas/go/src/github.com/codegangsta/inject/inject.go:102 +0x443
+  github.com/go-martini/martini.(*context).run()
+      /home/andreas/go/src/github.com/go-martini/martini/martini.go:173 +0xe0
+  github.com/go-martini/martini.(*context).Next()
+      /home/andreas/go/src/github.com/go-martini/martini/martini.go:164 +0x6f
+  github.com/go-martini/martini.func·001()
+      /home/andreas/go/src/github.com/go-martini/martini/logger.go:25 +0x34a
+  runtime.call64()
+      /usr/local/go/src/pkg/runtime/asm_amd64.s:362 +0x31
+  reflect.Value.Call()
+      /usr/local/go/src/pkg/reflect/value.go:411 +0xed
+  github.com/codegangsta/inject.(*injector).Invoke()
+      /home/andreas/go/src/github.com/codegangsta/inject/inject.go:102 +0x443
+  github.com/go-martini/martini.(*context).run()
+      /home/andreas/go/src/github.com/go-martini/martini/martini.go:173 +0xe0
+  github.com/go-martini/martini.(*Martini).ServeHTTP()
+      /home/andreas/go/src/github.com/go-martini/martini/martini.go:69 +0x60
+  net/http.serverHandler.ServeHTTP()
+      /usr/local/go/src/pkg/net/http/server.go:1673 +0x1fc
+  net/http.(*conn).serve()
+      /usr/local/go/src/pkg/net/http/server.go:1174 +0xf9e
+==================
+==================
+WARNING: DATA RACE
+Read by goroutine 52:
+  runtime.mapaccess1_faststr()
+      /usr/local/go/src/pkg/runtime/hashmap_fast.c:15 +0x0
+  github.com/eris-ltd/thelonious/monkstate.(*State).GetStateObject()
+      /home/andreas/go/src/github.com/eris-ltd/thelonious/monkstate/state.go:86 +0xed
+  github.com/eris-ltd/thelonious/monkpipe.(*World).safeGet()
+      /home/andreas/go/src/github.com/eris-ltd/thelonious/monkpipe/world.go:38 +0x60
+  github.com/eris-ltd/thelonious/monkpipe.(*World).SafeGet()
+      /home/andreas/go/src/github.com/eris-ltd/thelonious/monkpipe/world.go:34 +0x52
+  github.com/eris-ltd/thelonious/monk.(*Monk).Account()
+      /home/andreas/go/src/github.com/eris-ltd/thelonious/monk/monk.go:322 +0xd6
+  github.com/eris-ltd/thelonious/monk.(*MonkModule).Account()
+      /home/andreas/go/src/github.com/eris-ltd/thelonious/monk/monk.go:170 +0x59
+  github.com/eris-ltd/decerver-interfaces/glue/monk.(*MonkJs).Account()
+      /home/andreas/go/src/github.com/eris-ltd/decerver-interfaces/glue/monk/monkjs.go:79 +0x59
+  runtime.call32()
+      /usr/local/go/src/pkg/runtime/asm_amd64.s:361 +0x31
+  reflect.Value.Call()
+      /usr/local/go/src/pkg/reflect/value.go:411 +0xed
+  github.com/robertkrimen/otto.func·039()
+      /home/andreas/go/src/github.com/robertkrimen/otto/runtime.go:225 +0x2c5
+  github.com/robertkrimen/otto.(*_object).call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/type_function.go:140 +0x561
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeCallExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:240 +0x92c
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:44 +0xa76
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeVariableExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:450 +0x182
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:100 +0x93c
+  github.com/robertkrimen/otto.func·019()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:203 +0x461
+  github.com/robertkrimen/otto.objectEnumerate()
+      /home/andreas/go/src/github.com/robertkrimen/otto/object_class.go:25 +0x206
+  github.com/robertkrimen/otto.(*_object).enumerate()
+      /home/andreas/go/src/github.com/robertkrimen/otto/object.go:118 +0x7a
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeForInStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:222 +0x63d
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:62 +0x1559
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatementList()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:118 +0xf7
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:30 +0x5da
+  github.com/robertkrimen/otto.(*_runtime).cmpl_call_nodeFunction()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate.go:61 +0x72e
+  github.com/robertkrimen/otto.(*_object).call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/type_function.go:154 +0x2c6
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeCallExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:240 +0x92c
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:44 +0xa76
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeAssignExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:124 +0x108
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:31 +0xc34
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:59 +0x14c1
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatementList()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:118 +0xf7
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:30 +0x5da
+  github.com/robertkrimen/otto.(*_runtime).cmpl_call_nodeFunction()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate.go:61 +0x72e
+  github.com/robertkrimen/otto.(*_object).call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/type_function.go:154 +0x2c6
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeCallExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:240 +0x92c
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:44 +0xa76
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:59 +0x14c1
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatementList()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:118 +0xf7
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:30 +0x5da
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeIfStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:289 +0x15b
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:68 +0x13f2
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatementList()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:118 +0xf7
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:30 +0x5da
+  github.com/robertkrimen/otto.(*_runtime).cmpl_call_nodeFunction()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate.go:61 +0x72e
+  github.com/robertkrimen/otto.(*_object).call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/type_function.go:154 +0x2c6
+  github.com/robertkrimen/otto.Value.call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/value.go:123 +0x1b4
+  github.com/robertkrimen/otto.func·044()
+      /home/andreas/go/src/github.com/robertkrimen/otto/value.go:112 +0xdb
+  github.com/robertkrimen/otto.catchPanic()
+      /home/andreas/go/src/github.com/robertkrimen/otto/error.go:243 +0xb1
+  github.com/robertkrimen/otto.Value.Call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/value.go:113 +0x119
+  github.com/robertkrimen/otto.Object.Call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/otto.go:514 +0x1c0
+  github.com/eris-ltd/decerver/ate.(*JsRuntime).CallFuncOnObj()
+      /home/andreas/go/src/github.com/eris-ltd/decerver/ate/ate.go:172 +0x2d4
+  github.com/eris-ltd/decerver/ate.func·001()
+      /home/andreas/go/src/github.com/eris-ltd/decerver/ate/ate.go:247 +0x615
+
+Previous write by goroutine 55:
+  [failed to restore the stack]
+
+Goroutine 52 (running) created at:
+  github.com/eris-ltd/decerver/ate.(*JsrEvents).Subscribe()
+      /home/andreas/go/src/github.com/eris-ltd/decerver/ate/ate.go:252 +0x379
+  runtime.call128()
+      /usr/local/go/src/pkg/runtime/asm_amd64.s:363 +0x40
+  reflect.Value.Call()
+      /usr/local/go/src/pkg/reflect/value.go:411 +0xed
+  github.com/robertkrimen/otto.func·039()
+      /home/andreas/go/src/github.com/robertkrimen/otto/runtime.go:225 +0x2c5
+  github.com/robertkrimen/otto.(*_object).call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/type_function.go:140 +0x561
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeCallExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:240 +0x92c
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:44 +0xa76
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:59 +0x14c1
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatementList()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:118 +0xf7
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:30 +0x5da
+  github.com/robertkrimen/otto.(*_runtime).cmpl_call_nodeFunction()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate.go:61 +0x72e
+  github.com/robertkrimen/otto.(*_object).call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/type_function.go:154 +0x2c6
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeCallExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:240 +0x92c
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:44 +0xa76
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:59 +0x14c1
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatementList()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:118 +0xf7
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:30 +0x5da
+  github.com/robertkrimen/otto.(*_runtime).cmpl_call_nodeFunction()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate.go:61 +0x72e
+  github.com/robertkrimen/otto.(*_object).call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/type_function.go:154 +0x2c6
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeCallExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:240 +0x92c
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:44 +0xa76
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:59 +0x14c1
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatementList()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:118 +0xf7
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:30 +0x5da
+  github.com/robertkrimen/otto.(*_runtime).cmpl_call_nodeFunction()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate.go:61 +0x72e
+  github.com/robertkrimen/otto.(*_object).call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/type_function.go:154 +0x2c6
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeCallExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:240 +0x92c
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:44 +0xa76
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeAssignExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:124 +0x108
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:31 +0xc34
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:59 +0x14c1
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatementList()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:118 +0xf7
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:30 +0x5da
+  github.com/robertkrimen/otto.(*_runtime).cmpl_call_nodeFunction()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate.go:61 +0x72e
+  github.com/robertkrimen/otto.(*_object).call()
+      /home/andreas/go/src/github.com/robertkrimen/otto/type_function.go:154 +0x2c6
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeCallExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:240 +0x92c
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeExpression()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_expression.go:44 +0xa76
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatement()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:59 +0x14c1
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeStatementList()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate_statement.go:118 +0xf7
+  github.com/robertkrimen/otto.(*_runtime).cmpl_evaluate_nodeProgram()
+      /home/andreas/go/src/github.com/robertkrimen/otto/cmpl_evaluate.go:17 +0x1d5
+  github.com/robertkrimen/otto.func·040()
+      /home/andreas/go/src/github.com/robertkrimen/otto/runtime.go:293 +0x7b
+  github.com/robertkrimen/otto.catchPanic()
+      /home/andreas/go/src/github.com/robertkrimen/otto/error.go:243 +0xb1
+  github.com/robertkrimen/otto.(*_runtime).cmpl_run()
+      /home/andreas/go/src/github.com/robertkrimen/otto/runtime.go:294 +0x1a4
+  github.com/robertkrimen/otto.Otto.Run()
+      /home/andreas/go/src/github.com/robertkrimen/otto/otto.go:292 +0x89
+  github.com/eris-ltd/decerver/ate.(*JsRuntime).AddScript()
+      /home/andreas/go/src/github.com/eris-ltd/decerver/ate/ate.go:132 +0x120
+  github.com/eris-ltd/decerver/server.(*WsAPIServer).handleWs()
+      /home/andreas/go/src/github.com/eris-ltd/decerver/server/WsAPIServer.go:99 +0x76b
+  github.com/eris-ltd/decerver/server.*WsAPIServer.(github.com/eris-ltd/decerver/server.handleWs)·fm()
+      /home/andreas/go/src/github.com/eris-ltd/decerver/server/webserver.go:61 +0x51
+  runtime.call32()
+      /usr/local/go/src/pkg/runtime/asm_amd64.s:361 +0x31
+  reflect.Value.Call()
+      /usr/local/go/src/pkg/reflect/value.go:411 +0xed
+  github.com/codegangsta/inject.(*injector).Invoke()
+      /home/andreas/go/src/github.com/codegangsta/inject/inject.go:102 +0x443
+  github.com/go-martini/martini.(*context).Invoke()
+      <autogenerated>:30 +0xc6
+  github.com/go-martini/martini.(*routeContext).run()
+      /home/andreas/go/src/github.com/go-martini/martini/router.go:350 +0x190
+  github.com/go-martini/martini.(*route).Handle()
+      /home/andreas/go/src/github.com/go-martini/martini/router.go:229 +0x16f
+  github.com/go-martini/martini.(*router).Handle()
+      /home/andreas/go/src/github.com/go-martini/martini/router.go:112 +0x20e
+  github.com/go-martini/martini.Router.Handle·fm()
+      /home/andreas/go/src/github.com/go-martini/martini/martini.go:119 +0x77
+  runtime.call64()
+      /usr/local/go/src/pkg/runtime/asm_amd64.s:362 +0x31
+  reflect.Value.Call()
+      /usr/local/go/src/pkg/reflect/value.go:411 +0xed
+  github.com/codegangsta/inject.(*injector).Invoke()
+      /home/andreas/go/src/github.com/codegangsta/inject/inject.go:102 +0x443
+  github.com/go-martini/martini.(*context).run()
+      /home/andreas/go/src/github.com/go-martini/martini/martini.go:173 +0xe0
+  github.com/go-martini/martini.(*context).Next()
+      /home/andreas/go/src/github.com/go-martini/martini/martini.go:164 +0x6f
+  github.com/go-martini/martini.func·004()
+      /home/andreas/go/src/github.com/go-martini/martini/recovery.go:140 +0xbc
+  runtime.call32()
+      /usr/local/go/src/pkg/runtime/asm_amd64.s:361 +0x31
+  reflect.Value.Call()
+      /usr/local/go/src/pkg/reflect/value.go:411 +0xed
+  github.com/codegangsta/inject.(*injector).Invoke()
+      /home/andreas/go/src/github.com/codegangsta/inject/inject.go:102 +0x443
+  github.com/go-martini/martini.(*context).run()
+      /home/andreas/go/src/github.com/go-martini/martini/martini.go:173 +0xe0
+  github.com/go-martini/martini.(*context).Next()
+      /home/andreas/go/src/github.com/go-martini/martini/martini.go:164 +0x6f
+  github.com/go-martini/martini.func·001()
+      /home/andreas/go/src/github.com/go-martini/martini/logger.go:25 +0x34a
+  runtime.call64()
+      /usr/local/go/src/pkg/runtime/asm_amd64.s:362 +0x31
+  reflect.Value.Call()
+      /usr/local/go/src/pkg/reflect/value.go:411 +0xed
+  github.com/codegangsta/inject.(*injector).Invoke()
+      /home/andreas/go/src/github.com/codegangsta/inject/inject.go:102 +0x443
+  github.com/go-martini/martini.(*context).run()
+      /home/andreas/go/src/github.com/go-martini/martini/martini.go:173 +0xe0
+  github.com/go-martini/martini.(*Martini).ServeHTTP()
+      /home/andreas/go/src/github.com/go-martini/martini/martini.go:69 +0x60
+  net/http.serverHandler.ServeHTTP()
+      /usr/local/go/src/pkg/net/http/server.go:1673 +0x1fc
+  net/http.(*conn).serve()
+      /usr/local/go/src/pkg/net/http/server.go:1174 +0xf9e
+
+Goroutine 55 (running) created at:
+  github.com/eris-ltd/thelonious/monkminer.(*Miner).Start()
+      /home/andreas/go/src/github.com/eris-ltd/thelonious/monkminer/miner.go:62 +0x2a0
+  github.com/eris-ltd/thelonious/monk.func·022()
+      /home/andreas/go/src/github.com/eris-ltd/thelonious/monk/utils.go:266 +0x3a8
+==================
+Found 3 data race(s)

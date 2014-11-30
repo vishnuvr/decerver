@@ -139,30 +139,42 @@ func BindDefaults(runtime *JsRuntime) {
 		
 		events.callbacks = {};
 		
-		events.subscribe = function(eventSource, eventType, eventTarget, eventId, callbackFn){
+		events.subscribe = function(eventSource, eventType, eventTarget, callbackFn){
+		
 			if(typeof(callbackFn) !== "function"){
 				throw new Error("Trying to register a non callback function as callback.");
 			}
+			
+			var eventId = events.generateId(eventSource,eventType);
 			// The jsr_events object has the go bindings to actually subscribe.
 			jsr_events.Subscribe(eventSource, eventType, eventTarget, eventId);
-			
-			this.callbacks[eventId] = callbackFn;
-			return res;
-			
+			this.callbacks[eventId] = callbackFn;	
 		}
 		
-		events.unsubscribe = function(subId){
+		events.unsubscribe = function(eventSource,eventName){
+			var subId = events.generateId(eventSource,eventName);
 			jsr_events.Unsubscribe(subId);
 			events.callbacks[subId] = null;
 		}
 		
 		// Called by the go event processor.
 		events.post = function(eventJson){
+			console.log("[Otto] Getting json stuff: " + eventJson);
 			var event = JSON.parse(eventJson);
-			var cfn = this.callbacks[event.Id];
+			var eventId = events.generateId(event.Source, event.Event);
+			var cfn = this.callbacks[eventId];
 			if (typeof(cfn) === "function"){
+				console.log("[Otto] passing event to callback function: " + eventId);
+				console.log(cfn.toString());
 				cfn(event);
+			} else {
+				console.log("No callback for event: " + eventId);
 			}
+			console.log("[Otto] Callback done");
+		}
+		
+		events.generateId = function(evtSource,evtName){
+			return RuntimeId + "_" + evtSource + "_" + evtName; 
 		}
 	`)
 

@@ -58,7 +58,7 @@ func NewEventProcessor(mr modules.ModuleRegistry) *EventProcessor {
 	// DEBUG
 	fmt.Printf("[Events] Subscriber map created: %v\n", ep.channels)
 	ep.byId = make(map[string]events.Subscriber)
-	ep.postChan = make(chan events.Event)
+	ep.postChan = make(chan events.Event, 64)
 	ep.moduleRegistry = mr
 	return ep
 }
@@ -102,6 +102,7 @@ func (ep *EventProcessor) Subscribe(sub events.Subscriber) {
 		srcSubs = make(SubMap)
 		ep.channels[src] = srcSubs
 	}
+	
 	evt := sub.Event()
 	evts, okEvt := srcSubs[evt]
 
@@ -109,10 +110,11 @@ func (ep *EventProcessor) Subscribe(sub events.Subscriber) {
 		evts = NewSubscriptions()
 		srcSubs[evt] = evts
 	}
+	
 	evts.add(sub)
 	ep.byId[sub.Id()] = sub
 
-	ep.moduleRegistry.GetModules()[src].Subscribe(sub.Id(), sub.Event(), sub.Target())
+	sub.SetChannel(ep.moduleRegistry.GetModules()[src].Subscribe(sub.Id(), sub.Event(), sub.Target()))
 	fmt.Printf("New subscriber added to: %s (%s)\n", sub.Source(), sub.Event())
 }
 
@@ -124,6 +126,7 @@ func (ep *EventProcessor) Unsubscribe(id string) {
 		fmt.Println("No subscriber with id: " + id)
 		return
 	}
+	ep.moduleRegistry.GetModules()[sub.Source()].UnSubscribe(sub.Id())
 	ep.channels[sub.Source()][sub.Event()].remove(id)
 	ep.byId[id] = nil
 }

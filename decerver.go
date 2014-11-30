@@ -171,7 +171,7 @@ func (dc *DeCerver) createDappRegistry() {
 
 func (dc *DeCerver) LoadModule(md modules.Module) {
 	// TODO re-add
-	md.Register(dc.paths, nil, dc.ate, dc.ep)
+	md.Register(dc.paths, dc.ate, dc.ep)
 	dc.moduleRegistry.Add(md)
 	fmt.Printf("Registering module '%s'.\n", md.Name())
 }

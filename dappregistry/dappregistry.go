@@ -160,6 +160,7 @@ func (dc *DappRegistry) LoadDapp(dir string) {
 	if errH == nil && !bytes.Equal(hash,oldHash) {
 		// TODO this is an old but updated dapp.
 		fmt.Printf("Hash mismatch: New: '%s', Old: '%s'.\n",hex.EncodeToString(hash),hex.EncodeToString(oldHash))
+		dc.hashDB.Put([]byte(dapp.path),hash,nil)
 	} else {
 		fmt.Printf("Hash of '%s' matches the stored value: '%s'.\n", dir, hex.EncodeToString(hash))
 	}

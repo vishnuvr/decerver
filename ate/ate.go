@@ -8,6 +8,7 @@ import (
 	"github.com/robertkrimen/otto"
 	"io/ioutil"
 	"strings"
+	"sync"
 )
 
 type AteEventProcessor struct {
@@ -35,7 +36,7 @@ func (ate *Ate) CreateRuntime(name string) core.Runtime {
 	ate.runtimes[name] = rt
 	rt.jsrEvents = NewJsrEvents(rt)
 	// TODO add a "runtime" or "os" object with more stuff in it?
-	
+
 	rt.Init(name)
 	for k, v := range ate.apis {
 		// TODO error checking!
@@ -68,6 +69,7 @@ type JsRuntime struct {
 	er        events.EventRegistry
 	name      string
 	jsrEvents *JsrEvents
+	mutex     *sync.Mutex
 }
 
 func newJsRuntime(name string, er events.EventRegistry) *JsRuntime {
@@ -78,6 +80,7 @@ func newJsRuntime(name string, er events.EventRegistry) *JsRuntime {
 	jsr.closeChan = make(chan bool)
 	jsr.er = er
 	jsr.name = name
+	jsr.mutex = &sync.Mutex{}
 	return jsr
 }
 
@@ -88,15 +91,14 @@ func (jsr *JsRuntime) Shutdown() {
 
 // TODO set up the interrupt channel.
 func (jsr *JsRuntime) Init(name string) {
-	jsr.vm.Set("jsr_events",jsr.jsrEvents)
-	jsr.BindScriptObject("RuntimeId", func(otto.FunctionCall) otto.Value {
-		ret, _ := otto.ToValue(name)
-		return ret
-	})
+	jsr.vm.Set("jsr_events", jsr.jsrEvents)
+	jsr.BindScriptObject("RuntimeId", name)
 	BindDefaults(jsr)
 }
 
 func (jsr *JsRuntime) LoadScriptFile(fileName string) error {
+	jsr.mutex.Lock()
+	defer jsr.mutex.Unlock()
 	bytes, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		return err
@@ -106,6 +108,8 @@ func (jsr *JsRuntime) LoadScriptFile(fileName string) error {
 }
 
 func (jsr *JsRuntime) LoadScriptFiles(fileName ...string) error {
+	jsr.mutex.Lock()
+	defer jsr.mutex.Unlock()
 	for _, sf := range fileName {
 		err := jsr.LoadScriptFile(sf)
 		if err != nil {
@@ -116,16 +120,22 @@ func (jsr *JsRuntime) LoadScriptFiles(fileName ...string) error {
 }
 
 func (jsr *JsRuntime) BindScriptObject(name string, val interface{}) error {
-	return jsr.vm.Set(name, val)
+	jsr.mutex.Lock()
+	defer jsr.mutex.Unlock()
+	err := jsr.vm.Set(name, val)
+	return err
 }
 
 func (jsr *JsRuntime) AddScript(script string) error {
+	jsr.mutex.Lock()
+	defer jsr.mutex.Unlock()
 	_, err := jsr.vm.Run(script)
 	return err
 }
 
 func (jsr *JsRuntime) RunFunction(funcName string, params []string) (interface{}, error) {
-
+	jsr.mutex.Lock()
+	defer jsr.mutex.Unlock()
 	cmd := funcName + "("
 
 	paramStr := ""
@@ -153,6 +163,8 @@ func (jsr *JsRuntime) RunFunction(funcName string, params []string) (interface{}
 }
 
 func (jsr *JsRuntime) CallFuncOnObj(objName, funcName string, param ...interface{}) (interface{}, error) {
+	jsr.mutex.Lock()
+	defer jsr.mutex.Unlock()
 	ob, err := jsr.vm.Get(objName)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -162,6 +174,10 @@ func (jsr *JsRuntime) CallFuncOnObj(objName, funcName string, param ...interface
 	if callErr != nil {
 		fmt.Println(callErr.Error())
 	}
+
+	v, _ := val.ToString()
+	// DEBUG
+	fmt.Println("OTTOTOTOTOTOTOTO -----------------------------------> " + v)
 	// Take the result and turn it into a go value.
 	obj, expErr := val.Export()
 
@@ -173,6 +189,8 @@ func (jsr *JsRuntime) CallFuncOnObj(objName, funcName string, param ...interface
 }
 
 func (jsr *JsRuntime) CallFunc(funcName string, param ...interface{}) (interface{}, error) {
+	jsr.mutex.Lock()
+	defer jsr.mutex.Unlock()
 	val, callErr := jsr.vm.Call(funcName, nil, param)
 
 	if callErr != nil {
@@ -207,9 +225,31 @@ func NewJsrEvents(jsr *JsRuntime) *JsrEvents {
 }
 
 func (jsre *JsrEvents) Subscribe(evtSource, evtType, evtTarget, subId string) {
-
 	sub := NewAteSub(evtSource, evtType, evtTarget, subId, jsre.jsr)
 	jsre.jsr.er.Subscribe(sub)
+	// Launch the sub channel.
+	go func() {
+		// DEBUG
+		fmt.Println("Starting event loop for atesub: " + sub.id)
+		for {
+			select {
+			case evt, ok := <-sub.eventChan:
+				if !ok {
+					fmt.Println("Close message received. Closing ate subscription loop.")
+					sub.closeChan <- true
+					return
+				}
+				jsonString, err := json.Marshal(evt)
+				// _ , err := json.Marshal(evt)
+				if err != nil {
+					fmt.Println("Error when posting event to ate: " + err.Error())
+				}
+				sub.rt.CallFuncOnObj("events", "post", string(jsonString))
+			case <-sub.closeChan:
+				return
+			}
+		}
+	}()
 }
 
 func (jsre *JsrEvents) Unsubscribe(subId string) {
@@ -234,26 +274,6 @@ func NewAteSub(eventSource, eventType, eventTarget, subId string, rt core.Runtim
 	as.tgt = eventTarget
 	as.id = subId
 	as.rt = rt
-
-	// Launch the sub channel.
-	go func(as *AteSub) {
-		fmt.Println("RUNNING ATE EVENT LOOP")
-		for {
-			select {
-			case evt, ok := <-as.eventChan:
-				if !ok {
-					return
-				}
-				jsonString, err := json.Marshal(evt)
-				if err != nil {
-					fmt.Println("Error when posting event to ate: " + err.Error())
-				}
-				as.rt.CallFuncOnObj("events", "post", string(jsonString))
-			case <-as.closeChan:
-				return
-			}
-		}
-	}(as)
 
 	return as
 }
