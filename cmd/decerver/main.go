@@ -7,11 +7,9 @@ import (
 )
 
 func main() {
-
 	dc := decerver.NewDeCerver()
 	mjs := monkjs.NewMonkJs()
 	// fm := ipfs.NewIpfs()
-	
 	dc.LoadModule(mjs)
 	// dc.LoadModule(fm)
 	dc.Init()

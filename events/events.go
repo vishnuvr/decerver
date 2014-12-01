@@ -26,10 +26,8 @@ func (ss *subscriptions) remove(subId string) bool {
 		}
 	}
 	if theIdx >= 0 {
-		sub := ss.srs[theIdx]
-		sub.Close()
 		// DEBUG
-		fmt.Println("Subscriber removed from globals")
+		fmt.Println("Subscriber removed: " + subId)
 		ss.srs = append(ss.srs[:theIdx], ss.srs[theIdx+1:]...)
 		return true
 	}
@@ -43,9 +41,8 @@ func NewSubscriptions() *subscriptions {
 }
 
 type EventProcessor struct {
-	mutex    *sync.Mutex
-	postChan chan events.Event
-	// Sorts by source, then by event name.
+	mutex          *sync.Mutex
+	postChan       chan events.Event
 	channels       map[string]SubMap
 	byId           map[string]events.Subscriber
 	moduleRegistry modules.ModuleRegistry
@@ -102,7 +99,7 @@ func (ep *EventProcessor) Subscribe(sub events.Subscriber) {
 		srcSubs = make(SubMap)
 		ep.channels[src] = srcSubs
 	}
-	
+
 	evt := sub.Event()
 	evts, okEvt := srcSubs[evt]
 
@@ -110,7 +107,7 @@ func (ep *EventProcessor) Subscribe(sub events.Subscriber) {
 		evts = NewSubscriptions()
 		srcSubs[evt] = evts
 	}
-	
+
 	evts.add(sub)
 	ep.byId[sub.Id()] = sub
 

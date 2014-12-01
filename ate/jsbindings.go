@@ -22,7 +22,7 @@ func BindDefaults(runtime *JsRuntime) {
 	
 	// Networking.
 	_, err = vm.Run(`
-	
+		
 		var jsonErrors = {
 			"E_PARSE"       : -32700,
 			"E_INVALID_REQ" : -32600,
@@ -31,7 +31,7 @@ func BindDefaults(runtime *JsRuntime) {
 			"E_INTERNAL"    : -32603,
 			"E_SERVER"      : -32000
 		};
-	
+		
 		// Network is an object that encapsulates all networking activity.
 		var network = {};
 		
@@ -54,6 +54,7 @@ func BindDefaults(runtime *JsRuntime) {
 		
 		// Each session has a handler.
 		network.wsHandlers = {};
+		network.wsSessions = {};
 		
 		network.newWsCallback = function(sessionObj){
 			return function (){
@@ -62,8 +63,28 @@ func BindDefaults(runtime *JsRuntime) {
 		};
 		
 		network.newWsSession = function(sessionObj){
-			console.log("Adding new session: " + sessionObj.SessionId());
-			network.wsHandlers[sessionObj.SessionId()] = network.newWsCallback(sessionObj);
+			var sId = sessionObj.SessionId();
+			console.log("Adding new session: " + sId);
+			network.wsHandlers[sId] = network.newWsCallback(sessionObj);
+			network.wsSessions[sId] = sessionObj;
+		}
+		
+		network.deleteWsCallback = function(sessionObj){
+			return function (){
+				console.log("No callback registered for delete websocket connections.");
+			};
+		};
+		
+		network.deleteWsSession = function(sessionId){
+			var sId = sessionId;
+			var sessionObj = network.wsSessions[sId];
+			if(typeof network.wsSessions[sId] === "undefined" || network.wsSessions[sId] === null){
+				console.log("[Otto] No session with id " + sId + ". Cannot delete.");
+				return;
+			}
+			console.log("[Otto] Deleting session: " + sId);
+			network.wsSessions[sId] = null;
+			network.deleteWsCallback(sessionObj);
 		}
 		
 		network.incomingWsMsg = function(sessionId, reqJson) {
@@ -159,9 +180,12 @@ func BindDefaults(runtime *JsRuntime) {
 		
 		// Called by the go event processor.
 		events.post = function(eventJson){
-			console.log("[Otto] Getting json stuff: " + eventJson);
+			
 			var event = JSON.parse(eventJson);
+			console.log(eventJson);
+			
 			var eventId = events.generateId(event.Source, event.Event);
+			
 			var cfn = this.callbacks[eventId];
 			if (typeof(cfn) === "function"){
 				console.log("[Otto] passing event to callback function: " + eventId);
@@ -170,7 +194,8 @@ func BindDefaults(runtime *JsRuntime) {
 			} else {
 				console.log("No callback for event: " + eventId);
 			}
-			console.log("[Otto] Callback done");
+			
+			return;
 		}
 		
 		events.generateId = function(evtSource,evtName){

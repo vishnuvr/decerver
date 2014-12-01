@@ -124,12 +124,14 @@ func (ss *Session) Close() {
 	fmt.Printf("CLOSING SESSION: %d\n", ss.wsConn.sessionId)
 	// Deregister ourselves.
 	ss.server.RemoveSession(ss)
+	ss.runtime.CallFuncOnObj("network","deleteWsSession",int(ss.SessionId()))
 	if ss.wsConn.conn != nil {
 		err := ss.wsConn.conn.Close()
 		if err != nil {
 			fmt.Printf("Failed to close websocket connection, already removed: %d\n", ss.wsConn.sessionId)
 		}
 	}
+	
 }
 
 func (ss *Session) handleRequest(rpcReq string) {

@@ -1,7 +1,7 @@
 package ate
 
 import (
-	"encoding/json"
+	//"encoding/json"
 	"fmt"
 	"github.com/eris-ltd/decerver-interfaces/core"
 	"github.com/eris-ltd/decerver-interfaces/events"
@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"strings"
 	"sync"
+	"encoding/json"
 )
 
 type AteEventProcessor struct {
@@ -64,20 +65,17 @@ func (ate *Ate) RegisterApi(name string, api interface{}) {
 
 type JsRuntime struct {
 	vm        *otto.Otto
-	subChan   chan events.Event
-	closeChan chan bool
 	er        events.EventRegistry
 	name      string
 	jsrEvents *JsrEvents
 	mutex     *sync.Mutex
+	lockLvl	  int
 }
 
 func newJsRuntime(name string, er events.EventRegistry) *JsRuntime {
 	vm := otto.New()
 	jsr := &JsRuntime{}
 	jsr.vm = vm
-	jsr.subChan = make(chan events.Event)
-	jsr.closeChan = make(chan bool)
 	jsr.er = er
 	jsr.name = name
 	jsr.mutex = &sync.Mutex{}
@@ -86,7 +84,24 @@ func newJsRuntime(name string, er events.EventRegistry) *JsRuntime {
 
 func (jsr *JsRuntime) Shutdown() {
 	fmt.Println("Runtime shut down: " + jsr.name)
-	jsr.closeChan <- true
+}
+
+func (jsr *JsRuntime) lock(){
+	jsr.mutex.Lock()
+	jsr.lockLvl++
+	fmt.Printf("[JSRuntime] Locking counter: %d\n",jsr.lockLvl);
+	if jsr.lockLvl > 1 || jsr.lockLvl < 0 {
+		panic("Lock level: weeeeird")
+	}
+}
+
+func (jsr *JsRuntime) unlock(){
+	jsr.mutex.Unlock()
+	jsr.lockLvl--
+	fmt.Printf("[JSRuntime] Locking counter: %d\n",jsr.lockLvl);
+	if jsr.lockLvl > 1 || jsr.lockLvl < 0 {
+		panic("Lock level: weeeeird")
+	}
 }
 
 // TODO set up the interrupt channel.
@@ -97,8 +112,8 @@ func (jsr *JsRuntime) Init(name string) {
 }
 
 func (jsr *JsRuntime) LoadScriptFile(fileName string) error {
-	jsr.mutex.Lock()
-	defer jsr.mutex.Unlock()
+	jsr.lock()
+	defer jsr.unlock()
 	bytes, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		return err
@@ -108,8 +123,8 @@ func (jsr *JsRuntime) LoadScriptFile(fileName string) error {
 }
 
 func (jsr *JsRuntime) LoadScriptFiles(fileName ...string) error {
-	jsr.mutex.Lock()
-	defer jsr.mutex.Unlock()
+	jsr.lock()
+	defer jsr.unlock()
 	for _, sf := range fileName {
 		err := jsr.LoadScriptFile(sf)
 		if err != nil {
@@ -120,22 +135,22 @@ func (jsr *JsRuntime) LoadScriptFiles(fileName ...string) error {
 }
 
 func (jsr *JsRuntime) BindScriptObject(name string, val interface{}) error {
-	jsr.mutex.Lock()
-	defer jsr.mutex.Unlock()
+	jsr.lock()
+	defer jsr.unlock()
 	err := jsr.vm.Set(name, val)
 	return err
 }
 
 func (jsr *JsRuntime) AddScript(script string) error {
-	jsr.mutex.Lock()
-	defer jsr.mutex.Unlock()
+	jsr.lock()
+	defer jsr.unlock()
 	_, err := jsr.vm.Run(script)
 	return err
 }
 
 func (jsr *JsRuntime) RunFunction(funcName string, params []string) (interface{}, error) {
-	jsr.mutex.Lock()
-	defer jsr.mutex.Unlock()
+	jsr.lock()
+	defer jsr.unlock()
 	cmd := funcName + "("
 
 	paramStr := ""
@@ -163,34 +178,42 @@ func (jsr *JsRuntime) RunFunction(funcName string, params []string) (interface{}
 }
 
 func (jsr *JsRuntime) CallFuncOnObj(objName, funcName string, param ...interface{}) (interface{}, error) {
-	jsr.mutex.Lock()
-	defer jsr.mutex.Unlock()
+	jsr.lock()
+	defer jsr.unlock()
+	return jsr.cfoSafe(objName,funcName,param...)
+}
+
+func (jsr *JsRuntime) cfoSafe(objName, funcName string, param ...interface{}) (interface{}, error){
+	defer func() {
+        if err := recover(); err != nil {
+            fmt.Println("work failed:", err)
+        }
+    }()
 	ob, err := jsr.vm.Get(objName)
 	if err != nil {
 		fmt.Println(err.Error())
+		return nil, err
 	}
+	
 	val, callErr := ob.Object().Call(funcName, param...)
 
 	if callErr != nil {
 		fmt.Println(callErr.Error())
+		return nil, err
 	}
 
-	v, _ := val.ToString()
-	// DEBUG
-	fmt.Println("OTTOTOTOTOTOTOTO -----------------------------------> " + v)
 	// Take the result and turn it into a go value.
 	obj, expErr := val.Export()
 
 	if expErr != nil {
 		return nil, fmt.Errorf("Error when exporting returned value: %s\n", expErr.Error())
 	}
-
 	return obj, nil
 }
 
 func (jsr *JsRuntime) CallFunc(funcName string, param ...interface{}) (interface{}, error) {
-	jsr.mutex.Lock()
-	defer jsr.mutex.Unlock()
+	jsr.lock()
+	defer jsr.unlock()
 	val, callErr := jsr.vm.Call(funcName, nil, param)
 
 	if callErr != nil {
@@ -228,28 +251,25 @@ func (jsre *JsrEvents) Subscribe(evtSource, evtType, evtTarget, subId string) {
 	sub := NewAteSub(evtSource, evtType, evtTarget, subId, jsre.jsr)
 	jsre.jsr.er.Subscribe(sub)
 	// Launch the sub channel.
-	go func() {
+	go func(s *AteSub) {
 		// DEBUG
-		fmt.Println("Starting event loop for atesub: " + sub.id)
+		fmt.Println("Starting event loop for atesub: " + s.id)
 		for {
-			select {
-			case evt, ok := <-sub.eventChan:
-				if !ok {
-					fmt.Println("Close message received. Closing ate subscription loop.")
-					sub.closeChan <- true
-					return
-				}
-				jsonString, err := json.Marshal(evt)
-				// _ , err := json.Marshal(evt)
-				if err != nil {
-					fmt.Println("Error when posting event to ate: " + err.Error())
-				}
-				sub.rt.CallFuncOnObj("events", "post", string(jsonString))
-			case <-sub.closeChan:
+			evt, ok := <-s.eventChan
+			if !ok {
+				fmt.Println("[Atë] Close message received.")
 				return
 			}
+			fmt.Println("[Atë] stuff coming in from event processor: " + evt.Event)
+			
+			jsonString, err := json.Marshal(evt)
+			// _ , err := json.Marshal(evt)
+			if err != nil {
+				fmt.Println("Error when posting event to ate: " + err.Error())
+			}
+			s.rt.CallFuncOnObj("events", "post", string(jsonString))
 		}
-	}()
+	}(sub)
 }
 
 func (jsre *JsrEvents) Unsubscribe(subId string) {
@@ -300,9 +320,4 @@ func (as *AteSub) Target() string {
 
 func (as *AteSub) Event() string {
 	return as.tpe
-}
-
-func (as *AteSub) Close() {
-	close(as.closeChan)
-	close(as.eventChan)
 }
