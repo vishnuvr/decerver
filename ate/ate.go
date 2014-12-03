@@ -86,24 +86,6 @@ func (jsr *JsRuntime) Shutdown() {
 	fmt.Println("Runtime shut down: " + jsr.name)
 }
 
-func (jsr *JsRuntime) lock(){
-	jsr.mutex.Lock()
-	jsr.lockLvl++
-	fmt.Printf("[JSRuntime] Locking counter: %d\n",jsr.lockLvl);
-	if jsr.lockLvl > 1 || jsr.lockLvl < 0 {
-		panic("Lock level: weeeeird")
-	}
-}
-
-func (jsr *JsRuntime) unlock(){
-	jsr.mutex.Unlock()
-	jsr.lockLvl--
-	fmt.Printf("[JSRuntime] Locking counter: %d\n",jsr.lockLvl);
-	if jsr.lockLvl > 1 || jsr.lockLvl < 0 {
-		panic("Lock level: weeeeird")
-	}
-}
-
 // TODO set up the interrupt channel.
 func (jsr *JsRuntime) Init(name string) {
 	jsr.vm.Set("jsr_events", jsr.jsrEvents)
@@ -112,8 +94,8 @@ func (jsr *JsRuntime) Init(name string) {
 }
 
 func (jsr *JsRuntime) LoadScriptFile(fileName string) error {
-	jsr.lock()
-	defer jsr.unlock()
+	jsr.mutex.Lock()
+	defer jsr.mutex.Unlock()
 	bytes, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		return err
@@ -123,8 +105,6 @@ func (jsr *JsRuntime) LoadScriptFile(fileName string) error {
 }
 
 func (jsr *JsRuntime) LoadScriptFiles(fileName ...string) error {
-	jsr.lock()
-	defer jsr.unlock()
 	for _, sf := range fileName {
 		err := jsr.LoadScriptFile(sf)
 		if err != nil {
@@ -135,22 +115,22 @@ func (jsr *JsRuntime) LoadScriptFiles(fileName ...string) error {
 }
 
 func (jsr *JsRuntime) BindScriptObject(name string, val interface{}) error {
-	jsr.lock()
-	defer jsr.unlock()
+	jsr.mutex.Lock()
+	defer jsr.mutex.Unlock()
 	err := jsr.vm.Set(name, val)
 	return err
 }
 
 func (jsr *JsRuntime) AddScript(script string) error {
-	jsr.lock()
-	defer jsr.unlock()
+	jsr.mutex.Lock()
+	defer jsr.mutex.Unlock()
 	_, err := jsr.vm.Run(script)
 	return err
 }
 
 func (jsr *JsRuntime) RunFunction(funcName string, params []string) (interface{}, error) {
-	jsr.lock()
-	defer jsr.unlock()
+	jsr.mutex.Lock()
+	defer jsr.mutex.Unlock()
 	cmd := funcName + "("
 
 	paramStr := ""
@@ -178,17 +158,8 @@ func (jsr *JsRuntime) RunFunction(funcName string, params []string) (interface{}
 }
 
 func (jsr *JsRuntime) CallFuncOnObj(objName, funcName string, param ...interface{}) (interface{}, error) {
-	jsr.lock()
-	defer jsr.unlock()
-	return jsr.cfoSafe(objName,funcName,param...)
-}
-
-func (jsr *JsRuntime) cfoSafe(objName, funcName string, param ...interface{}) (interface{}, error){
-	defer func() {
-        if err := recover(); err != nil {
-            fmt.Println("work failed:", err)
-        }
-    }()
+	jsr.mutex.Lock()
+	defer jsr.mutex.Unlock()
 	ob, err := jsr.vm.Get(objName)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -212,8 +183,8 @@ func (jsr *JsRuntime) cfoSafe(objName, funcName string, param ...interface{}) (i
 }
 
 func (jsr *JsRuntime) CallFunc(funcName string, param ...interface{}) (interface{}, error) {
-	jsr.lock()
-	defer jsr.unlock()
+	jsr.mutex.Lock()
+	defer jsr.mutex.Unlock()
 	val, callErr := jsr.vm.Call(funcName, nil, param)
 
 	if callErr != nil {

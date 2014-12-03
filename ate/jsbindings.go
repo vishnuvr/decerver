@@ -7,6 +7,9 @@ import (
 	"github.com/robertkrimen/otto"
 	//"github.com/eris-ltd/decerver-interfaces/events"
 	"math/big"
+	"time"
+	"log"
+	"github.com/eris-ltd/decerver-interfaces/core"
 )
 
 var BZERO *big.Int = big.NewInt(0)
@@ -15,25 +18,29 @@ func isZero(i *big.Int) bool {
 	return i.Cmp(BZERO) == 0
 }
 
+var ottoLog *log.Logger = core.NewLogger("JsRuntime")
+
 func BindDefaults(runtime *JsRuntime) {
 	vm := runtime.vm
 	
 	var err error
 	
+	bindHelpers(vm)
+	
 	// Networking.
 	_, err = vm.Run(`
 		
-		var jsonErrors = {
-			"E_PARSE"       : -32700,
-			"E_INVALID_REQ" : -32600,
-			"E_NO_METHOD"   : -32601,
-			"E_BAD_PARAMS"  : -32602,
-			"E_INTERNAL"    : -32603,
-			"E_SERVER"      : -32000
-		};
+		var E_PARSE = -32700;
+		var E_INVALID_REQ = -32600;
+		var	E_NO_METHOD = -32601;
+		var	E_BAD_PARAMS = -32602;
+		var	E_INTERNAL = -32603;
+		var	E_SERVER = -32000;
 		
 		// Network is an object that encapsulates all networking activity.
 		var network = {};
+		
+		// Http...
 		
 		network.incomingHttpCallback = function(){};
 		
@@ -58,20 +65,20 @@ func BindDefaults(runtime *JsRuntime) {
 		
 		network.newWsCallback = function(sessionObj){
 			return function (){
-				console.log("No callback registered for new websocket connections.");
+				Println("No callback registered for new websocket connections.");
 			};
 		};
 		
 		network.newWsSession = function(sessionObj){
 			var sId = sessionObj.SessionId();
-			console.log("Adding new session: " + sId);
+			Println("Adding new session: " + sId);
 			network.wsHandlers[sId] = network.newWsCallback(sessionObj);
 			network.wsSessions[sId] = sessionObj;
 		}
 		
 		network.deleteWsCallback = function(sessionObj){
 			return function (){
-				console.log("No callback registered for delete websocket connections.");
+				Println("No callback registered for delete websocket connections.");
 			};
 		};
 		
@@ -79,24 +86,24 @@ func BindDefaults(runtime *JsRuntime) {
 			var sId = sessionId;
 			var sessionObj = network.wsSessions[sId];
 			if(typeof network.wsSessions[sId] === "undefined" || network.wsSessions[sId] === null){
-				console.log("[Otto] No session with id " + sId + ". Cannot delete.");
+				Println("No session with id " + sId + ". Cannot delete.");
 				return;
 			}
-			console.log("[Otto] Deleting session: " + sId);
+			Println("Deleting session: " + sId);
 			network.wsSessions[sId] = null;
 			network.deleteWsCallback(sessionObj);
 		}
 		
 		network.incomingWsMsg = function(sessionId, reqJson) {
-			console.log("[Otto] Incoming websocket message.");
+			Println("Incoming websocket message.");
 			try {
 				var request = JSON.parse(reqJson);
 				if (typeof(request.Method) === "undefined" || request.Method === ""){
-					return JSON.stringify(network.getWsError(jsonErrors.E_NO_METHOD, "No method in request."));
+					return JSON.stringify(network.getWsError(E_NO_METHOD, "No method in request."));
 				} else {
 					var handler = network.wsHandlers[sessionId];
 					if (typeof handler !== "function"){
-						return JSON.stringify(network.getWsError(jsonErrors.E_SERVER, "Handler not registered for websocket session: " + sessionId.toString()) );
+						return JSON.stringify(network.getWsError(E_SERVER, "Handler not registered for websocket session: " + sessionId.toString()) );
 					}
 					var response = handler(request);
 					if(response === null){
@@ -104,48 +111,71 @@ func BindDefaults(runtime *JsRuntime) {
 					}
 					var respStr;
 					try {
+						response.Time = TimeMS();
 						respStr = JSON.stringify(response);
 					} catch (err) {
-						return JSON.stringify(network.getWsError(jsonErrors.E_INTERNAL, "Failed to marshal response: " + err));
+						return JSON.stringify(network.getWsError(E_INTERNAL, "Failed to marshal response: " + err));
 					}
 					return respStr;
 				}
 			} catch (err){
-				response = JSON.stringify(network.getWsError(jsonErrors.E_PARSE, err));
+				response = JSON.stringify(network.getWsError(E_PARSE, err));
 			}
 		}
 		
 		network.newWsRequest = function(){
 			return {
-				"Jsonrpc" : 2.0,
-				"Id" : "",
+				"Protocol" : "EWSMP1",
 				"Method" : "",
 				"Params" : "",
+				"Time" : "",
+				"Id" : ""
 			};
 		}
 		
 		network.getWsResponse = function(){
 			return {
-				"Jsonrpc" : 2.0,
-				"Id" : "",
+				"Protocol" : "EWSMP1",
+				"Method" : "",
 				"Result" : "",
 				"Error" : "",
+				"Time" : "",
+				"Id" : ""
 			};
 		}
 		
-		network.getWsError = function(code, message){
+		network.getWsErrorDetailed = function(code, message, data){
 			return {
-				"Jsonrpc" : 2.0,
-				"Id" : "",
+				"Protocol" : "EWSMP1",
+				"Method" : "",
 				"Result" : "",
+				"Time" : "",
+				"Id" : "",
 				"Error" : {
 					"Code" : code,
 					"Message" : message,
-					"Data" : null
+					"Data" : data
 				  }
 			};
 		}
 		
+		network.getWsError = function(error){
+			if (typeof(error) !== "string") {
+				error = "Server passed non string to error function (bad server-side javascript).";
+			}
+			return {
+				"Protocol" : "EWSMP1",
+				"Method" : "",
+				"Result" : "",
+				"Timestamp" : "",
+				"Id" : "",
+				"Error" : {
+					"Code" : E_INTERNAL,
+					"Message" : error,
+					"Data" : null
+				  }
+			};
+		}
 	`)
 
 	if err != nil {
@@ -154,7 +184,7 @@ func BindDefaults(runtime *JsRuntime) {
 		fmt.Println("[Atë] Networking script loaded.")
 	}
 
-	_, err = vm.Run(`
+	_ , err = vm.Run(`
 	
 		var events = {};
 		
@@ -181,20 +211,14 @@ func BindDefaults(runtime *JsRuntime) {
 		// Called by the go event processor.
 		events.post = function(eventJson){
 			
-			var event = JSON.parse(eventJson);
-			console.log(eventJson);
-			
+			var event = JSON.parse(eventJson);			
 			var eventId = events.generateId(event.Source, event.Event);
-			
 			var cfn = this.callbacks[eventId];
 			if (typeof(cfn) === "function"){
-				console.log("[Otto] passing event to callback function: " + eventId);
-				console.log(cfn.toString());
 				cfn(event);
 			} else {
-				console.log("No callback for event: " + eventId);
+				Println("No callback for event: " + eventId);
 			}
-			
 			return;
 		}
 		
@@ -208,11 +232,11 @@ func BindDefaults(runtime *JsRuntime) {
 	} else {
 		fmt.Println("[Atë] Event processing script loaded.")
 	}
-
-	bindHelpers(vm)
+	
 }
 
 func bindHelpers(vm *otto.Otto) {
+	
 	vm.Set("Add", func(call otto.FunctionCall) otto.Value {
 		p0, p1, errP := parseBin(call)
 		if errP != nil {
@@ -287,6 +311,13 @@ func bindHelpers(vm *otto.Otto) {
 
 		return result
 	})
+	
+	// Millisecond time.
+	vm.Set("TimeMS", func(call otto.FunctionCall) otto.Value {
+		ts := time.Now().UnixNano() >> 6
+		result, _ := vm.ToValue(ts)
+		return result
+	})
 
 	// Crypto
 	vm.Set("SHA3", func(call otto.FunctionCall) otto.Value {
@@ -303,6 +334,55 @@ func bindHelpers(vm *otto.Otto) {
 		result, _ := vm.ToValue(hex.EncodeToString(d.Sum(nil)))
 
 		return result
+	})
+	
+	vm.Set("Print", func(call otto.FunctionCall) otto.Value {
+		output := make([]interface{},0)
+		// TODO error
+		for _, argument := range call.ArgumentList {
+			arg, _ := argument.Export()
+			output = append(output, arg)
+		}
+		ottoLog.Print(output...)
+		return otto.Value{}
+	})
+	
+	vm.Set("Println", func(call otto.FunctionCall) otto.Value {
+		output := make([]interface{},0)
+		// TODO error
+		for _, argument := range call.ArgumentList {
+			arg, _ := argument.Export()
+			output = append(output, arg)
+		}
+		ottoLog.Println(output... )
+		return otto.Value{}
+	})
+	
+	vm.Set("Printf",func(call otto.FunctionCall) otto.Value {
+		args := call.ArgumentList
+		if args == nil || len(args) == 0 {
+			ottoLog.Println("")
+			return otto.Value{}
+		}
+		fmtStr, _ := args[0].Export()
+		fs, ok := fmtStr.(string)
+		if !ok {
+			ottoLog.Println("")
+			return otto.Value{}
+		}
+		
+		if len(args) == 1 {
+			ottoLog.Printf(fs)
+		} else {
+			output := make([]interface{},0)
+			// TODO error
+			for _, argument := range call.ArgumentList[1:] {
+				arg, _ := argument.Export()
+				output = append(output, arg)
+			}
+			ottoLog.Printf(fs, output...)
+		}
+		return otto.Value{}
 	})
 }
 
