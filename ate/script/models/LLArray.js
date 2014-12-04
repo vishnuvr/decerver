@@ -1,4 +1,4 @@
-Monk.LLArray = {
+esl.llarray = {
 	"name" : "LLArray",
 
 	//Constants
@@ -8,10 +8,10 @@ Monk.LLArray = {
 	"StartOffset" : "1",
 
 	//Structure
-	"ESizeSlot" : function(base){
+	"ESizeslot" : function(base){
 		return Add(base, this.ESizeOffset);
 	},
-	"MaxESlot" : function(slot){
+	"Maxeslot" : function(slot){
 		return Add(slot, this.MaxEOffset);
 	},
 	"StartSlot" : function(slot){
@@ -19,15 +19,15 @@ Monk.LLArray = {
 	},
 
 	//Gets
-	"GetESize" : function(addr, base){
-		return GetStorageAt(addr, this.ESizeSlot(base));
+	"ESize" : function(addr, base){
+		return GetStorageAt(addr, this.ESizeslot(base));
 	},
 	
-	"GetMaxE" : function(addr, base){
-		return GetStorageAt(addr, this.MaxESlot(base));
+	"MaxE" : function(addr, slot){
+		return GetStorageAt(addr, this.Maxeslot(slot));
 	},
 
-	"GetElement" : function(addr, base, slot, index){
+	"Element" : function(addr, base, slot, index){
 		var Esize = this.GetESize(addr, base);
 		if(this.GetMaxE(addr, slot) < index){
 			return "0";

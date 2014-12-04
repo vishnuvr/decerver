@@ -1,11 +1,8 @@
-LLKeyValue = {
+esl.llkv = {
 	"name" 	: "LLKeyValue",
 
-	//Constants
-	//NONE
-
 	//Functions
-	"value" : function(addr, slot, offset){
+	"Value" : function(addr, slot, offset){
 		return GetStorageAt(addr, Add(slot, offset));
 	},
 }

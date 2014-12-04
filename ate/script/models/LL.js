@@ -1,62 +1,122 @@
-LL = {
+esl.ll = {
 	"name" : "LinkedList"
 
 	//Structure
 	"CTS" : function(name, key){
-		return Add(Monk.StdVar.Vari(name), Add(Mul(Mod(key, Exp("0x100", "20")), Exp("0x100", "3")), Exp("0x100","2"));
+		return Add(esl.stdvar.Vari(name), Add(Mul(Mod(key, Exp("0x100", "20")), Exp("0x100", "3")), Exp("0x100","2"));
 	},
 	"CTK" : function(slot){
 		return Mod(Div(slot, Exp("0x100","3")), Exp("0x100","20"));
 	},
 
 	"TailSlot" : function(name){
-		return Monk.LLLL.TailSlot(Monk.StdVar.Vari(name));
+		return esl.llll.TailSlot(esl.stdvar.Vari(name));
 	},
 	"HeadSlot" : function(name){
-		return Monk.LLLL.HeadSlot(Monk.StdVar.Vari(name));
+		return esl.llll.HeadSlot(esl.stdvar.Vari(name));
 	},
 	"LenSlot" : function(name){
-		return Monk.LLLL.LenSlot(Monk.StdVar.Vari(name));
+		return esl.llll.LenSlot(esl.stdvar.Vari(name));
 	},
 
 	"MainSlot" : function(name, key){
-		return Monk.LLLL.MainSlot(this.CTS(name, key));
+		return esl.llll.MainSlot(this.CTS(name, key));
 	},
 	"PrevSlot" : function(name, key){
-		return Monk.LLLL.Prevlot(this.CTS(name, key));
+		return esl.llll.Prevlot(this.CTS(name, key));
 	},
 	"NextSlot" : function(name, key){
-		return Monk.LLLL.NextSlot(this.CTS(name, key));
+		return esl.llll.NextSlot(this.CTS(name, key));
 	},
 
 	//Gets
-	"GetTail" : function(addr, name){
-		return GetStorageAt(addr, this.TailSlot(name));
+	"TailAddr" : function(addr, name){
+		tail=GetStorageAt(addr, this.TailSlot(name));
+		if(tail=="0"){
+			return null;
+		}
+		else{
+			return tail;
+		}
 	},
-	"GetHead" : function(addr, name){
-		return GetStorageAt(addr, this.HeadSlot(name));
+	"HeadAddr" : function(addr, name){
+		head=GetStorageAt(addr, this.HeadSlot(name));
+		if(head=="0"){
+			return null;
+		}
+		else{
+			return head;
+		}
 	},
-	"GetLen"  : function(addr, name){
+	"Tail" : function(addr, name){
+		head=GetStorageAt(addr, this.HeadSlot(name));
+		if(head=="0"){
+			return null;
+		}
+		else{
+			return this.CTK(tail);
+		}
+	},
+	"Head" : function(addr, name){
+		head=GetStorageAt(addr, this.HeadSlot(name));
+		if(head=="0"){
+			return null;
+		}
+		else{
+			return this.CTK(head);
+		}
+	},
+	"Len"  : function(addr, name){
 		return GetStorageAt(addr, this.LenSlot(name));
 	},
 
-	"GetMain" : function(addr, name, key){
+	"Main" : function(addr, name, key){
 		return GetStorageAt(addr, this.MainSlot(name, key));
 	},
-	"GetPrev" : function(addr, name, key){
-		return GetStorageAt(addr, this.PrevSlot(name, key));
+	"PrevAddr" : function(addr, name, key){
+		prev=GetStorageAt(addr, this.PrevSlot(name, key));
+		if(prev==="0"){
+			return null;
+		}
+		else{
+			return prev;
+		}
 	},
-	"GetNext" : function(addr, name, key){
-		return GetStorageAt(addr, this.NextSlot(name, key));
+	"NextAddr" : function(addr, name, key){
+		next=GetStorageAt(addr, this.NextSlot(name, key));
+		if(next==="0"){
+			return null;
+		}
+		else{
+			return next;
+		}
+	},
+	"Prev" : function(addr, name, key){
+		prev=GetStorageAt(addr, this.PrevSlot(name, key));
+		if(prev==="0"){
+			return null;
+		}
+		else{
+			return this.CTK(prev);
+		}	
+	},
+	"Next" : function(addr, name, key){
+		next=GetStorageAt(addr, this.NextSlot(name, key));
+		if(next==="0"){
+			return null;
+		}
+		else{
+			return this.CTK(next);
+		}
 	},
 
 	//Gets the whole list. Note the separate function which gets the keys
 	"GetList" : function(addr, name){
 		var list = [];
-		var current = this.GetTail(addr, name);
-		while(!IsZero(current)){
-			list.push(this.GetMain(addr, current));
-			current = this.GetNext(addr, current);
+		var current = this.Tail(addr, name);
+		while(current!=null){
+			list.push(this.Main(addr, current));
+			current = this.Next(addr, current);
 		}
 
 		return list;
@@ -64,12 +124,25 @@ LL = {
 
 	"GetKeys" : function(addr, name){
 		var keys = [];
-		var current = this.GetTail(addr, name);
-		while(!IsZero(current)){
-			list.push(this.CTK(current));
-			current = this.GetNext(addr, current);
+		var current = this.Tail(addr, name);
+		while(current!=null){
+			list.push(current);
+			current = this.Next(addr, current);
 		}
 
 		return keys;
 	},
+
+	"GetPairs" : function(addr, name){
+       var list = [];
+       var current = this.Tail(addr, name);
+       while(current!=null){
+           var pair = {};
+           pair.Key = current;
+           pair.Value = this.Main(addr, current);
+           list.push(pair);
+           current = this.Next(addr, current);
+       }       
+        return list;
+   },
 }

@@ -1,4 +1,4 @@
-LLLL = {
+esl.llll = {
 	"name" : "LLLinkedList"
 
 	//Constants
@@ -34,23 +34,23 @@ LLLL = {
 	},
 
 	//Gets
-	"GetTail" : function(addr, base){
+	"Tail" : function(addr, base){
 		return GetStorageAt(addr, this.TailSlot(base));
 	},
-	"GetHead" : function(addr, base){
+	"Head" : function(addr, base){
 		return GetStorageAt(addr, this.HeadSlot(base));
 	},
-	"GetLen"  : function(addr, base){
+	"Len"  : function(addr, base){
 		return GetStorageAt(addr, this.LenSlot(base));
 	}
 
-	"GetMain" : function(addr, slot){
+	"Main" : function(addr, slot){
 		return GetStorageAt(addr, this.MainSlot(slot));
 	},
-	"GetPrev" : function(addr, slot){
+	"Prev" : function(addr, slot){
 		return GetStorageAt(addr, this.PrevSlot(slot));
 	},
-	"GetNext" : function(addr, slot){
+	"Next" : function(addr, slot){
 		return GetStorageAt(addr, this.NextSlot(slot));
 	}
 
