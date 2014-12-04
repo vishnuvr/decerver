@@ -3,7 +3,7 @@ Monk.Single = {
 
 	//Structure
 	"ValueSlot" : function(varname){
-		return Monk.StdVarSpace(Monk.StdVarSpace.Vari(varname));
+		return Monk.StdVarSpace.VarBase(Monk.StdVarSpace.Vari(varname));
 	},
 
 	//Gets
