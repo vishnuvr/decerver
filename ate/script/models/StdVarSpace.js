@@ -10,7 +10,7 @@ Monk.StdVarSpace = {
 		return Add(Mul(NSBase, this.StdVarOffset)),Mul(Div(SHA3(varname),Exp("0x100", "24")),Exp("0x100", "23"));
 	},
 	"VarBase" 	: function(varname){
-		return Add(varname, this.StdVarOffset)
+		return Add(varname, this.VarSlotSize)
 	},
 
 	//Data Slots
