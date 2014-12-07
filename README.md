@@ -26,9 +26,6 @@ Out of the box, the following generalized interfaces are provided:
   - for integrating real world, [legalmarkdown](https://github.com/eris-ltd/legalmarkdown) based contracts into your smart contract or decentralized stack
 - scripts runner
   - for running jobs either in response to an inbound API call, in response to an event within one of the decentralized stack modules, or on a schedule
-- p2p communications layer
-  - two p2p communications layers are compiled by default: tox and bitmessage
-  - if and when other mature p2p communications sysstems come online we will happily accept pull requests for interfaces which wrap those packages
 
 For each of these packages, the deCerver acts as the hub for the entire system allowing all of these layers to talk to one another via a mediated -- javascript based scripting layer. The entire system operates in the manner shown below:
 
