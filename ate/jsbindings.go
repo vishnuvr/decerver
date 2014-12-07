@@ -337,6 +337,7 @@ func bindHelpers(vm *otto.Otto) {
 		if err1 != nil {
 			return otto.UndefinedValue()
 		}
+		fmt.Println("String from hex: " + string(bts))
 		result, _ := vm.ToValue(string(bts))
 
 		return result
