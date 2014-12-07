@@ -6,10 +6,10 @@ import (
 	"github.com/obscuren/sha3"
 	"github.com/robertkrimen/otto"
 	//"github.com/eris-ltd/decerver-interfaces/events"
+	"github.com/eris-ltd/decerver-interfaces/core"
+	"log"
 	"math/big"
 	"time"
-	"log"
-	"github.com/eris-ltd/decerver-interfaces/core"
 )
 
 var BZERO *big.Int = big.NewInt(0)
@@ -22,11 +22,11 @@ var ottoLog *log.Logger = core.NewLogger("JsRuntime")
 
 func BindDefaults(runtime *JsRuntime) {
 	vm := runtime.vm
-	
+
 	var err error
-	
+
 	bindHelpers(vm)
-	
+
 	// Networking.
 	_, err = vm.Run(`
 		
@@ -184,7 +184,7 @@ func BindDefaults(runtime *JsRuntime) {
 		fmt.Println("[Atë] Networking script loaded.")
 	}
 
-	_ , err = vm.Run(`
+	_, err = vm.Run(`
 	
 		var events = {};
 		
@@ -232,11 +232,11 @@ func BindDefaults(runtime *JsRuntime) {
 	} else {
 		fmt.Println("[Atë] Event processing script loaded.")
 	}
-	
+
 }
 
 func bindHelpers(vm *otto.Otto) {
-	
+
 	vm.Set("Add", func(call otto.FunctionCall) otto.Value {
 		p0, p1, errP := parseBin(call)
 		if errP != nil {
@@ -273,8 +273,8 @@ func bindHelpers(vm *otto.Otto) {
 		if errP != nil {
 			return otto.UndefinedValue()
 		}
-		fmt.Println("DIV Nom: " + p0.String());
-		fmt.Println("Div Denom: " + p1.String());
+		fmt.Println("DIV Nom: " + p0.String())
+		fmt.Println("Div Denom: " + p1.String())
 		if isZero(p1) {
 			return otto.NaNValue()
 		}
@@ -291,6 +291,19 @@ func bindHelpers(vm *otto.Otto) {
 			return otto.NaNValue()
 		}
 		result, _ := vm.ToValue("0x" + hex.EncodeToString(p0.Mod(p0, p1).Bytes()))
+		return result
+	})
+	
+	vm.Set("Equals", func(call otto.FunctionCall) otto.Value {
+		p0, p1, errP := parseBin(call)
+		if errP != nil {
+			return otto.UndefinedValue()
+		}
+		ret := false
+		if p0.Cmp(p1) == 0 {
+			ret = true;
+		}
+		result, _ := vm.ToValue(ret)
 		return result
 	})
 
@@ -314,7 +327,7 @@ func bindHelpers(vm *otto.Otto) {
 
 		return result
 	})
-	
+
 	vm.Set("HexToString", func(call otto.FunctionCall) otto.Value {
 		prm, err0 := call.Argument(0).ToString()
 		if err0 != nil {
@@ -325,29 +338,37 @@ func bindHelpers(vm *otto.Otto) {
 			return otto.UndefinedValue()
 		}
 		result, _ := vm.ToValue(string(bts))
-		
+
 		return result
 	})
-	
+
 	vm.Set("StringToHex", func(call otto.FunctionCall) otto.Value {
 		prm, err0 := call.Argument(0).ToString()
 		fmt.Println("[OTTO] String: " + prm)
 		if err0 != nil {
 			return otto.UndefinedValue()
 		}
-		res := "0x" + hex.EncodeToString([]byte(prm))
+		bts := []byte(prm)
+		
+		if 32 > len(bts) {
+			zeros := make([]byte, 32 - len(bts) )
+			bts = append(zeros,bts...)
+		}
+		res := "0x" + hex.EncodeToString(bts)
+		fmt.Println("[OTTO] String hex: " + res)
+		fmt.Printf("[OTTO] len: %d\n", len(bts))
 		result, _ := vm.ToValue(res)
-		fmt.Println("[OTTO] String: " + res)
+		
 		return result
 	})
-	
+
 	// Millisecond time.
 	vm.Set("TimeMS", func(call otto.FunctionCall) otto.Value {
 		ts := time.Now().UnixNano() >> 6
 		result, _ := vm.ToValue(ts)
 		return result
 	})
-	
+
 	// Crypto
 	vm.Set("SHA3", func(call otto.FunctionCall) otto.Value {
 		prm, err0 := call.Argument(0).ToString()
@@ -360,20 +381,20 @@ func bindHelpers(vm *otto.Otto) {
 		h, err := hex.DecodeString(prm)
 		fmt.Printf("Hashed value: %s\n", string(h))
 		if err != nil {
-			fmt.Printf("Error hashing, " + err.Error());
+			fmt.Printf("Error hashing, " + err.Error())
 			return otto.UndefinedValue()
 		}
 		d := sha3.NewKeccak256()
 		d.Write(h)
 		v := hex.EncodeToString(d.Sum(nil))
-		fmt.Println("SHA3: " + v);
+		fmt.Println("SHA3: " + v)
 		result, _ := vm.ToValue("0x" + v)
-		
+
 		return result
 	})
-	
+
 	vm.Set("Print", func(call otto.FunctionCall) otto.Value {
-		output := make([]interface{},0)
+		output := make([]interface{}, 0)
 		// TODO error
 		for _, argument := range call.ArgumentList {
 			arg, _ := argument.Export()
@@ -382,19 +403,19 @@ func bindHelpers(vm *otto.Otto) {
 		ottoLog.Print(output...)
 		return otto.Value{}
 	})
-	
+
 	vm.Set("Println", func(call otto.FunctionCall) otto.Value {
-		output := make([]interface{},0)
+		output := make([]interface{}, 0)
 		// TODO error
 		for _, argument := range call.ArgumentList {
 			arg, _ := argument.Export()
 			output = append(output, arg)
 		}
-		ottoLog.Println(output... )
+		ottoLog.Println(output...)
 		return otto.Value{}
 	})
-	
-	vm.Set("Printf",func(call otto.FunctionCall) otto.Value {
+
+	vm.Set("Printf", func(call otto.FunctionCall) otto.Value {
 		args := call.ArgumentList
 		if args == nil || len(args) == 0 {
 			ottoLog.Println("")
@@ -406,11 +427,11 @@ func bindHelpers(vm *otto.Otto) {
 			ottoLog.Println("")
 			return otto.Value{}
 		}
-		
+
 		if len(args) == 1 {
 			ottoLog.Printf(fs)
 		} else {
-			output := make([]interface{},0)
+			output := make([]interface{}, 0)
 			// TODO error
 			for _, argument := range call.ArgumentList[1:] {
 				arg, _ := argument.Export()
