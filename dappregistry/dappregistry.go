@@ -2,18 +2,23 @@ package dappregistry
 
 import (
 	// "path/filepath"
-	"fmt"
-	"io/ioutil"
-	"os"
-	//"crypto/sha1"
-	//"bytes"
+	"bytes"
+	"crypto/sha1"
+	"encoding/hex"
 	"encoding/json"
+	"github.com/eris-ltd/decerver-interfaces/api"
 	"github.com/eris-ltd/decerver-interfaces/core"
 	"github.com/eris-ltd/decerver-interfaces/dapps"
+	"github.com/syndtr/goleveldb/leveldb"
+	"io/ioutil"
+	"os"
 	"path"
 	"strings"
 	"sync"
+	"log"
 )
+
+var logger *log.Logger = core.NewLogger("Dapp Registry")
 
 type Dapp struct {
 	models      map[string]string
@@ -27,42 +32,48 @@ func NewDapp() *Dapp {
 }
 
 type DappRegistry struct {
-	mutex *sync.Mutex
-	keys  map[string]string
-	dapps map[string]*Dapp
-	ate   core.Runtime
+	mutex  *sync.Mutex
+	keys   map[string]string
+	dapps  map[string]*Dapp
+	ate    core.RuntimeManager
+	server api.Server
+	hashDB *leveldb.DB
 }
 
-func NewDappRegistry(ate core.Runtime) *DappRegistry {
+func NewDappRegistry(ate core.RuntimeManager, server api.Server) *DappRegistry {
 	dr := &DappRegistry{}
 	dr.keys = make(map[string]string)
 	dr.dapps = make(map[string]*Dapp)
 	dr.mutex = &sync.Mutex{}
 	dr.ate = ate
+	dr.server = server
 	return dr
 }
 
-func (dc *DappRegistry) LoadDapps(directory string) error {
-	fmt.Println("[Dapp Registry] Loading dapps")
+func (dc *DappRegistry) LoadDapps(directory, dbDir string) error {
+	dbDir = path.Join(dbDir,"dapp_stored_hashes")
+	dc.hashDB, _ = leveldb.OpenFile(dbDir,nil)
+	defer dc.hashDB.Close()
+	logger.Println("Loading dapps")
 	files, err := ioutil.ReadDir(directory)
+	
 	if err != nil {
 		return err
 	}
-
+	
 	if len(files) == 0 {
-		fmt.Println("[Dapp Registry] No dapps has been downloaded")
+		logger.Println("No dapps has been downloaded.")
 		return nil
 	}
-
+	
 	for _, fileInfo := range files {
 		if fileInfo.IsDir() {
 			// This is a dapp
 			pth := path.Join(directory, fileInfo.Name())
 			dc.LoadDapp(pth)
 		}
-
 	}
-
+	logger.Println("Done loading dapps.")
 	return nil
 }
 
@@ -71,34 +82,18 @@ func (dc *DappRegistry) LoadDapp(dir string) {
 	dc.mutex.Lock()
 	defer dc.mutex.Unlock()
 	pkDir := path.Join(dir, dapps.PACKAGE_FILE_NAME)
-	_, err1 := os.Stat(pkDir)
-	if err1 != nil {
-		fmt.Printf("[Dapp Registry] Error loading 'package.json' for dapp '%s'. Skipping...\n", dir)
-		fmt.Println(err1.Error())
+	_, errPfn := os.Stat(pkDir)
+	if errPfn != nil {
+		logger.Printf("Error loading 'package.json' for dapp '%s'. Skipping...\n", dir)
+		logger.Println(errPfn.Error())
 		return
 	}
-	/*
-		idxDir := path.Join(dir,dapps.INDEX_FILE_NAME)
-		_ , err1 = os.Stat(idxDir)
-		if err1 != nil {
-			fmt.Printf("Error loading 'index.html' for dapp '%s'. Skipping...\n", dir)
-			fmt.Println(err1.Error())
-			return
-		}
-	*/
-
-	/*
-		mdFi , err3 := os.Stat(mdDir)
-		if err3 != nil || os.IsNotExist(mdFi) {
-			fmt.Printf("Dapp '%s' does not have a 'package.json' file. Skipping...\n", dir)
-			return err2
-		}*/
-
+	
 	pkBts, errP := ioutil.ReadFile(pkDir)
 
 	if errP != nil {
-		fmt.Printf("[Dapp Registry] Error loading 'package.json' for dapp '%s'. Skipping...\n", dir)
-		fmt.Println(errP.Error())
+		logger.Printf("Error loading 'package.json' for dapp '%s'. Skipping...\n", dir)
+		logger.Println(errP.Error())
 		return
 	}
 
@@ -106,93 +101,168 @@ func (dc *DappRegistry) LoadDapp(dir string) {
 	pkUnmErr := json.Unmarshal(pkBts, packageFile)
 
 	if pkUnmErr != nil {
-		fmt.Printf("[Dapp Registry] The 'package.json' file for dapp '%s' is corrupted. Skipping...\n", dir)
-		fmt.Println(pkUnmErr.Error())
+		logger.Printf("The 'package.json' file for dapp '%s' is corrupted. Skipping...\n", dir)
+		logger.Println(pkUnmErr.Error())
+	}
+
+	idxDir := path.Join(dir, dapps.INDEX_FILE_NAME)
+	_, errIf := os.Stat(idxDir)
+	
+	if errIf != nil {
+		logger.Printf("Cannot find an 'index.html' file for dapp '%s'. Skipping...\n", dir)
+		logger.Println(errIf.Error())
+		return
+	}
+
+	modelDir := path.Join(dir, dapps.MODELS_FOLDER_NAME)
+
+	modelFi, errMfi := os.Stat(modelDir)
+	logger.Print("## Loading dapp: " + packageFile.Name + " ##")
+	if errMfi != nil {
+		logger.Printf("Error loading 'models' directory for dapp '%s'. Skipping.\n", dir)
+		logger.Println(errMfi.Error())
+		return
+	}
+
+	if !modelFi.IsDir() {
+		logger.Printf("Error loading 'models' directory for dapp '%s': Not a directory.\n", dir)
+		return
+	}
+
+	files, err := ioutil.ReadDir(modelDir)
+	if err != nil {
+		logger.Printf("Error loading 'models' directory for dapp '%s': Not a directory.\n", dir)
+		return
+	}
+
+	if len(files) == 0 {
+		logger.Printf("No models in model dir for app '%s', skipping.\n", dir)
+		return
 	}
 
 	dapp := NewDapp()
 	dapp.path = dir
 	dapp.packageFile = packageFile
 
-	// TODO the hashing thing.
+	// Hash the dapp files and check.
+	hash := dc.HashApp(modelDir)
 
-	dc.dapps[packageFile.Name] = dapp
-
-	modelDir := path.Join(dir, dapps.MODELS_FOLDER_NAME)
-
-	modelFi, errMfi := os.Stat(modelDir)
-
-	if errMfi != nil {
-		fmt.Printf("[Dapp Registry] Error loading 'Models' directory for dapp '%s'. Skipping models\n.", dir)
-		fmt.Println(errMfi.Error())
+	if hash == nil {
+		logger.Println("Failed to get hash of dapp files, skipping. Dapp: " + dir)
 		return
 	}
-
-	if !modelFi.IsDir() {
-		fmt.Printf("[Dapp Registry] Error loading 'Models' directory for dapp '%s': Not a directory.\n", dir)
-		return
+	
+	oldHash, errH := dc.hashDB.Get([]byte(dapp.path), nil)
+	
+	if errH != nil {
+		// this is a new dapp
+		
+		/*
+		confChan := make(chan bool)
+		
+		ret <- confChan
+		if ret {
+			
+		} else {
+			logger.Println("User denied, skipping. Dapp: " + dir)
+			return	
+		}
+		*/
+		logger.Printf("Adding new hash '%s' to folder '%s'.\n",hex.EncodeToString(hash),dir)
+		dc.hashDB.Put([]byte(dapp.path),hash,nil)
+	}
+	
+	if errH == nil && !bytes.Equal(hash,oldHash) {
+		// TODO this is an old but updated dapp.
+		logger.Printf("Hash mismatch: New: '%s', Old: '%s'.\n",hex.EncodeToString(hash),hex.EncodeToString(oldHash))
+		dc.hashDB.Put([]byte(dapp.path),hash,nil)
+	} else {
+		logger.Printf("Hash of '%s' matches the stored value: '%s'.\n", dir, hex.EncodeToString(hash))
 	}
 
-	fmt.Println("[Dapp Registry] Dapp module directory: " + modelDir)
-	files, err := ioutil.ReadDir(modelDir)
-	if err != nil {
-		fmt.Printf("[Dapp Registry] Error loading 'Models' directory for dapp '%s': Not a directory.\n", dir)
-		return
-	}
+	dc.dapps[packageFile.Id] = dapp
 
-	if len(files) == 0 {
-		fmt.Printf("[Dapp Registry] No models in model dir for app '%s', skipping.\n", dir)
-		return
-	}
+	// Create a new javascript runtime
+	id := dapp.packageFile.Id
+
+	rt := dc.ate.CreateRuntime(id)
+	dc.server.RegisterDapp(id)
 
 	for _, fileInfo := range files {
 		fp := path.Join(modelDir, fileInfo.Name())
 		if fileInfo.IsDir() {
-			fmt.Println("[Dapp Registry] Action models are not searched for recursively (yet), skipping directory: " + fp)
+			logger.Println("Action models are not searched for recursively (yet), skipping directory: " + fp)
 			// Skip for now.
 			continue
 		}
-		
+
 		if strings.ToLower(path.Ext(fp)) != ".js" {
-			fmt.Println("[Dapp Registry] Skipping non .js file: " + fp)
+			//fmt.Println("[Dapp Registry] Skipping non .js file: " + fp)
 			continue
 		}
 
 		fileBts, errFile := ioutil.ReadFile(fp)
 		if errFile != nil {
-			fmt.Println("[Dapp Registry] Error reading javascript file: " + fp)
+			logger.Println("Error reading javascript file: " + fp)
 		}
-		
+
 		jsFile := string(fileBts)
-		
-		
-		
-		parseErr := dc.ate.ParseScript(jsFile)
-		
-		if parseErr != nil {
-			fmt.Printf("[Dapp Registry] Error parsing javascript file: %s\nDUMP: \n%s\n", jsFile, parseErr.Error())
+
+		addErr := rt.AddScript(jsFile)
+
+		if addErr != nil {
+			logger.Printf("Error running javascript file: \n%s\n%s\n", jsFile, addErr.Error())
 			continue
 		}
-		
-		addErr := dc.ate.AddScript(jsFile)
-		
-		if addErr != nil {
-			fmt.Printf("[Dapp Registry] Error running javascript file: %s\nDUMP: \n%s\n", jsFile, addErr.Error())
-		}
-		
-		result, erk := dc.ate.RunFunction("Shitty.CreateFile","nothing");
-		
-		if erk != nil {
-			fmt.Println(erk.Error())	
-		} else {
-			fmt.Printf("%v\n",result)
-		}
+
+		logger.Printf("Loaded javascript file '%s'\n", path.Base(fp))
+
 	}
 
 	return
 }
 
 func (dc *DappRegistry) HashApp(dir string) []byte {
+	logger.Println("Hashing models folder: " + dir)
+	hashes := dc.HashDir(dir)
+	if hashes == nil {
+		return nil
+	}
+	hash := sha1.Sum(hashes)
+	return hash[:]
+}
 
-	return nil
+func (dc *DappRegistry) HashDir(directory string) []byte {
+	files, err := ioutil.ReadDir(directory)
+	if err != nil {
+		logger.Println(err.Error())
+		return nil
+	}
+	if len(files) == 0 {
+		logger.Println("No files in directory: " + directory)
+		return nil
+	}
+	hashes := make([]byte, 0)
+	for _, fileInfo := range files {
+		if fileInfo.IsDir() {
+			// This is a dapp
+			pth := path.Join(directory, fileInfo.Name())
+			hs := dc.HashDir(pth)
+			if hs != nil {
+				hashes = append(hashes, hs...)
+			} else {
+				return nil
+			}
+		} else {
+			fBts, errF := ioutil.ReadFile(path.Join(directory, fileInfo.Name()))
+			if errF != nil {
+				logger.Printf(" Error loading '%s', skipping...\n", fileInfo.Name())
+				logger.Println(errF.Error())
+				return nil
+			}
+			hash := sha1.Sum(fBts)
+			hashes = append(hashes, hash[:]...)
+		}
+	}
+	return hashes
 }

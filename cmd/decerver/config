@@ -1,7 +1,0 @@
-{
-	"config_file": "config",
-	"root_dir": "/home/andreas/.deCerver",
-	"log_file": "",
-	"MaxClients": 10,
-	"Port": 3000
-}

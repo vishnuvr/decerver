@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/eris-ltd/decerver-interfaces/core"
 	"io/ioutil"
 	"os"
 	"os/user"
 	"path"
-	"github.com/eris-ltd/decerver-interfaces/core"
 )
 
 var (
@@ -22,23 +22,23 @@ var DefaultConfig = &core.DCConfig{
 	RootDir:    path.Join(usr.HomeDir, ".decerver"),
 	LogFile:    "",
 	MaxClients: 10,
-	Port : 3000,
+	Port:       3000,
 }
 
 func (dc *DeCerver) WriteConfig(dcConfig *core.DCConfig) {
 	b, err := json.Marshal(dcConfig)
-	
+
 	if err != nil {
 		fmt.Println("error marshalling config:", err)
 		return
 	}
-	
+
 	var out bytes.Buffer
 	json.Indent(&out, b, "", "\t")
-	ioutil.WriteFile((path.Join(dc.paths.Root(),"config.json")),out.Bytes(),0600)
+	ioutil.WriteFile((path.Join(dc.paths.Root(), "config.json")), out.Bytes(), 0600)
 }
 
-func (dc *DeCerver) GetConfig() *core.DCConfig{
+func (dc *DeCerver) GetConfig() *core.DCConfig {
 	return dc.config
 }
 

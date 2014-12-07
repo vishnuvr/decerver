@@ -2,19 +2,19 @@ package main
 
 import (
 	"github.com/eris-ltd/decerver"
-	"github.com/eris-ltd/thelonious/monk"
 	"github.com/eris-ltd/decerver-interfaces/glue/ipfs"
+	"github.com/eris-ltd/decerver-interfaces/glue/monk"
 )
 
 func main() {
-	
 	dc := decerver.NewDeCerver()
-	mm := monk.NewMonk(nil)
+	mjs := monkjs.NewMonkJs()
 	fm := ipfs.NewIpfs()
-	dc.LoadModule(mm)
+	
+	dc.LoadModule(mjs)
 	dc.LoadModule(fm)
 	
 	dc.Init()
-	// Run decerver
+	//Run decerver
 	dc.Start()
 }

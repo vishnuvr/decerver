@@ -1,0 +1,32 @@
+; Simple contract that lets you store a two-slot file hash using the file name as key.
+;
+; (calldataload 0) is the file name
+; (calldataload 32) is the first 30 bytes of the hash
+; (calldataload 64) is the last 2 bytes of the hash
+
+; Definitions
+
+(def "filename" $0)		; $N is shorthand for (calldataload N)
+(def "filehash1" $32)
+(def "filehash2" $64)
+
+; Here starts the init section. There is no code in init - we just return the body.
+{
+	(returnlll {		
+		; if predicate is true - do block A, otherwise do block B
+		; Check if anything is stored at storage address "filename" (e.g. @@filename is not 0)
+		(if @@filename 
+			; If something is stored, exit by returning 0
+			{
+				(return 0)
+			}
+			; Otherwise, we store the hashes at address "filename" and "filename" + 1
+			{
+				[[filename]] filehash1
+				[[(+ 1 filename]] filehash2
+				(return 1)
+			}
+		)
+		 
+	} )
+}

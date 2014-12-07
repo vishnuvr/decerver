@@ -3,12 +3,35 @@ package events
 import (
 	"fmt"
 	"github.com/eris-ltd/decerver-interfaces/events"
-	"strings"
+	"github.com/eris-ltd/decerver-interfaces/modules"
 	"sync"
 )
 
+type SubMap map[string]*subscriptions
+
 type subscriptions struct {
 	srs []events.Subscriber
+}
+
+func (ss *subscriptions) add(sub events.Subscriber) {
+	ss.srs = append(ss.srs, sub)
+}
+
+func (ss *subscriptions) remove(subId string) bool {
+	theIdx := -1
+	for i, sub := range ss.srs {
+		if sub.Id() == subId {
+			theIdx = i
+			break
+		}
+	}
+	if theIdx >= 0 {
+		// DEBUG
+		fmt.Println("Subscriber removed: " + subId)
+		ss.srs = append(ss.srs[:theIdx], ss.srs[theIdx+1:]...)
+		return true
+	}
+	return false
 }
 
 func NewSubscriptions() *subscriptions {
@@ -18,145 +41,88 @@ func NewSubscriptions() *subscriptions {
 }
 
 type EventProcessor struct {
-	mutex    sync.Mutex
-	postChan chan events.Event
-	// Sorts by source, then by event name.
-	channels map[string]*subscriptions
-	glob     *subscriptions
+	mutex          *sync.Mutex
+	postChan       chan events.Event
+	channels       map[string]SubMap
+	byId           map[string]events.Subscriber
+	moduleRegistry modules.ModuleRegistry
 }
 
-func NewEventProcessor() *EventProcessor {
+func NewEventProcessor(mr modules.ModuleRegistry) *EventProcessor {
 	ep := &EventProcessor{}
-	ep.channels = make(map[string]*subscriptions)
-	ep.glob = NewSubscriptions()
-	/*
-		for _ , mod := range modules {
-			ep.channels[mod] = NewSubscriptions()
-		}
-	*/
-
-	ep.postChan = make(chan events.Event)
+	ep.mutex = &sync.Mutex{}
+	ep.channels = make(map[string]SubMap)
+	// DEBUG
+	fmt.Printf("[Events] Subscriber map created: %v\n", ep.channels)
+	ep.byId = make(map[string]events.Subscriber)
+	ep.postChan = make(chan events.Event, 64)
+	ep.moduleRegistry = mr
 	return ep
 }
 
 func (ep *EventProcessor) Post(e events.Event) {
 	ep.mutex.Lock()
-	fmt.Println("Posting stuff " + e.Target)
-	src := e.Source
-	fmt.Println(src)
+	defer ep.mutex.Unlock()
 
-	subs := ep.glob
-	for _, sub := range subs.srs {
-		fmt.Println("Found service")
-		fmt.Printf("Chan: %v\n",sub)
-		sub.Channel() <- e
+	src := e.Source
+	// DEBUG
+	fmt.Println("Receiving event '" + e.Event + "' from '" + e.Source + "'.")
+
+	sourceSubs := ep.channels[src]
+	if sourceSubs == nil {
+		return
 	}
 
-	if src != "*" {
-		subs = ep.channels[src]
-		if subs == nil {
-			ep.mutex.Unlock()
-			return
-		}
-		for _, sub := range subs.srs {
+	tgt := e.Target
+	targetSubs := sourceSubs[tgt]
+	if targetSubs == nil {
+		return
+	}
+
+	for _, sub := range targetSubs.srs {
+		if sub.Target() == e.Target {
+			fmt.Println("Found service")
+			fmt.Printf("Chan: %v\n", sub)
 			sub.Channel() <- e
 		}
 	}
-
-	ep.mutex.Unlock()
 }
-/*
-func (ep *EventProcessor) SubscribeNoChan(source string, callback string) {
-	
-}
-	
-	src := sub.Source()
-	var split []string
 
-	if strings.Trim(sub.Source(), " ") == "*" {
-		ep.glob.srs = append(ep.glob.srs, sub)
-		fmt.Println("Subscriber added to globals")
-		fmt.Printf("SUUUUUBBBBBB %v\n",sub)
-		return
-	}
-
-	split = strings.Split(src, ";")
-
-	for _, s := range split {
-		subs := ep.channels[s]
-		if subs == nil {
-			newSubs := NewSubscriptions()
-			ep.channels[s] = newSubs
-			subs = newSubs
-		}
-		subs.srs = append(subs.srs, sub)
-		fmt.Printf("New subscriber added to: %s\n", sub.Source())
-	}
-}
-*/
 func (ep *EventProcessor) Subscribe(sub events.Subscriber) {
-	
+	ep.mutex.Lock()
+	defer ep.mutex.Unlock()
 	src := sub.Source()
-	var split []string
-
-	if strings.Trim(sub.Source(), " ") == "*" {
-		ep.glob.srs = append(ep.glob.srs, sub)
-		fmt.Println("Subscriber added to globals")
-		return
+	fmt.Println("[Events] New subscription registering: " + src)
+	srcSubs, okSrc := ep.channels[src]
+	if !okSrc {
+		srcSubs = make(SubMap)
+		ep.channels[src] = srcSubs
 	}
 
-	split = strings.Split(src, ";")
+	evt := sub.Event()
+	evts, okEvt := srcSubs[evt]
 
-	for _, s := range split {
-		subs := ep.channels[s]
-		if subs == nil {
-			newSubs := NewSubscriptions()
-			ep.channels[s] = newSubs
-			subs = newSubs
-		}
-		subs.srs = append(subs.srs, sub)
-		fmt.Printf("New subscriber added to: %s\n", sub.Source())
+	if !okEvt {
+		evts = NewSubscriptions()
+		srcSubs[evt] = evts
 	}
+
+	evts.add(sub)
+	ep.byId[sub.Id()] = sub
+
+	sub.SetChannel(ep.moduleRegistry.GetModules()[src].Subscribe(sub.Id(), sub.Event(), sub.Target()))
+	fmt.Printf("New subscriber added to: %s (%s)\n", sub.Source(), sub.Event())
 }
 
-func (ep *EventProcessor) Unsubscribe(sub events.Subscriber) {
-
-	src := sub.Source()
-
-	var split []string
-	id := sub.Id()
-	if strings.Trim(sub.Source(), " ") == "*" {
-		theIdx := -1
-		for i, sub := range ep.glob.srs {
-			if sub.Id() == id {
-				theIdx = i
-				break
-			}
-			if theIdx >= 0 {
-				sub.Close()
-				fmt.Println("Subscriber removed from globals")
-				ep.glob.srs = append(ep.glob.srs[:theIdx], ep.glob.srs[theIdx+1:]...)
-			}
-		}
+func (ep *EventProcessor) Unsubscribe(id string) {
+	ep.mutex.Lock()
+	defer ep.mutex.Unlock()
+	sub, ok := ep.byId[id]
+	if !ok {
+		fmt.Println("No subscriber with id: " + id)
 		return
 	}
-
-	split = strings.Split(src, ";")
-
-	for _, s := range split {
-		subs := ep.channels[s]
-		theIdx := -1
-		for i, sub := range subs.srs {
-			if sub.Id() == id {
-				theIdx = i
-				break
-			}
-			if theIdx >= 0 {
-				fmt.Printf("Subscriber removed from: %s, id: %s\n", sub.Source(), sub.Id())
-				subs.srs = append(subs.srs[:theIdx], subs.srs[theIdx+1:]...)
-			}
-		}
-
-	}
-
+	ep.moduleRegistry.GetModules()[sub.Source()].UnSubscribe(sub.Id())
+	ep.channels[sub.Source()][sub.Event()].remove(id)
+	ep.byId[id] = nil
 }
