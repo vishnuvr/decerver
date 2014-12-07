@@ -80,7 +80,6 @@ func (ep *EventProcessor) Post(e events.Event) {
 	}
 
 	for _, sub := range targetSubs.srs {
-		// TODO necessary?
 		if sub.Target() == e.Target {
 			fmt.Println("Found service")
 			fmt.Printf("Chan: %v\n", sub)

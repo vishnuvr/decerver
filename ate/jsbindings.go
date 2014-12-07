@@ -242,7 +242,7 @@ func bindHelpers(vm *otto.Otto) {
 		if errP != nil {
 			return otto.UndefinedValue()
 		}
-		result, _ := vm.ToValue("0x" + p0.Add(p0, p1).String())
+		result, _ := vm.ToValue("0x" + hex.EncodeToString(p0.Add(p0, p1).Bytes()))
 		return result
 	})
 
@@ -255,7 +255,7 @@ func bindHelpers(vm *otto.Otto) {
 		if p0.Sign() < 0 {
 			otto.NaNValue() // TODO
 		}
-		result, _ := vm.ToValue("0x" + p0.String())
+		result, _ := vm.ToValue("0x" + hex.EncodeToString(p0.Bytes()))
 		return result
 	})
 
@@ -264,7 +264,7 @@ func bindHelpers(vm *otto.Otto) {
 		if errP != nil {
 			return otto.UndefinedValue()
 		}
-		result, _ := vm.ToValue("0x" + p0.Mul(p0, p1).String())
+		result, _ := vm.ToValue("0x" + hex.EncodeToString(p0.Mul(p0, p1).Bytes()))
 		return result
 	})
 
@@ -273,10 +273,12 @@ func bindHelpers(vm *otto.Otto) {
 		if errP != nil {
 			return otto.UndefinedValue()
 		}
+		fmt.Println("DIV Nom: " + p0.String());
+		fmt.Println("Div Denom: " + p1.String());
 		if isZero(p1) {
 			return otto.NaNValue()
 		}
-		result, _ := vm.ToValue("0x" + p0.Div(p0, p1).String())
+		result, _ := vm.ToValue("0x" + hex.EncodeToString(p0.Div(p0, p1).Bytes()))
 		return result
 	})
 
@@ -288,7 +290,7 @@ func bindHelpers(vm *otto.Otto) {
 		if isZero(p1) {
 			return otto.NaNValue()
 		}
-		result, _ := vm.ToValue("0x" + p0.Mod(p0, p1).String())
+		result, _ := vm.ToValue("0x" + hex.EncodeToString(p0.Mod(p0, p1).Bytes()))
 		return result
 	})
 
@@ -297,7 +299,8 @@ func bindHelpers(vm *otto.Otto) {
 		if errP != nil {
 			return otto.UndefinedValue()
 		}
-		result, _ := vm.ToValue("0x" + p0.Exp(p0, p1, nil).String())
+		result, _ := vm.ToValue("0x" + hex.EncodeToString(p0.Exp(p0, p1, nil).Bytes()))
+		// fmt.Println("[OTTOTOTOOTT] " + )
 		return result
 	})
 
@@ -312,27 +315,60 @@ func bindHelpers(vm *otto.Otto) {
 		return result
 	})
 	
+	vm.Set("HexToString", func(call otto.FunctionCall) otto.Value {
+		prm, err0 := call.Argument(0).ToString()
+		if err0 != nil {
+			return otto.UndefinedValue()
+		}
+		bts, err1 := hex.DecodeString(prm)
+		if err1 != nil {
+			return otto.UndefinedValue()
+		}
+		result, _ := vm.ToValue(string(bts))
+		
+		return result
+	})
+	
+	vm.Set("StringToHex", func(call otto.FunctionCall) otto.Value {
+		prm, err0 := call.Argument(0).ToString()
+		fmt.Println("[OTTO] String: " + prm)
+		if err0 != nil {
+			return otto.UndefinedValue()
+		}
+		res := "0x" + hex.EncodeToString([]byte(prm))
+		result, _ := vm.ToValue(res)
+		fmt.Println("[OTTO] String: " + res)
+		return result
+	})
+	
 	// Millisecond time.
 	vm.Set("TimeMS", func(call otto.FunctionCall) otto.Value {
 		ts := time.Now().UnixNano() >> 6
 		result, _ := vm.ToValue(ts)
 		return result
 	})
-
+	
 	// Crypto
 	vm.Set("SHA3", func(call otto.FunctionCall) otto.Value {
 		prm, err0 := call.Argument(0).ToString()
 		if err0 != nil {
 			return otto.UndefinedValue()
 		}
+		if prm[1] == 'x' {
+			prm = prm[2:]
+		}
 		h, err := hex.DecodeString(prm)
+		fmt.Printf("Hashed value: %s\n", string(h))
 		if err != nil {
+			fmt.Printf("Error hashing, " + err.Error());
 			return otto.UndefinedValue()
 		}
 		d := sha3.NewKeccak256()
 		d.Write(h)
-		result, _ := vm.ToValue(hex.EncodeToString(d.Sum(nil)))
-
+		v := hex.EncodeToString(d.Sum(nil))
+		fmt.Println("SHA3: " + v);
+		result, _ := vm.ToValue("0x" + v)
+		
 		return result
 	})
 	

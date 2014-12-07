@@ -2,6 +2,7 @@ package ate
 
 import (
 	//"encoding/json"
+	"encoding/json"
 	"fmt"
 	"github.com/eris-ltd/decerver-interfaces/core"
 	"github.com/eris-ltd/decerver-interfaces/events"
@@ -9,21 +10,31 @@ import (
 	"io/ioutil"
 	"strings"
 	"sync"
-	"encoding/json"
 )
 
 type AteEventProcessor struct {
 	er events.EventRegistry
 }
 
+type JsObj struct {
+	Name   string
+	Object interface{}
+}
+
 type Ate struct {
-	runtimes map[string]*JsRuntime
-	apis     map[string]interface{}
-	er       events.EventRegistry
+	runtimes  map[string]*JsRuntime
+	apiObjs   []*JsObj
+	apiScript []string
+	er        events.EventRegistry
 }
 
 func NewAte(er events.EventRegistry) *Ate {
-	return &Ate{make(map[string]*JsRuntime), make(map[string]interface{}), er}
+	return &Ate{
+		make(map[string]*JsRuntime),
+		make([]*JsObj,0),
+		make([]string,0),
+		er,
+	}
 }
 
 func (ate *Ate) ShutdownRuntimes() {
@@ -39,9 +50,17 @@ func (ate *Ate) CreateRuntime(name string) core.Runtime {
 	// TODO add a "runtime" or "os" object with more stuff in it?
 
 	rt.Init(name)
-	for k, v := range ate.apis {
-		// TODO error checking!
-		rt.BindScriptObject(k, v)
+	for _, jo := range ate.apiObjs {
+		err := rt.BindScriptObject(jo.Name, jo.Object)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+	}
+	for _, s := range ate.apiScript {
+		err := rt.AddScript(s)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
 	}
 	fmt.Printf("Creating new runtime: " + name)
 	// DEBUG
@@ -59,8 +78,12 @@ func (ate *Ate) RemoveRuntime(name string) {
 	ate.runtimes[name] = nil
 }
 
-func (ate *Ate) RegisterApi(name string, api interface{}) {
-	ate.apis[name] = api
+func (ate *Ate) RegisterApiObject(objectname string, api interface{}) {
+	ate.apiObjs = append(ate.apiObjs, &JsObj{objectname, api})
+}
+
+func (ate *Ate) RegisterApiScript(script string) {
+	ate.apiScript = append(ate.apiScript, script)
 }
 
 type JsRuntime struct {
@@ -69,7 +92,7 @@ type JsRuntime struct {
 	name      string
 	jsrEvents *JsrEvents
 	mutex     *sync.Mutex
-	lockLvl	  int
+	lockLvl   int
 }
 
 func newJsRuntime(name string, er events.EventRegistry) *JsRuntime {
@@ -165,7 +188,17 @@ func (jsr *JsRuntime) CallFuncOnObj(objName, funcName string, param ...interface
 		fmt.Println(err.Error())
 		return nil, err
 	}
+/*
+	conv := make([]interface{}, 0)
 	
+	for p := range param {
+		c , err := jsr.vm.ToValue(p)
+		if err != nil {
+			fmt.Println("[Ate] -------------------> " + err.Error());
+		}
+		conv = append(conv, c)
+	}
+*/
 	val, callErr := ob.Object().Call(funcName, param...)
 
 	if callErr != nil {
@@ -232,7 +265,7 @@ func (jsre *JsrEvents) Subscribe(evtSource, evtType, evtTarget, subId string) {
 				return
 			}
 			fmt.Println("[Atë] stuff coming in from event processor: " + evt.Event)
-			
+
 			jsonString, err := json.Marshal(evt)
 			// _ , err := json.Marshal(evt)
 			if err != nil {
@@ -259,13 +292,14 @@ type AteSub struct {
 
 func NewAteSub(eventSource, eventType, eventTarget, subId string, rt core.Runtime) *AteSub {
 	as := &AteSub{}
+	// TODO Optimize later.
+	as.eventChan = make(chan events.Event, 10)
 	as.closeChan = make(chan bool)
 	as.source = eventSource
 	as.tpe = eventType
 	as.tgt = eventTarget
 	as.id = subId
 	as.rt = rt
-
 	return as
 }
 
