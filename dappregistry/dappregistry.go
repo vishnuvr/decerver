@@ -20,6 +20,8 @@ import (
 
 var logger *log.Logger = core.NewLogger("Dapp Registry")
 
+const REG_URL = "http://localhost:9999"  // We'll see.
+
 type Dapp struct {
 	models      map[string]string
 	path        string
@@ -266,3 +268,8 @@ func (dc *DappRegistry) HashDir(directory string) []byte {
 	}
 	return hashes
 }
+/*
+func getVerification(string dappName) bool {
+	
+}
+*/

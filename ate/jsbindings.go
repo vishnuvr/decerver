@@ -273,8 +273,6 @@ func bindHelpers(vm *otto.Otto) {
 		if errP != nil {
 			return otto.UndefinedValue()
 		}
-		fmt.Println("DIV Nom: " + p0.String())
-		fmt.Println("Div Denom: " + p1.String())
 		if isZero(p1) {
 			return otto.NaNValue()
 		}
@@ -333,11 +331,18 @@ func bindHelpers(vm *otto.Otto) {
 		if err0 != nil {
 			return otto.UndefinedValue()
 		}
+		if(prm == "" || prm == "0x0" || prm == "0x" || prm == "0"){
+			fmt.Println("Getting zero hex string from otto, returning empty string");
+			r, _ := vm.ToValue("")
+			return r
+		}
+		if(prm[1] == 'x'){
+			prm = prm[2:]
+		}
 		bts, err1 := hex.DecodeString(prm)
 		if err1 != nil {
 			return otto.UndefinedValue()
 		}
-		fmt.Println("String from hex: " + string(bts))
 		result, _ := vm.ToValue(string(bts))
 
 		return result
@@ -345,7 +350,6 @@ func bindHelpers(vm *otto.Otto) {
 
 	vm.Set("StringToHex", func(call otto.FunctionCall) otto.Value {
 		prm, err0 := call.Argument(0).ToString()
-		fmt.Println("[OTTO] String: " + prm)
 		if err0 != nil {
 			return otto.UndefinedValue()
 		}
@@ -356,8 +360,6 @@ func bindHelpers(vm *otto.Otto) {
 			bts = append(zeros,bts...)
 		}
 		res := "0x" + hex.EncodeToString(bts)
-		fmt.Println("[OTTO] String hex: " + res)
-		fmt.Printf("[OTTO] len: %d\n", len(bts))
 		result, _ := vm.ToValue(res)
 		
 		return result
@@ -376,13 +378,16 @@ func bindHelpers(vm *otto.Otto) {
 		if err0 != nil {
 			return otto.UndefinedValue()
 		}
+		if len(prm) == 0 {
+			fmt.Printf("Trying to hash an empty string.");
+			return otto.UndefinedValue()
+		}
 		if prm[1] == 'x' {
 			prm = prm[2:]
 		}
 		h, err := hex.DecodeString(prm)
-		fmt.Printf("Hashed value: %s\n", string(h))
 		if err != nil {
-			fmt.Printf("Error hashing, " + err.Error())
+			fmt.Printf("Error hashing: %s. Val: %s, Len: %d\n ", err.Error(), prm, len(prm))
 			return otto.UndefinedValue()
 		}
 		d := sha3.NewKeccak256()
