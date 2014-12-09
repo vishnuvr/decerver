@@ -273,11 +273,6 @@ func bindHelpers(vm *otto.Otto) {
 		if errP != nil {
 			return otto.UndefinedValue()
 		}
-<<<<<<< HEAD
-=======
-//		fmt.Println("DIV Nom: " + p0.String())
-//		fmt.Println("Div Denom: " + p1.String())
->>>>>>> e81bb4fbc22bf961b59502410664ebd4711ae254
 		if isZero(p1) {
 			return otto.NaNValue()
 		}
