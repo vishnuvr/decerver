@@ -273,8 +273,8 @@ func bindHelpers(vm *otto.Otto) {
 		if errP != nil {
 			return otto.UndefinedValue()
 		}
-		fmt.Println("DIV Nom: " + p0.String())
-		fmt.Println("Div Denom: " + p1.String())
+//		fmt.Println("DIV Nom: " + p0.String())
+//		fmt.Println("Div Denom: " + p1.String())
 		if isZero(p1) {
 			return otto.NaNValue()
 		}
@@ -331,13 +331,15 @@ func bindHelpers(vm *otto.Otto) {
 	vm.Set("HexToString", func(call otto.FunctionCall) otto.Value {
 		prm, err0 := call.Argument(0).ToString()
 		if err0 != nil {
+			fmt.Println(err0)
 			return otto.UndefinedValue()
 		}
 		bts, err1 := hex.DecodeString(prm)
 		if err1 != nil {
+			fmt.Println(err1)
 			return otto.UndefinedValue()
 		}
-		fmt.Println("String from hex: " + string(bts))
+//		fmt.Println("String from hex: " + string(bts))
 		result, _ := vm.ToValue(string(bts))
 
 		return result
@@ -345,7 +347,7 @@ func bindHelpers(vm *otto.Otto) {
 
 	vm.Set("StringToHex", func(call otto.FunctionCall) otto.Value {
 		prm, err0 := call.Argument(0).ToString()
-		fmt.Println("[OTTO] String: " + prm)
+//		fmt.Println("[OTTO] String: " + prm)
 		if err0 != nil {
 			return otto.UndefinedValue()
 		}
@@ -356,8 +358,8 @@ func bindHelpers(vm *otto.Otto) {
 			bts = append(zeros,bts...)
 		}
 		res := "0x" + hex.EncodeToString(bts)
-		fmt.Println("[OTTO] String hex: " + res)
-		fmt.Printf("[OTTO] len: %d\n", len(bts))
+//		fmt.Println("[OTTO] String hex: " + res)
+//		fmt.Printf("[OTTO] len: %d\n", len(bts))
 		result, _ := vm.ToValue(res)
 		
 		return result
@@ -380,7 +382,7 @@ func bindHelpers(vm *otto.Otto) {
 			prm = prm[2:]
 		}
 		h, err := hex.DecodeString(prm)
-		fmt.Printf("Hashed value: %s\n", string(h))
+//		fmt.Printf("Hashed value: %s\n", string(h))
 		if err != nil {
 			fmt.Printf("Error hashing, " + err.Error())
 			return otto.UndefinedValue()
@@ -388,7 +390,7 @@ func bindHelpers(vm *otto.Otto) {
 		d := sha3.NewKeccak256()
 		d.Write(h)
 		v := hex.EncodeToString(d.Sum(nil))
-		fmt.Println("SHA3: " + v)
+//		fmt.Println("SHA3: " + v)
 		result, _ := vm.ToValue("0x" + v)
 
 		return result
