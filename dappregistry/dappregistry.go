@@ -263,6 +263,7 @@ func (dc *DappRegistry) LoadDapp(dappId string) {
 					monkMod.SetProperty("PeerServerAddress",monkData.PeerServerAddress)
 					monkMod.SetProperty("ChainId",monkData.ChainId)
 					monkMod.Restart()
+					rt.BindScriptObject("RootContract",monkData.RootContract)
 				} else {
 					logger.Fatal("Blockchain will not work. Chain data for monk not available in dapp package file: " + dapp.packageFile.Name);
 				}

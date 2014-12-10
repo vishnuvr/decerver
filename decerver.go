@@ -14,6 +14,7 @@ import (
 	"os/signal"
 	"path"
 	"sync"
+	"time"
 )
 
 type Paths struct {
@@ -119,11 +120,17 @@ func (dc *DeCerver) Start() {
 		fmt.Printf("Module failed to start: %s. Shutting down.\n", err.Error())
 		os.Exit(-1)
 	}
-
+	// TODO Haxx until we got front end.
+	go func(){
+		time.Sleep(1000)
+		dc.dappRegistry.LoadDapp("monkadmin")
+	}()
+	fmt.Println("[Decerver] Waiting...");
+	// Just block for now.
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, os.Kill)
 	<-c
-	fmt.Println("Shutting down")
+	fmt.Println("Shutting down.")
 }
 
 func (dc *DeCerver) createPaths() {
@@ -157,10 +164,6 @@ func (dc *DeCerver) createAte() {
 	dc.ate = ate.NewAte(dc.ep)
 }
 
-func (dc *DeCerver) initAte() {
-	
-}
-
 func (dc *DeCerver) createModuleRegistry() {
 	dc.moduleRegistry = moduleregistry.NewModuleRegistry()
 }
@@ -184,10 +187,6 @@ func (dc *DeCerver) initDapps() {
 		fmt.Println("Error loading dapps: " + err.Error())
 		os.Exit(0)
 	}
-}
-
-func (dc *DeCerver) initDapp() {
-
 }
 
 func (dc *DeCerver) GetPaths() core.FileIO {

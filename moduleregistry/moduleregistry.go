@@ -51,10 +51,10 @@ func (mr *ModuleRegistry) Init() error {
 
 func (mr *ModuleRegistry) Start() error {
 	for _, mod := range mr.modules {
-		err := mod.Start()
-		if err != nil {
-			return err
-		}
+		go func(){
+			mod.Start()
+		}()
+		
 	}
 	return nil
 }

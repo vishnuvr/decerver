@@ -69,15 +69,13 @@ func (ate *Ate) CreateRuntime(name string) core.Runtime {
 }
 
 func (ate *Ate) GetRuntime(name string) core.Runtime {
-	fmt.Println(name)
-	fmt.Printf("Ate: %v\n", ate)
 	return ate.runtimes[name]
 }
 
 func (ate *Ate) RemoveRuntime(name string) {
 	rt, ok := ate.runtimes[name]
 	if ok {
-		ate.runtimes[name] = nil
+		delete(ate.runtimes,name)
 		rt.Shutdown()
 	}
 }
