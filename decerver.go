@@ -177,7 +177,7 @@ func (dc *DeCerver) LoadModule(md modules.Module) {
 }
 
 func (dc *DeCerver) initDapps() {
-	err := dc.dappRegistry.LoadDapps(dc.paths.Apps(),dc.paths.System())
+	err := dc.dappRegistry.RegisterDapps(dc.paths.Apps(),dc.paths.System())
 
 	if err != nil {
 		fmt.Println("Error loading dapps: " + err.Error())

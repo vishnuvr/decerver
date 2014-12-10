@@ -9,6 +9,7 @@ import (
 	"github.com/eris-ltd/decerver-interfaces/api"
 	"github.com/eris-ltd/decerver-interfaces/core"
 	"github.com/eris-ltd/decerver-interfaces/dapps"
+	"github.com/eris-ltd/decerver-interfaces/modules"
 	"github.com/syndtr/goleveldb/leveldb"
 	"io/ioutil"
 	"os"
@@ -23,13 +24,13 @@ var logger *log.Logger = core.NewLogger("Dapp Registry")
 const REG_URL = "http://localhost:9999"  // We'll see.
 
 type Dapp struct {
-	models      map[string]string
+	models      []string
 	path        string
 	packageFile *dapps.PackageFile
 }
 
 func NewDapp() *Dapp {
-	dapp := &Dapp{models: make(map[string]string)}
+	dapp := &Dapp{models: make([]string,0)}
 	return dapp
 }
 
@@ -40,6 +41,8 @@ type DappRegistry struct {
 	ate    core.RuntimeManager
 	server api.Server
 	hashDB *leveldb.DB
+	runningDapp *Dapp
+	moduleReg modules.ModuleRegistry
 }
 
 func NewDappRegistry(ate core.RuntimeManager, server api.Server) *DappRegistry {
@@ -52,7 +55,7 @@ func NewDappRegistry(ate core.RuntimeManager, server api.Server) *DappRegistry {
 	return dr
 }
 
-func (dc *DappRegistry) LoadDapps(directory, dbDir string) error {
+func (dc *DappRegistry) RegisterDapps(directory, dbDir string) error {
 	dbDir = path.Join(dbDir,"dapp_stored_hashes")
 	dc.hashDB, _ = leveldb.OpenFile(dbDir,nil)
 	defer dc.hashDB.Close()
@@ -72,17 +75,15 @@ func (dc *DappRegistry) LoadDapps(directory, dbDir string) error {
 		if fileInfo.IsDir() {
 			// This is a dapp
 			pth := path.Join(directory, fileInfo.Name())
-			dc.LoadDapp(pth)
+			dc.RegisterDapp(pth)
 		}
 	}
 	logger.Println("Done loading dapps.")
 	return nil
 }
 
-// TODO check dependencies.
-func (dc *DappRegistry) LoadDapp(dir string) {
-	dc.mutex.Lock()
-	defer dc.mutex.Unlock()
+func (dc *DappRegistry) RegisterDapp(dir string) {
+	
 	pkDir := path.Join(dir, dapps.PACKAGE_FILE_NAME)
 	_, errPfn := os.Stat(pkDir)
 	if errPfn != nil {
@@ -141,14 +142,14 @@ func (dc *DappRegistry) LoadDapp(dir string) {
 		logger.Printf("No models in model dir for app '%s', skipping.\n", dir)
 		return
 	}
-
+	
 	dapp := NewDapp()
 	dapp.path = dir
 	dapp.packageFile = packageFile
-
+	
 	// Hash the dapp files and check.
 	hash := dc.HashApp(modelDir)
-
+	
 	if hash == nil {
 		logger.Println("Failed to get hash of dapp files, skipping. Dapp: " + dir)
 		return
@@ -187,7 +188,7 @@ func (dc *DappRegistry) LoadDapp(dir string) {
 	// Create a new javascript runtime
 	id := dapp.packageFile.Id
 
-	rt := dc.ate.CreateRuntime(id)
+	//rt := dc.ate.CreateRuntime(id)
 	dc.server.RegisterDapp(id)
 
 	for _, fileInfo := range files {
@@ -210,18 +211,70 @@ func (dc *DappRegistry) LoadDapp(dir string) {
 
 		jsFile := string(fileBts)
 
-		addErr := rt.AddScript(jsFile)
-
-		if addErr != nil {
-			logger.Printf("Error running javascript file: \n%s\n%s\n", jsFile, addErr.Error())
-			continue
-		}
-
 		logger.Printf("Loaded javascript file '%s'\n", path.Base(fp))
+		
+		dapp.models = append(dapp.models,jsFile);
 
 	}
 
 	return
+}
+
+// TODO check dependencies.
+func (dc *DappRegistry) LoadDapp(dappId string) {
+	dc.mutex.Lock()
+	defer dc.mutex.Unlock()
+	dapp, ok := dc.dapps[dappId]
+	if (!ok){
+		logger.Println("Error loading dapp: " + dappId + ". No dapp with that name has been registered.")
+	}
+
+	if dc.runningDapp != nil {
+		dc.UnloadDapp(dc.runningDapp)
+	}
+
+	rt := dc.ate.CreateRuntime(dappId)
+	dc.server.RegisterDapp(dappId)
+
+	for _, js := range dapp.models {
+		rt.AddScript(js)
+	}
+	
+	// Monk hack until we script
+	deps := dapp.packageFile.ModuleDependencies
+	if deps != nil {
+		for _, d := range deps {
+			if d.Name == "monk" {
+				mData := d.Data
+				if mData != nil {
+					monkData := &dapps.MonkData{}
+					err := json.Unmarshal(mData, monkData)
+					if err != nil {
+						logger.Fatal("Blockchain will not work. Chain data for monk not available in dapp package file: " + dapp.packageFile.Name);
+					}
+					monkMod, ok := dc.moduleReg.GetModules()["monk"]
+					if !ok {
+						logger.Fatal("Blockchain will not work. There is no Monk module.");
+					}
+					monkMod.SetProperty("PeerServerAddress",monkData.PeerServerAddress)
+					monkMod.SetProperty("ChainId",monkData.ChainId)
+					monkMod.Restart()
+				} else {
+					logger.Fatal("Blockchain will not work. Chain data for monk not available in dapp package file: " + dapp.packageFile.Name);
+				}
+			}
+		}
+	}
+	
+	dc.runningDapp = dapp
+	return
+}
+
+func (dc *DappRegistry) UnloadDapp(dapp *Dapp){
+	dappId := dapp.packageFile.Id
+	// TODO unregister with the server? 
+	// dc.server.UnregisterDapp(dappId);
+	dc.ate.RemoveRuntime(dappId);
 }
 
 func (dc *DappRegistry) HashApp(dir string) []byte {

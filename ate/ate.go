@@ -75,7 +75,11 @@ func (ate *Ate) GetRuntime(name string) core.Runtime {
 }
 
 func (ate *Ate) RemoveRuntime(name string) {
-	ate.runtimes[name] = nil
+	rt, ok := ate.runtimes[name]
+	if ok {
+		ate.runtimes[name] = nil
+		rt.Shutdown()
+	}
 }
 
 func (ate *Ate) RegisterApiObject(objectname string, api interface{}) {
@@ -107,6 +111,7 @@ func newJsRuntime(name string, er events.EventRegistry) *JsRuntime {
 
 func (jsr *JsRuntime) Shutdown() {
 	fmt.Println("Runtime shut down: " + jsr.name)
+	// TODO implement
 }
 
 // TODO set up the interrupt channel.
@@ -188,17 +193,7 @@ func (jsr *JsRuntime) CallFuncOnObj(objName, funcName string, param ...interface
 		fmt.Println(err.Error())
 		return nil, err
 	}
-/*
-	conv := make([]interface{}, 0)
 	
-	for p := range param {
-		c , err := jsr.vm.ToValue(p)
-		if err != nil {
-			fmt.Println("[Ate] -------------------> " + err.Error());
-		}
-		conv = append(conv, c)
-	}
-*/
 	val, callErr := ob.Object().Call(funcName, param...)
 
 	if callErr != nil {
@@ -235,11 +230,6 @@ func (jsr *JsRuntime) CallFunc(funcName string, param ...interface{}) (interface
 	}
 
 	return obj, nil
-}
-
-// Use this to set up a new runtime. Should re-do init().
-// TODO implement
-func (jsr *JsRuntime) Recover() {
 }
 
 // Used to call the event processor from inside the javascript vm
