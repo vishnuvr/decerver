@@ -227,6 +227,7 @@ func (dc *DappRegistry) LoadDapp(dappId string) {
 	dapp, ok := dc.dapps[dappId]
 	if (!ok){
 		logger.Println("Error loading dapp: " + dappId + ". No dapp with that name has been registered.")
+		return
 	}
 
 	if dc.runningDapp != nil {
@@ -241,7 +242,10 @@ func (dc *DappRegistry) LoadDapp(dappId string) {
 	}
 	
 	// Monk hack until we script
+	
+	/*
 	deps := dapp.packageFile.ModuleDependencies
+	
 	if deps != nil {
 		for _, d := range deps {
 			if d.Name == "monk" {
@@ -265,6 +269,7 @@ func (dc *DappRegistry) LoadDapp(dappId string) {
 			}
 		}
 	}
+	*/
 	
 	dc.runningDapp = dapp
 	return

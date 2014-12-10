@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"github.com/eris-ltd/decerver-interfaces/core"
+	"github.com/eris-ltd/decerver/dappregistry"
 	"github.com/go-martini/martini"
 )
 
@@ -28,10 +29,12 @@ type WebServer struct {
 	was					  *WsAPIServer
 	has                   *HttpAPIServer
 	das					  *DecerverAPIServer
+	dr					  *dappregistry.DappRegistry
 }
 
 func NewWebServer(maxConnections uint32, appDir string, port int, ate core.RuntimeManager, dc core.DeCerver) *WebServer {
 	ws := &WebServer{}
+	
 	ws.maxConnections = maxConnections
 	ws.appsDirectory = appDir
 	if port <= 0 {
@@ -66,11 +69,15 @@ func (ws *WebServer) RegisterDapp(dappId string){
 	
 }
 
+func (ws *WebServer) AddDappRegistry(dr *dappregistry.DappRegistry){
+	ws.dr = dr
+} 
+
 func (ws *WebServer) Start() error {
 	
 	ws.webServer.Use(martini.Static(ws.appsDirectory))
 
-	das := NewDecerverAPIServer(ws.decerver)
+	das := NewDecerverAPIServer(ws.decerver, ws.dr)
 
 	// Decerver configuration
 	ws.webServer.Get("/admin/decerver", das.handleDecerverGET)
@@ -79,6 +86,9 @@ func (ws *WebServer) Start() error {
 	// Module configuration
 	ws.webServer.Get("/admin/modules/(.*)", das.handleModuleGET)
 	ws.webServer.Post("/admin/modules/(.*)", das.handleModulePOST)
+
+	// Decerver configuration
+	ws.webServer.Post("/admin/switch", das.handleDappSwitch)
 
 	go func() {
 		ws.webServer.RunOnAddr("localhost:" + fmt.Sprintf("%d", ws.port))

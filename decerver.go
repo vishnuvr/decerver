@@ -167,6 +167,7 @@ func (dc *DeCerver) createModuleRegistry() {
 
 func (dc *DeCerver) createDappRegistry() {
 	dc.dappRegistry = dappregistry.NewDappRegistry(dc.ate, dc.webServer)
+	dc.webServer.AddDappRegistry(dc.dappRegistry)
 }
 
 func (dc *DeCerver) LoadModule(md modules.Module) {

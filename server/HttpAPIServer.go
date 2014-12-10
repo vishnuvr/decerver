@@ -22,6 +22,7 @@ func NewHttpAPIServer(rm core.RuntimeManager) *HttpAPIServer {
 	return &HttpAPIServer{rm}
 }
 
+// This is our basic http receiver that takes the request and passes it into the js runtime.
 func (has *HttpAPIServer) handleHttp(w http.ResponseWriter, r *http.Request) {
 	u := r.URL
 	p := u.Path
@@ -38,13 +39,16 @@ func (has *HttpAPIServer) handleHttp(w http.ResponseWriter, r *http.Request) {
 		has.writeError(w, 500, err.Error())
 		return
 	}
+	
 	rStr := ret.(string)
 	hr := &HttpResp{}
 	errJson := json.Unmarshal([]byte(rStr), hr)
+	
 	if errJson != nil {
 		has.writeError(w, 500, errJson.Error())
 		return
 	}
+	
 	has.writeReq(hr,w)
 }
 

@@ -75,7 +75,6 @@ func (srv *WsAPIServer) handleWs(w http.ResponseWriter, r *http.Request) {
 	u := r.URL
 	p := u.Path
 	caller := path.Base(p)
-	fmt.Println("Caller: " + caller)
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		fmt.Printf("Failed to upgrade to websocket (%s)\n", err.Error())
