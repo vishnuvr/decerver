@@ -25,7 +25,7 @@ type Paths struct {
 	blockchains string
 	filesystems string
 	apps        string
-	system		string
+	system      string
 }
 
 func (p *Paths) Root() string {
@@ -86,6 +86,7 @@ type DeCerver struct {
 	webServer      *server.WebServer
 	moduleRegistry *moduleregistry.ModuleRegistry
 	dappRegistry   *dappregistry.DappRegistry
+	isStarted      bool
 }
 
 func NewDeCerver() *DeCerver {
@@ -120,13 +121,17 @@ func (dc *DeCerver) Start() {
 		fmt.Printf("Module failed to start: %s. Shutting down.\n", err.Error())
 		os.Exit(-1)
 	}
+
+	// Now everything is registered.
+	dc.isStarted = true
+	
 	// TODO Haxx until we got front end.
-	go func(){
+	go func() {
 		time.Sleep(1000)
 		dc.dappRegistry.LoadDapp("monkadmin")
 	}()
-	
-	fmt.Println("[Decerver] Waiting...");
+
+	fmt.Println("[Decerver] Waiting...")
 	// Just block for now.
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, os.Kill)
@@ -165,6 +170,10 @@ func (dc *DeCerver) createAte() {
 	dc.ate = ate.NewAte(dc.ep)
 }
 
+func (dc *DeCerver) IsStarted() bool {
+	return dc.isStarted
+}
+
 func (dc *DeCerver) createModuleRegistry() {
 	dc.moduleRegistry = moduleregistry.NewModuleRegistry()
 }
@@ -182,7 +191,7 @@ func (dc *DeCerver) LoadModule(md modules.Module) {
 }
 
 func (dc *DeCerver) initDapps() {
-	err := dc.dappRegistry.RegisterDapps(dc.paths.Apps(),dc.paths.System())
+	err := dc.dappRegistry.RegisterDapps(dc.paths.Apps(), dc.paths.System())
 
 	if err != nil {
 		fmt.Println("Error loading dapps: " + err.Error())

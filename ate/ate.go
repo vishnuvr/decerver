@@ -69,7 +69,12 @@ func (ate *Ate) CreateRuntime(name string) core.Runtime {
 }
 
 func (ate *Ate) GetRuntime(name string) core.Runtime {
-	return ate.runtimes[name]
+	rt, ok := ate.runtimes[name]
+	if ok {
+		return rt
+	} else {
+		return nil
+	}
 }
 
 func (ate *Ate) RemoveRuntime(name string) {

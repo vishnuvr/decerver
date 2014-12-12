@@ -2,10 +2,11 @@ package dappregistry
 
 import (
 	// "path/filepath"
-	"bytes"
+	//"bytes"
 	"crypto/sha1"
-	"encoding/hex"
+	//"encoding/hex"
 	"encoding/json"
+	"errors"
 	"github.com/eris-ltd/decerver-interfaces/api"
 	"github.com/eris-ltd/decerver-interfaces/core"
 	"github.com/eris-ltd/decerver-interfaces/dapps"
@@ -18,7 +19,7 @@ import (
 	"strings"
 	"sync"
 	"log"
-	"time"
+	//"time"
 )
 
 var logger *log.Logger = core.NewLogger("Dapp Registry")
@@ -211,28 +212,29 @@ func (dc *DappRegistry) RegisterDapp(dir string) {
 		dapp.models = append(dapp.models,jsFile);
 
 	}
+	
+	// Register the handlers right away.
+	dc.server.RegisterDapp(dapp.packageFile.Id)
 
 	return
 }
 
 // TODO check dependencies.
-func (dc *DappRegistry) LoadDapp(dappId string) {
+func (dc *DappRegistry) LoadDapp(dappId string) error {
 	logger.Println("Loading dapp: " + dappId)
 	dc.mutex.Lock()
 	defer dc.mutex.Unlock()
 	dapp, ok := dc.dapps[dappId]
 	if (!ok){
-		logger.Println("Error loading dapp: " + dappId + ". No dapp with that name has been registered.")
-		return
+		return errors.New("Error loading dapp: " + dappId + ". No dapp with that name has been registered.")
 	}
-
+	
 	if dc.runningDapp != nil {
 		dc.UnloadDapp(dc.runningDapp)
 	}
-
+	
 	rt := dc.ate.CreateRuntime(dappId)
-	dc.server.RegisterDapp(dappId)
-
+	
 	for _, js := range dapp.models {
 		rt.AddScript(js)
 	}
@@ -269,14 +271,14 @@ func (dc *DappRegistry) LoadDapp(dappId string) {
 					monkMod.SetProperty("RemotePort",port)
 					monkMod.SetProperty("ChainId",monkData.ChainId)
 					logger.Println("Calling restart on monk")
+					cr := make(chan bool)
 					go func(){
 						monkMod.Restart()
+						cr <- true
 					}()
-					logger.Print("Sleeping");
-					time.Sleep(1000)
-					logger.Print("Waking up");
+					<- cr
+					logger.Print("Started");
 					rt.BindScriptObject("RootContract",monkData.RootContract)
-					
 				} else {
 					logger.Fatal("Blockchain will not work. Chain data for monk not available in dapp package file: " + dapp.packageFile.Name);
 				}
@@ -285,13 +287,13 @@ func (dc *DappRegistry) LoadDapp(dappId string) {
 	}
 	
 	dc.runningDapp = dapp
-	return
+	return nil
 }
 
 func (dc *DappRegistry) UnloadDapp(dapp *Dapp){
+	// TODO cleanup
 	dappId := dapp.packageFile.Id
-	// TODO unregister with the server? 
-	// dc.server.UnregisterDapp(dappId);
+	logger.Println("Unregistering dapp: " + dappId)
 	dc.ate.RemoveRuntime(dappId);
 }
 
@@ -339,6 +341,17 @@ func (dc *DappRegistry) HashDir(directory string) []byte {
 	}
 	return hashes
 }
+
+func (dc *DappRegistry) GetDappsList() []*dapps.DappInfo{
+	arr := make([]*dapps.DappInfo,len(dc.dapps))
+	ctr := 0;
+	for _ , dapp := range dc.dapps {
+		arr[ctr] = dapps.DappInfoFromPackageFile(dapp.packageFile)
+		ctr++
+	}
+	return arr
+}
+
 /*
 func getVerification(string dappName) bool {
 	

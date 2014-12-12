@@ -24,6 +24,27 @@ func NewDecerverAPIServer(dc core.DeCerver, dr *dappregistry.DappRegistry) *Dece
 	return &DecerverAPIServer{dc, dr}
 }
 
+func (das *DecerverAPIServer) handleReadyGET(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("[martini] GET decerver ready")
+	
+	if !das.decerver.IsStarted(){
+		das.writeError(w,400,"decerver not started")
+	}
+	
+	dapplist := das.dappreg.GetDappsList()
+	bts, err := json.Marshal(dapplist)
+
+	if err != nil {
+		das.writeError(w, 500, err.Error())
+		return
+	}
+	jsn := string(bts)
+	fmt.Println("Dapplist:\n" + jsn)
+	w.WriteHeader(200)
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprint(w, jsn)
+}
+
 func (das *DecerverAPIServer) handleDecerverGET(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("[martini] GET decerver config")
 	cfg := das.decerver.GetConfig()
@@ -149,49 +170,36 @@ func (das *DecerverAPIServer) handleModulePOST(w http.ResponseWriter, r *http.Re
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 }
 
+func (das *DecerverAPIServer) handleDappSwitch(w http.ResponseWriter, r *http.Request) {
+	url := r.URL.String()
+	mName := path.Base(url)
+	fmt.Println("Url: " + url)
+	if mName == "." || mName == "/" || mName == ""{
+		das.writeError(w, 404, "Malformed URL")
+		return
+	}
+	fmt.Println("Switching to dapp: ", mName)
+	err := das.dappreg.LoadDapp(mName)
+
+	if err != nil {
+		das.writeError(w, 500, err.Error())
+		return
+	}
+
+	w.WriteHeader(200)
+	
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	// Whatever...
+	fmt.Fprint(w, "success")
+}
+
+
+func (das *DecerverAPIServer) handleFoF(w http.ResponseWriter, r *http.Request) {
+	das.writeError(w,400,"The route not open (the dapp is not in focus).")
+}
+
 func (das *DecerverAPIServer) writeError(w http.ResponseWriter, status int, msg string) {
 	w.WriteHeader(status)
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	fmt.Fprint(w, msg)
-}
-
-func (das *DecerverAPIServer) handleDappSwitch(w http.ResponseWriter, r *http.Request) {
-
-	contentType := r.Header.Get("Content-Type")
-	idx := strings.Index(contentType, ";")
-	if idx != -1 {
-		contentType = contentType[:idx]
-	}
-	ct := strings.ToLower(contentType)
-
-	if ct != "application/json" {
-		das.writeError(w, 415, "unrecognized Content-Type: "+contentType)
-		return
-	}
-
-	url := r.URL.String()
-	mName := path.Base(url)
-	if mName == "." || mName == "/" {
-		das.writeError(w, 404, "Malformed URL")
-		return
-	}
-	fmt.Printf("[martini] POST '%s' switch\n", mName)
-
-	bts, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		das.writeError(w, 400, err.Error())
-		return
-	}
-
-	sn := &SwitchName{}
-	err2 := json.Unmarshal(bts, sn)
-	if err2 != nil {
-		das.writeError(w, 400, err.Error())
-		return
-	}
-	
-	das.dappreg.LoadDapp(sn.Name);
-	
-	w.WriteHeader(204)
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 }

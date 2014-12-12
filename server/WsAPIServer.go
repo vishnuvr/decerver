@@ -51,7 +51,6 @@ func (srv *WsAPIServer) RemoveSession(ss *Session) {
 }
 
 func (srv *WsAPIServer) CreateSession(caller string, rt core.Runtime, wsConn *WsConn) *Session {
-	fmt.Printf("Runtime: %v\n", rt)
 	ss := &Session{}
 	ss.wsConn = wsConn
 	ss.server = srv
@@ -75,6 +74,16 @@ func (srv *WsAPIServer) handleWs(w http.ResponseWriter, r *http.Request) {
 	u := r.URL
 	p := u.Path
 	caller := path.Base(p)
+	
+	rt := srv.ate.GetRuntime(caller)
+	// TODO Update this. It's basically how we check if dapp is ready now.
+	if rt == nil {
+		w.WriteHeader(400)
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		fmt.Fprint(w, "Dapp not in focus")
+		return
+	}
+	
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		fmt.Printf("Failed to upgrade to websocket (%s)\n", err.Error())
@@ -85,7 +94,7 @@ func (srv *WsAPIServer) handleWs(w http.ResponseWriter, r *http.Request) {
 		writeMsgChannel:   make(chan *Message, 256),
 		writeCloseChannel: make(chan *Message, 256),
 	}
-	rt := srv.ate.GetRuntime(caller)
+	
 	ss := srv.CreateSession(caller, rt, wsConn)
 	// We add this session to the callers (dapps) runtime.
 	err = rt.BindScriptObject("tempObj", NewSessionJs(ss))

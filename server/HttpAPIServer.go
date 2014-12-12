@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/eris-ltd/decerver-interfaces/core"
 	"net/http"
-	"strings"
+	"path"
 )
 
 type HttpResp struct {
@@ -24,16 +24,23 @@ func NewHttpAPIServer(rm core.RuntimeManager) *HttpAPIServer {
 
 // This is our basic http receiver that takes the request and passes it into the js runtime.
 func (has *HttpAPIServer) handleHttp(w http.ResponseWriter, r *http.Request) {
+
 	u := r.URL
 	p := u.Path
-	p = strings.Trim(p, "/")
-
+	caller := path.Base(p)
+	
+	rt := has.ate.GetRuntime(caller)
+	// TODO Update this. It's basically how we check if dapp is ready now.
+	if rt == nil {
+		w.WriteHeader(400)
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		fmt.Fprint(w, "Dapp not in focus")
+		return
+	}
+	
 	reqJson, _ := json.Marshal(r)
-
-	segs := strings.Split(p, "/")
-
-	dappId := segs[1]
-	ret, err := has.ate.GetRuntime(dappId).CallFuncOnObj("network", "incomingHttp", reqJson)
+	
+	ret, err := rt.CallFuncOnObj("network", "incomingHttp", reqJson)
 
 	if err != nil {
 		has.writeError(w, 500, err.Error())

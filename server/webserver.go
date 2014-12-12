@@ -56,17 +56,8 @@ func NewWebServer(maxConnections uint32, appDir string, port int, ate core.Runti
 
 func (ws *WebServer) RegisterDapp(dappId string){
 	fmt.Println("Adding routes for: " + dappId)
-	// Use Router.Any(...)?
-	ws.webServer.Get("/http/" + dappId, ws.has.handleHttp)
-	ws.webServer.Post("/http/" + dappId, ws.has.handleHttp)
-	wsRoute := "/ws/" + dappId
-	fmt.Println(wsRoute)
-	ws.webServer.Get(wsRoute, ws.was.handleWs)
-	
-	// serve := ws.appsDirectory + "/" + dappId + "/"
-	// fmt.Println(serve)
-	// ws.webServer.Use(martini.Static(serve))
-	
+	ws.webServer.Any(HTTP_BASE + dappId, ws.has.handleHttp)
+	ws.webServer.Get(WS_BASE + dappId, ws.was.handleWs)
 }
 
 func (ws *WebServer) AddDappRegistry(dr *dappregistry.DappRegistry){
@@ -79,6 +70,9 @@ func (ws *WebServer) Start() error {
 
 	das := NewDecerverAPIServer(ws.decerver, ws.dr)
 
+	// Decerver ready
+	ws.webServer.Get("/admin/ready", das.handleReadyGET)
+
 	// Decerver configuration
 	ws.webServer.Get("/admin/decerver", das.handleDecerverGET)
 	ws.webServer.Post("/admin/decerver", das.handleDecerverPOST)
@@ -88,7 +82,7 @@ func (ws *WebServer) Start() error {
 	ws.webServer.Post("/admin/modules/(.*)", das.handleModulePOST)
 
 	// Decerver configuration
-	ws.webServer.Post("/admin/switch", das.handleDappSwitch)
+	ws.webServer.Get("/admin/switch/(.*)", das.handleDappSwitch)
 
 	go func() {
 		ws.webServer.RunOnAddr("localhost:" + fmt.Sprintf("%d", ws.port))
