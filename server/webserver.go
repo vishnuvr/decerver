@@ -62,7 +62,7 @@ func (ws *WebServer) RegisterDapp(dappId string){
 
 func (ws *WebServer) AddDappRegistry(dr *dappregistry.DappRegistry){
 	ws.dr = dr
-} 
+}
 
 func (ws *WebServer) Start() error {
 	

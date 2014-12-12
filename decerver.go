@@ -128,7 +128,7 @@ func (dc *DeCerver) Start() {
 	// TODO Haxx until we got front end.
 	go func() {
 		time.Sleep(1000)
-		dc.dappRegistry.LoadDapp("monkadmin")
+		dc.dappRegistry.LoadDapp("helloworld")
 	}()
 
 	fmt.Println("[Decerver] Waiting...")

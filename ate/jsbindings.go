@@ -146,7 +146,7 @@ func BindDefaults(runtime *JsRuntime) {
 		
 		network.getWsErrorDetailed = function(code, message, data){
 			return {
-				"Protocol" : "EWSMP1",
+				"Protocol" : "ESRPC",
 				"Method" : "",
 				"Result" : "",
 				"Time" : "",
