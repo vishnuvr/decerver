@@ -10,18 +10,20 @@ import (
 	"github.com/eris-ltd/decerver-interfaces/core"
 	"github.com/eris-ltd/decerver-interfaces/dapps"
 	"github.com/eris-ltd/decerver-interfaces/modules"
-	"github.com/syndtr/goleveldb/leveldb"
+	// "github.com/syndtr/goleveldb/leveldb"
 	"io/ioutil"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"sync"
 	"log"
+	"time"
 )
 
 var logger *log.Logger = core.NewLogger("Dapp Registry")
 
-const REG_URL = "http://localhost:9999"  // We'll see.
+// const REG_URL = "http://localhost:9999" 
 
 type Dapp struct {
 	models      []string
@@ -40,25 +42,26 @@ type DappRegistry struct {
 	dapps  map[string]*Dapp
 	ate    core.RuntimeManager
 	server api.Server
-	hashDB *leveldb.DB
+//	hashDB *leveldb.DB
 	runningDapp *Dapp
 	moduleReg modules.ModuleRegistry
 }
 
-func NewDappRegistry(ate core.RuntimeManager, server api.Server) *DappRegistry {
+func NewDappRegistry(ate core.RuntimeManager, server api.Server, mr modules.ModuleRegistry) *DappRegistry {
 	dr := &DappRegistry{}
 	dr.keys = make(map[string]string)
 	dr.dapps = make(map[string]*Dapp)
 	dr.mutex = &sync.Mutex{}
 	dr.ate = ate
 	dr.server = server
+	dr.moduleReg = mr
 	return dr
 }
 
 func (dc *DappRegistry) RegisterDapps(directory, dbDir string) error {
-	dbDir = path.Join(dbDir,"dapp_stored_hashes")
-	dc.hashDB, _ = leveldb.OpenFile(dbDir,nil)
-	defer dc.hashDB.Close()
+//	dbDir = path.Join(dbDir,"dapp_stored_hashes")
+//	dc.hashDB, _ = leveldb.OpenFile(dbDir,nil)
+//	defer dc.hashDB.Close()
 	logger.Println("Loading dapps")
 	files, err := ioutil.ReadDir(directory)
 	
@@ -73,7 +76,6 @@ func (dc *DappRegistry) RegisterDapps(directory, dbDir string) error {
 	
 	for _, fileInfo := range files {
 		if fileInfo.IsDir() {
-			// This is a dapp
 			pth := path.Join(directory, fileInfo.Name())
 			dc.RegisterDapp(pth)
 		}
@@ -106,6 +108,7 @@ func (dc *DappRegistry) RegisterDapp(dir string) {
 	if pkUnmErr != nil {
 		logger.Printf("The 'package.json' file for dapp '%s' is corrupted. Skipping...\n", dir)
 		logger.Println(pkUnmErr.Error())
+		return
 	}
 
 	idxDir := path.Join(dir, dapps.INDEX_FILE_NAME)
@@ -146,6 +149,11 @@ func (dc *DappRegistry) RegisterDapp(dir string) {
 	dapp := NewDapp()
 	dapp.path = dir
 	dapp.packageFile = packageFile
+		
+	/*
+	
+	TODO: Dapp verification has been postponed. Leaving this in, but
+	      
 	
 	// Hash the dapp files and check.
 	hash := dc.HashApp(modelDir)
@@ -158,19 +166,7 @@ func (dc *DappRegistry) RegisterDapp(dir string) {
 	oldHash, errH := dc.hashDB.Get([]byte(dapp.path), nil)
 	
 	if errH != nil {
-		// this is a new dapp
-		
-		/*
-		confChan := make(chan bool)
-		
-		ret <- confChan
-		if ret {
-			
-		} else {
-			logger.Println("User denied, skipping. Dapp: " + dir)
-			return	
-		}
-		*/
+		verify(dapp.path);
 		logger.Printf("Adding new hash '%s' to folder '%s'.\n",hex.EncodeToString(hash),dir)
 		dc.hashDB.Put([]byte(dapp.path),hash,nil)
 	}
@@ -178,23 +174,22 @@ func (dc *DappRegistry) RegisterDapp(dir string) {
 	if errH == nil && !bytes.Equal(hash,oldHash) {
 		// TODO this is an old but updated dapp.
 		logger.Printf("Hash mismatch: New: '%s', Old: '%s'.\n",hex.EncodeToString(hash),hex.EncodeToString(oldHash))
+		verify(dapp.path);
 		dc.hashDB.Put([]byte(dapp.path),hash,nil)
+		dc.hashDB.Delete(oldHash,nil)
 	} else {
 		logger.Printf("Hash of '%s' matches the stored value: '%s'.\n", dir, hex.EncodeToString(hash))
 	}
+	*/
 
 	dc.dapps[packageFile.Id] = dapp
 
-	// Create a new javascript runtime
-	id := dapp.packageFile.Id
-
-	//rt := dc.ate.CreateRuntime(id)
-	dc.server.RegisterDapp(id)
-
+	// TODO recursively and perhaps also a require.js type load file
+	// to ensure the proper loading order.
 	for _, fileInfo := range files {
 		fp := path.Join(modelDir, fileInfo.Name())
 		if fileInfo.IsDir() {
-			logger.Println("Action models are not searched for recursively (yet), skipping directory: " + fp)
+			logger.Println("Action models are not gotten recursively (yet). Skipping directory: " + fp)
 			// Skip for now.
 			continue
 		}
@@ -222,6 +217,7 @@ func (dc *DappRegistry) RegisterDapp(dir string) {
 
 // TODO check dependencies.
 func (dc *DappRegistry) LoadDapp(dappId string) {
+	logger.Println("Loading dapp: " + dappId)
 	dc.mutex.Lock()
 	defer dc.mutex.Unlock()
 	dapp, ok := dc.dapps[dappId]
@@ -241,9 +237,7 @@ func (dc *DappRegistry) LoadDapp(dappId string) {
 		rt.AddScript(js)
 	}
 	
-	// Monk hack until we script
-	
-	/*
+	// Monk hack until we script	
 	deps := dapp.packageFile.ModuleDependencies
 	
 	if deps != nil {
@@ -260,17 +254,35 @@ func (dc *DappRegistry) LoadDapp(dappId string) {
 					if !ok {
 						logger.Fatal("Blockchain will not work. There is no Monk module.");
 					}
-					monkMod.SetProperty("PeerServerAddress",monkData.PeerServerAddress)
+					psAddr := monkData.PeerServerAddress
+					addAndPort := strings.Split(psAddr,":")
+					if len(addAndPort) != 2 {
+						logger.Fatal("Blockchain will not work. Malformed peerserver url: " + psAddr);
+					}
+					
+					port, pErr := strconv.Atoi(addAndPort[1])
+					if pErr != nil {
+						logger.Fatal("Blockchain will not work. Malformed peerserver url (port not an integer)");
+					}
+					
+					monkMod.SetProperty("RemoteHost",addAndPort[0])
+					monkMod.SetProperty("RemotePort",port)
 					monkMod.SetProperty("ChainId",monkData.ChainId)
-					monkMod.Restart()
+					logger.Println("Calling restart on monk")
+					go func(){
+						monkMod.Restart()
+					}()
+					logger.Print("Sleeping");
+					time.Sleep(1000)
+					logger.Print("Waking up");
 					rt.BindScriptObject("RootContract",monkData.RootContract)
+					
 				} else {
 					logger.Fatal("Blockchain will not work. Chain data for monk not available in dapp package file: " + dapp.packageFile.Name);
 				}
 			}
 		}
 	}
-	*/
 	
 	dc.runningDapp = dapp
 	return

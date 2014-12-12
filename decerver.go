@@ -125,6 +125,7 @@ func (dc *DeCerver) Start() {
 		time.Sleep(1000)
 		dc.dappRegistry.LoadDapp("monkadmin")
 	}()
+	
 	fmt.Println("[Decerver] Waiting...");
 	// Just block for now.
 	c := make(chan os.Signal, 1)
@@ -169,7 +170,7 @@ func (dc *DeCerver) createModuleRegistry() {
 }
 
 func (dc *DeCerver) createDappRegistry() {
-	dc.dappRegistry = dappregistry.NewDappRegistry(dc.ate, dc.webServer)
+	dc.dappRegistry = dappregistry.NewDappRegistry(dc.ate, dc.webServer, dc.moduleRegistry)
 	dc.webServer.AddDappRegistry(dc.dappRegistry)
 }
 

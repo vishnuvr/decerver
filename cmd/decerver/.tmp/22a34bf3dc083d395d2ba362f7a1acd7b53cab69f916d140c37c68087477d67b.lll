@@ -1,0 +1,313 @@
+;Gen DOUG
+
+;FUNCTION CALLS / TRANSACTION SPECIFICATIONS 
+;===========================================
+;DOUG Name Table Functions
+
+;register
+;-------------------------------------------------------------------
+;Register a contract to a name
+;Permission Requirement: "doug"
+;"register" "name" 0xAddress [#type #behaviour #data #model #UI]
+;returns - [0 - failure, 1 - success]
+;-------------------------------------------------------------------
+;name 		- Name by which the contract shall be referenced by
+;Address 	- Address of the contract you are registering to name
+;-------------------------------------------------------------------
+
+
+;checkname
+;--------------------------------------------------
+;Request Address of contract associated with "name"
+;Permission Requirement : NONE
+;"checkname" "name"
+;Returns: 0xAddress associated with name
+;--------------------------------------------------
+;"name"  - name of contract you want address of
+;--------------------------------------------------
+
+
+;PERMISSION FUNCTIONS
+
+;setperm
+;------------------------------------------------------------------------------------------
+;Sets permission for a target for given permission to value. Note the permission must exist
+;Permission Requirements: "doug"
+;"setperm" "name" 0xTarget [#value]
+;Returns: [0 - Failure, 1 - Success]
+;------------------------------------------------------------------------------------------
+;"name"		- name of permission
+;0xTarget 	- Address of target whose permission you are setting
+;#value 	- Value you are setting target's permission at [0,15], if not included -> 0
+;------------------------------------------------------------------------------------------
+
+;addperm
+;--------------------------------------------
+;Creates a new permission with name "name"
+;Permission Requirement: "doug"
+;"addperm" "name"
+;Returns: [0 - Failure, 1 - Success]
+;--------------------------------------------
+;"name" - name of permission you are creating
+;--------------------------------------------
+
+;checkperm
+;-------------------------------------------------------------------
+;Returns the value of a permission "name" which the target has
+;Permission Requirements: NONE
+;"checkperm" "name" 0xTarget
+;Returns: Permission value [0,15]
+;-------------------------------------------------------------------
+;"name"    - Name of permission
+;0xTarget  - Address which you want to know the permission value for
+;-------------------------------------------------------------------
+
+;VARIABLE FUNCTIONS
+
+;setvar
+;------------------------------------------------------
+;Set the value of the variable associated with "name"
+;Permission Requirements: "doug"
+;"setvar" "name" #value
+;Returns: [0 - Failure, 1 - Success]
+;------------------------------------------------------
+;"name"	- Name of variable
+;#value - Value you are setting the variable to
+;------------------------------------------------------
+
+;getvar
+;-------------------------------------
+;Get the value associated with "name"
+;Permission Requirements: NONE
+;"getvar" "name"
+;Returns: Value of variable
+;-------------------------------------
+;"name" - Name of variable
+;-------------------------------------
+
+;CONSENSUS FUNCTIONS
+
+;addminer
+;------------------------------------------------------------------------------------------------
+;Add a target address to the list of miners, set relevant data, and give them permission to mine
+;Permission Requirements: doug
+;"addminer" 0xmineraddr "minername" #stake
+;Returns: [0 - Failure, 1 - Success]
+;------------------------------------------------------------------------------------------------
+;"name"   - Name associated to miner
+;0xTarget - Address of miner
+;#stake   - Stake for that miner
+;------------------------------------------------------------------------------------------------
+
+;rmminer
+;------------------------------------------------------------------------------------------------
+;Remove a Target address to the list of miners, and set their mining permission to mine
+;Permission Requirements: doug
+;"rmminer" 0xmineraddress
+;Returns: [0 - Failure, 1 - Success]
+;------------------------------------------------------------------------------------------------
+;0xmineraddress - Miner's public address (who you are removing)
+;------------------------------------------------------------------------------------------------
+
+{
+	(include "a1f53999ffb37bba096222e7f36fbdf8a64f4779dbafc7949b28639e6eaa8792.lll")
+	(include "ed4eb838ad4a27ec4ac9ae901fcef07b45fe57320d35d0be0f5f5e837660a255.lll")
+	(include "d9b8043e377b3e9beecff3fde02b441b28183239c78f6b1a2c0136ad8b9d05b1.lll")
+	(include "f19110dc98c13c4d9744315b216d6579ef1a9dbd6ffa907ee8e125adf922b43b.lll")
+
+	(def 'NEG (value) (- 0 value))
+	(def 'gass () (- (GAS) 100))
+
+	(def 'DOUGDATAMODEL 0x0) ;Fill these in if you want
+	(def 'DOUGUIPOINTER 0x0)
+	(def 'DOUGBLOB 0x0)
+
+	;General structure
+
+	;Minimum Viable Doug Set Up
+	(llInit "permnames" "none" "none" "none")
+	(llAddLink "permnames" "doug" 0)
+	(llAddLink "permnames" "mine" 1)
+	(llAddLink "permnames" "create" 2)
+	(llAddLink "permnames" "transact" 3)
+
+	(arrayInit "perms" "none" "none" "none" 4) ;Gives Caller all permissions
+	(arraySetE "perms" (CALLER) 0 1)
+	(arraySetE "perms" (CALLER) 1 1)
+	(arraySetE "perms" (CALLER) 2 1)
+	(arraySetE "perms" (CALLER) 3 1)
+
+;	(def 'BLcheck (addr) (|| (= (singleGet "public:doug") 1)(= (arrayGetE "perms" addr 0) 1)))
+	(def 'BLcheck (addr) (= (arrayGetE "perms" addr 0) 1))
+
+	;(Register)
+	(def 'cmd () (calldataload 0x0))
+	(def 'name () (calldataload 0x20))
+	(def 'target () (calldataload 0x40))
+	(def 'type () (calldataload 0x60))
+	(def 'behaviour () (calldataload 0x80))
+	(def 'data () (calldataload 0xA0))
+	(def 'model () (calldataload 0xC0))
+	(def 'UI () (calldataload 0xE0))
+
+	;DOUG Variable space
+	(def 'value () (calldataload 0x40))
+
+	;Permission
+	(def 'permnum () (calldataload 0x60))
+
+	;Consensus
+	(def 'mineraddr () (calldataload 0x20))
+	(def 'minername () (calldataload 0x40))
+	(def 'stake () (calldataload 0x60))
+
+	;INITIALIZATION
+	[0x300]0x88554646BA
+	[0x320] DOUGDATAMODEL
+	[0x340] DOUGUIPOINTER
+	[0x360] DOUGBLOB
+	[0x380] 0x0 ;DOUG IS SUPREME
+	[0x3A0]"The People"
+	[0x3C0]"Dennis Mckinnon" ; These feilds have no purpose in DOUG
+	[0x3E0]1
+	(C3DInit 0x300 0 1 0 0 0 0 0)
+
+	(llInit "DOUG" "none" "none" "none")
+	(llAddLink "DOUG" "DOUG" (Address))
+
+	[[0x38155ef3698a43b24b054d816a8a5f79fc148623]] 0x1111 ;NEED TO REMOVE THIS
+
+
+	;Consensus variables
+	;seq - sequential style round robin concensus
+
+	(singleInit "consensus" "none" "none" "none" "seq")
+	(singleInit "maxgastx" "none" "none" "none" 0x10000000000000000)
+	(singleInit "difficulty" "none" "none" "none" 0xd)
+	(singleInit "blocktime" "none" "none" "none" 0x14)
+
+;	(singleInit "public:doug" "none" "none" "none" 0)
+	(singleInit "public:mine" "none" "none" "none" 0)
+	(singleInit "public:create" "none" "none" "none" 0)
+	(singleInit "public:transact" "none" "none" "none" 0)
+
+
+	;Setting Parameters for consensus type "seq" -> rotating miners
+
+	(llInit "seq:name" "none" "none" "none")
+	;(llAddLink "seq:name" (CALLER) "GrandWarlordCasey")
+	(llInit "seq:stake" "none" "none" "none")
+	;(llAddLink "seq:stake" (CALLER) 10)
+
+	(return 0 (lll {
+
+	;DOUG Functions
+	;=================================================================================
+
+		(when (= (cmd) "checkname")
+			{
+				[0x0](llGet "DOUG" (name))
+				(return 0x0 0x20) ; Return the Address
+			}
+		)
+
+		(when (= (cmd) "register")
+			{
+				(unless (BLcheck (ORIGIN)) (STOP))
+
+				(llAddLink "DOUG" (name) (target))
+
+				;C3D Data Attached
+				[0x300](name)
+				[0x320](type)
+				[0x340](behaviour)
+				[0x360](data)
+				[0x380](model)
+				[0x3A0](UI)
+
+				(C3DAddLink (target) 0x300 0 1)
+
+				[0x0]1
+				(return 0x0 0x20)
+			}
+		)
+
+	;DOUG Variables
+	;=========================================================================================
+
+		(when (= (cmd) "getvar")
+			{
+				[0x0](singleGet (name))
+				(return 0x0 0x20) ; Return the Address
+			}
+		)
+
+		(when (= (cmd) "setvar")
+			{
+				(unless (BLcheck (ORIGIN)) (STOP))
+				(singleSet (name) (value))
+				[0x0]1
+				(return 0x0 0x20)
+			}
+		)	
+
+
+	;Permissions Functions
+	;=========================================================================================
+
+		(when (= (cmd) "checkperm")
+			{
+				[0x0](arrayGetE "perms" (target) (llGet "permnames" (name)))
+				(return 0x0 0x20) ;Return requested value
+			}
+		)
+
+		(when (= (cmd) "setperm")
+			{
+				(unless (BLcheck (ORIGIN)) (STOP))
+				(arraySetE "perms" (target) (llGet "permnames" (name)) (permnum))
+				[0x0]1
+				(return 0x0 0x20)
+			}
+		)
+
+		(when (= (cmd) "addperm")
+			{
+
+				(unless (BLcheck (ORIGIN)) (STOP))
+				(llAddLink "permnames" (name) (+ @@(llLenSlot "permnames") 1))
+
+				[0x0]1
+				(return 0x0 0x20)
+			}
+		)
+
+	;Consensus Functions
+	;========================================================================================
+		(when (= (cmd) "addminer")
+			{
+				(unless (BLcheck (ORIGIN)) (STOP))
+				(llAddLink "seq:name" (target) (name))
+				(llAddLink "seq:stake" (target) (stake))
+				(arraySetE "perms" (target) (llGet "permnames" "mine") 1)
+
+				[0x0]1
+				(return 0x0 0x20)
+			}
+		)
+
+		(when (= (cmd) "rmminer")
+			{
+				(unless (BLcheck (ORIGIN)) (STOP))
+				(llRmLink "seq:name" (mineraddr))
+				(llRmLink "seq:stake" (mineraddr))
+				(arraySetE "perms" (mineraddr) (llGet "permnames" "mine") 0)
+
+				[0x0]1
+				(return 0x0 0x20)
+			}
+		)
+
+
+	} 0))
+}
