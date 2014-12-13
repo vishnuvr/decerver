@@ -4,7 +4,6 @@
 package server
 
 import (
-	"fmt"
 	"github.com/gorilla/websocket"
 	"time"
 	"io/ioutil"
@@ -89,9 +88,8 @@ func reader(ss *Session) {
 	conn.SetReadDeadline(time.Time{})
 	//wsc.ws.SetPongHandler(func(string) error { c.ws.SetReadDeadline(time.Now().Add(downWait)); return nil })
 	
-	// TODO add back the reader timeout.
+	// TODO add back the reader timeout?
 	for {
-		fmt.Println("Waiting to read socket.")
 
 		mType, message, err := conn.NextReader()
 
@@ -113,7 +111,6 @@ func reader(ss *Session) {
 // Handle the writer
 func writer(ss *Session) {
 	conn := ss.wsConn.conn
-	fmt.Println("Waiting to write to socket.")
 	for {
 		message, ok := <-ss.wsConn.writeMsgChannel
 

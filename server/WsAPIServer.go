@@ -60,16 +60,16 @@ func (srv *WsAPIServer) CreateSession(caller string, rt core.Runtime, wsConn *Ws
 	id := srv.idPool.GetId()
 	ss.wsConn.sessionId = id
 	srv.sessions[id] = ss
-	fmt.Printf("ACTIVE CONNECTIONS: %v\n", srv.sessions)
+	logger.Printf("ACTIVE CONNECTIONS: %v\n", srv.sessions)
 	return ss
 }
 
 // This is passed to the Martini server.
 // Find out what endpoint they called and create a session based on that.
 func (srv *WsAPIServer) handleWs(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("New connection.")
+	logger.Println("New connection.")
 	if srv.activeConnections == srv.maxConnections {
-		fmt.Println("Connection failed: Already at capacity.")
+		logger.Println("Connection failed: Already at capacity.")
 	}
 	u := r.URL
 	p := u.Path
@@ -86,7 +86,7 @@ func (srv *WsAPIServer) handleWs(w http.ResponseWriter, r *http.Request) {
 	
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		fmt.Printf("Failed to upgrade to websocket (%s)\n", err.Error())
+		logger.Printf("Failed to upgrade to websocket (%s)\n", err.Error())
 		return
 	}
 	wsConn := &WsConn{
@@ -129,21 +129,21 @@ func (ss *Session) WriteCloseMsg() {
 }
 
 func (ss *Session) Close() {
-	fmt.Printf("CLOSING SESSION: %d\n", ss.wsConn.sessionId)
+	logger.Printf("CLOSING SESSION: %d\n", ss.wsConn.sessionId)
 	// Deregister ourselves.
 	ss.server.RemoveSession(ss)
 	ss.runtime.CallFuncOnObj("network","deleteWsSession",int(ss.SessionId()))
 	if ss.wsConn.conn != nil {
 		err := ss.wsConn.conn.Close()
 		if err != nil {
-			fmt.Printf("Failed to close websocket connection, already removed: %d\n", ss.wsConn.sessionId)
+			logger.Printf("Failed to close websocket connection, already removed: %d\n", ss.wsConn.sessionId)
 		}
 	}
 	
 }
 
 func (ss *Session) handleRequest(rpcReq string) {
-	fmt.Println("RPC Message: " + rpcReq)
+	logger.Println("RPC Message: " + rpcReq)
 	ret, err := ss.runtime.CallFuncOnObj("network", "incomingWsMsg", int(ss.wsConn.sessionId), rpcReq)
 	
 	if err != nil {

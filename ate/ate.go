@@ -1,5 +1,6 @@
 package ate
 
+// Atë is the scripting back-end for users.
 import (
 	//"encoding/json"
 	"encoding/json"
@@ -8,9 +9,11 @@ import (
 	"github.com/eris-ltd/decerver-interfaces/events"
 	"github.com/robertkrimen/otto"
 	"io/ioutil"
-	"strings"
+	"log"
 	"sync"
 )
+
+var logger *log.Logger = core.NewLogger("Atë")
 
 type AteEventProcessor struct {
 	er events.EventRegistry
@@ -21,6 +24,10 @@ type JsObj struct {
 	Object interface{}
 }
 
+
+// Implements RuntimeManager. Even though we call it Atë, 
+// RuntimeManager makes more sense to module devs I think.
+// - Andreas
 type Ate struct {
 	runtimes  map[string]*JsRuntime
 	apiObjs   []*JsObj
@@ -62,9 +69,10 @@ func (ate *Ate) CreateRuntime(name string) core.Runtime {
 			fmt.Println(err.Error())
 		}
 	}
-	fmt.Printf("Creating new runtime: " + name)
+	
+	logger.Printf("Creating new runtime: " + name)
 	// DEBUG
-	fmt.Printf("Runtimes: %v\n", ate.runtimes)
+	logger.Printf("Runtimes: %v\n", ate.runtimes)
 	return rt
 }
 
@@ -113,7 +121,7 @@ func newJsRuntime(name string, er events.EventRegistry) *JsRuntime {
 }
 
 func (jsr *JsRuntime) Shutdown() {
-	fmt.Println("Runtime shut down: " + jsr.name)
+	logger.Println("Runtime shut down: " + jsr.name)
 	// TODO implement
 }
 
@@ -157,35 +165,6 @@ func (jsr *JsRuntime) AddScript(script string) error {
 	defer jsr.mutex.Unlock()
 	_, err := jsr.vm.Run(script)
 	return err
-}
-
-func (jsr *JsRuntime) RunFunction(funcName string, params []string) (interface{}, error) {
-	jsr.mutex.Lock()
-	defer jsr.mutex.Unlock()
-	cmd := funcName + "("
-
-	paramStr := ""
-	for _, p := range params {
-		paramStr += p + ","
-	}
-	paramStr = strings.Trim(paramStr, ",")
-	cmd += paramStr + ");"
-
-	fmt.Println("Running function: " + cmd)
-	val, runErr := jsr.vm.Run(cmd)
-
-	if runErr != nil {
-		return nil, fmt.Errorf("Error when running function '%s': %s\n", funcName, runErr.Error())
-	}
-
-	// Take the result and turn it into a go value.
-	obj, expErr := val.Export()
-
-	if expErr != nil {
-		return nil, fmt.Errorf("Error when exporting returned value: %s\n", expErr.Error())
-	}
-
-	return obj, nil
 }
 
 func (jsr *JsRuntime) CallFuncOnObj(objName, funcName string, param ...interface{}) (interface{}, error) {
@@ -250,19 +229,19 @@ func (jsre *JsrEvents) Subscribe(evtSource, evtType, evtTarget, subId string) {
 	// Launch the sub channel.
 	go func(s *AteSub) {
 		// DEBUG
-		fmt.Println("Starting event loop for atesub: " + s.id)
+		logger.Println("Starting event loop for atesub: " + s.id)
 		for {
 			evt, ok := <-s.eventChan
 			if !ok {
-				fmt.Println("[Atë] Close message received.")
+				logger.Println("Close message received.")
 				return
 			}
-			fmt.Println("[Atë] stuff coming in from event processor: " + evt.Event)
+			logger.Println("Event received: " + evt.Event)
 
 			jsonString, err := json.Marshal(evt)
 			// _ , err := json.Marshal(evt)
 			if err != nil {
-				fmt.Println("Error when posting event to ate: " + err.Error())
+				logger.Println("Error when posting event to ate: " + err.Error())
 			}
 			s.rt.CallFuncOnObj("events", "post", string(jsonString))
 		}
@@ -273,6 +252,7 @@ func (jsre *JsrEvents) Unsubscribe(subId string) {
 	jsre.jsr.er.Unsubscribe(subId)
 }
 
+// Will be refactored asap. See events/events.go for an explanation.
 type AteSub struct {
 	eventChan chan events.Event
 	closeChan chan bool

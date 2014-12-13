@@ -179,9 +179,9 @@ func BindDefaults(runtime *JsRuntime) {
 	`)
 
 	if err != nil {
-		fmt.Println("[Atë] Error while bootstrapping js networking: " + err.Error())
+		logger.Println("Error while bootstrapping js networking: " + err.Error())
 	} else {
-		fmt.Println("[Atë] Networking script loaded.")
+		logger.Println("Networking script loaded.")
 	}
 
 	_, err = vm.Run(`
@@ -228,9 +228,9 @@ func BindDefaults(runtime *JsRuntime) {
 	`)
 
 	if err != nil {
-		fmt.Println("[Atë] Error while bootstrapping js event-processing: " + err.Error())
+		logger.Println("Error while bootstrapping js event-processing: " + err.Error())
 	} else {
-		fmt.Println("[Atë] Event processing script loaded.")
+		logger.Println("Event processing script loaded.")
 	}
 
 }
@@ -333,7 +333,7 @@ func bindHelpers(vm *otto.Otto) {
 			return otto.UndefinedValue()
 		}
 		if(prm == "" || prm == "0x0" || prm == "0x" || prm == "0"){
-			fmt.Println("Getting zero hex string from otto, returning empty string");
+			logger.Println("Getting zero hex string from otto, returning empty string");
 			r, _ := vm.ToValue("")
 			return r
 		}
@@ -381,7 +381,7 @@ func bindHelpers(vm *otto.Otto) {
 			return otto.UndefinedValue()
 		}
 		if len(prm) == 0 {
-			fmt.Printf("Trying to hash an empty string.");
+			logger.Printf("Trying to hash an empty string.");
 			return otto.UndefinedValue()
 		}
 		if prm[1] == 'x' {
@@ -389,7 +389,7 @@ func bindHelpers(vm *otto.Otto) {
 		}
 		h, err := hex.DecodeString(prm)
 		if err != nil {
-			fmt.Printf("Error hashing: %s. Val: %s, Len: %d\n ", err.Error(), prm, len(prm))
+			logger.Printf("Error hashing: %s. Val: %s, Len: %d\n ", err.Error(), prm, len(prm))
 			return otto.UndefinedValue()
 		}
 		d := sha3.NewKeccak256()

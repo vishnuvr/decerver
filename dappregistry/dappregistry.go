@@ -32,6 +32,18 @@ type Dapp struct {
 	packageFile *dapps.PackageFile
 }
 
+func (dapp *Dapp) GetModels() []string {
+	return dapp.models
+}
+
+func (dapp *Dapp) GetPath() string {
+	return dapp.path
+}
+
+func (dapp *Dapp) GetPackageFile() *dapps.PackageFile {
+	return dapp.packageFile
+}
+
 func NewDapp() *Dapp {
 	dapp := &Dapp{models: make([]string,0)}
 	return dapp
@@ -221,7 +233,7 @@ func (dc *DappRegistry) RegisterDapp(dir string) {
 
 // TODO check dependencies.
 func (dc *DappRegistry) LoadDapp(dappId string) error {
-	logger.Println("Loading dapp: " + dappId)
+	
 	dc.mutex.Lock()
 	defer dc.mutex.Unlock()
 	dapp, ok := dc.dapps[dappId]
@@ -230,8 +242,14 @@ func (dc *DappRegistry) LoadDapp(dappId string) error {
 	}
 	
 	if dc.runningDapp != nil {
+		if dc.runningDapp.packageFile.Id == dappId {
+			logger.Println("No switch, dapp already running: " + dappId)
+			return nil
+		}
 		dc.UnloadDapp(dc.runningDapp)
 	}
+	
+	logger.Println("Loading dapp: " + dappId)
 	
 	rt := dc.ate.CreateRuntime(dappId)
 	
@@ -342,7 +360,7 @@ func (dc *DappRegistry) HashDir(directory string) []byte {
 	return hashes
 }
 
-func (dc *DappRegistry) GetDappsList() []*dapps.DappInfo{
+func (dc *DappRegistry) GetDappList() []*dapps.DappInfo{
 	arr := make([]*dapps.DappInfo,len(dc.dapps))
 	ctr := 0;
 	for _ , dapp := range dc.dapps {

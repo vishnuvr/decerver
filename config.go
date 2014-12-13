@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/eris-ltd/decerver-interfaces/core"
 	"io/ioutil"
 	"os"
@@ -29,7 +28,7 @@ func (dc *DeCerver) WriteConfig(dcConfig *core.DCConfig) {
 	b, err := json.Marshal(dcConfig)
 
 	if err != nil {
-		fmt.Println("error marshalling config:", err)
+		logger.Println("error marshalling config:", err)
 		return
 	}
 
@@ -45,16 +44,16 @@ func (dc *DeCerver) GetConfig() *core.DCConfig {
 func (dc *DeCerver) ReadConfig(config_file string) {
 	b, err := ioutil.ReadFile(config_file)
 	if err != nil {
-		fmt.Println("could not read config", err)
-		fmt.Println("resorting to defaults")
+		logger.Println("could not read config", err)
+		logger.Println("resorting to defaults")
 		dc.config = DefaultConfig
 		return
 	}
 	config := &core.DCConfig{}
 	err = json.Unmarshal(b, &config)
 	if err != nil {
-		fmt.Println("error unmarshalling config from file:", err)
-		fmt.Println("resorting to defaults")
+		logger.Println("error unmarshalling config from file:", err)
+		logger.Println("resorting to defaults")
 		dc.config = DefaultConfig
 		return
 	}

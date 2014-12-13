@@ -1,7 +1,6 @@
 package decerver
 
 import (
-	"fmt"
 	"github.com/eris-ltd/decerver-interfaces/core"
 	"github.com/eris-ltd/decerver-interfaces/modules"
 	"github.com/eris-ltd/decerver/ate"
@@ -10,12 +9,15 @@ import (
 	"github.com/eris-ltd/decerver/moduleregistry"
 	"github.com/eris-ltd/decerver/server"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/signal"
 	"path"
 	"sync"
 	"time"
 )
+
+var logger *log.Logger = core.NewLogger("Decerver Core")
 
 type Paths struct {
 	mutex       *sync.Mutex
@@ -24,7 +26,7 @@ type Paths struct {
 	log         string
 	blockchains string
 	filesystems string
-	apps        string
+	dapps        string
 	system      string
 }
 
@@ -40,8 +42,8 @@ func (p *Paths) Log() string {
 	return p.log
 }
 
-func (p *Paths) Apps() string {
-	return p.apps
+func (p *Paths) Dapps() string {
+	return p.dapps
 }
 
 func (p *Paths) Blockchains() string {
@@ -91,7 +93,7 @@ type DeCerver struct {
 
 func NewDeCerver() *DeCerver {
 	dc := &DeCerver{}
-	fmt.Println("Starting decerver bootstrapping sequence.")
+	logger.Println("Starting decerver bootstrapping sequence.")
 	dc.ReadConfig("")
 	dc.createPaths()
 	dc.WriteConfig(dc.config)
@@ -106,7 +108,7 @@ func NewDeCerver() *DeCerver {
 func (dc *DeCerver) Init() {
 	err := dc.moduleRegistry.Init()
 	if err != nil {
-		fmt.Printf("Module failed to load: %s. Shutting down.\n", err.Error())
+		logger.Printf("Module failed to initialize: %s. Shutting down.\n", err.Error())
 		os.Exit(-1)
 	}
 	dc.initDapps()
@@ -114,11 +116,11 @@ func (dc *DeCerver) Init() {
 
 func (dc *DeCerver) Start() {
 	dc.webServer.Start()
-	fmt.Println("Server started.")
+	logger.Println("Server started.")
 
 	err := dc.moduleRegistry.Start()
 	if err != nil {
-		fmt.Printf("Module failed to start: %s. Shutting down.\n", err.Error())
+		logger.Printf("Module failed to start: %s. Shutting down.\n", err.Error())
 		os.Exit(-1)
 	}
 
@@ -131,12 +133,12 @@ func (dc *DeCerver) Start() {
 		dc.dappRegistry.LoadDapp("helloworld")
 	}()
 
-	fmt.Println("[Decerver] Waiting...")
+	logger.Println("Running...")
 	// Just block for now.
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, os.Kill)
 	<-c
-	fmt.Println("Shutting down.")
+	logger.Println("Shutting down.")
 }
 
 func (dc *DeCerver) createPaths() {
@@ -148,18 +150,18 @@ func (dc *DeCerver) createPaths() {
 	InitDir(dc.paths.log)
 	dc.paths.modules = dc.paths.root + "/modules"
 	InitDir(dc.paths.modules)
-	dc.paths.apps = dc.paths.root + "/apps"
-	InitDir(dc.paths.apps)
+	dc.paths.dapps = dc.paths.root + "/dapps"
+	InitDir(dc.paths.dapps)
 	dc.paths.filesystems = dc.paths.root + "/filesystems"
-	InitDir(dc.paths.apps)
+	InitDir(dc.paths.filesystems)
 	dc.paths.blockchains = dc.paths.root + "/blockchains"
-	InitDir(dc.paths.apps)
+	InitDir(dc.paths.blockchains)
 	dc.paths.system = dc.paths.root + "/system"
 	InitDir(dc.paths.system)
 }
 
 func (dc *DeCerver) createNetwork() {
-	dc.webServer = server.NewWebServer(uint32(dc.config.MaxClients), dc.paths.Apps(), dc.config.Port, dc.ate, dc)
+	dc.webServer = server.NewWebServer(uint32(dc.config.MaxClients), dc.paths.Dapps(), dc.config.Port, dc.ate, dc)
 }
 
 func (dc *DeCerver) createEventProcessor() {
@@ -187,18 +189,20 @@ func (dc *DeCerver) LoadModule(md modules.Module) {
 	// TODO re-add
 	md.Register(dc.paths, dc.ate, dc.ep)
 	dc.moduleRegistry.Add(md)
-	fmt.Printf("Registering module '%s'.\n", md.Name())
+	logger.Printf("Registering module '%s'.\n", md.Name())
 }
 
 func (dc *DeCerver) initDapps() {
-	err := dc.dappRegistry.RegisterDapps(dc.paths.Apps(), dc.paths.System())
+	err := dc.dappRegistry.RegisterDapps(dc.paths.Dapps(), dc.paths.System())
 
 	if err != nil {
-		fmt.Println("Error loading dapps: " + err.Error())
+		logger.Println("Error loading dapps: " + err.Error())
 		os.Exit(0)
 	}
 }
 
-func (dc *DeCerver) GetPaths() core.FileIO {
+func (dc *DeCerver) GetFileIO() core.FileIO {
 	return dc.paths
 }
+
+

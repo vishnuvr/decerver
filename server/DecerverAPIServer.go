@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/eris-ltd/decerver-interfaces/core"
-	"github.com/eris-ltd/decerver/dappregistry"
+	"github.com/eris-ltd/decerver-interfaces/dapps"
 	"io/ioutil"
 	"net/http"
 	"path"
@@ -17,21 +17,21 @@ type SwitchName struct {
 
 type DecerverAPIServer struct {
 	decerver core.DeCerver
-	dappreg  *dappregistry.DappRegistry
+	dappreg  dapps.DappRegistry
 }
 
-func NewDecerverAPIServer(dc core.DeCerver, dr *dappregistry.DappRegistry) *DecerverAPIServer {
+func NewDecerverAPIServer(dc core.DeCerver, dr dapps.DappRegistry) *DecerverAPIServer {
 	return &DecerverAPIServer{dc, dr}
 }
 
 func (das *DecerverAPIServer) handleReadyGET(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("[martini] GET decerver ready")
+	logger.Println("GET decerver ready")
 	
 	if !das.decerver.IsStarted(){
 		das.writeError(w,400,"decerver not started")
 	}
 	
-	dapplist := das.dappreg.GetDappsList()
+	dapplist := das.dappreg.GetDappList()
 	bts, err := json.Marshal(dapplist)
 
 	if err != nil {
@@ -39,14 +39,15 @@ func (das *DecerverAPIServer) handleReadyGET(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	jsn := string(bts)
-	fmt.Println("Dapplist:\n" + jsn)
+	// DEBUG
+	logger.Println("Dapplist:\n" + jsn)
 	w.WriteHeader(200)
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprint(w, jsn)
 }
 
 func (das *DecerverAPIServer) handleDecerverGET(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("[martini] GET decerver config")
+	logger.Println("GET decerver config")
 	cfg := das.decerver.GetConfig()
 	bts, err := json.Marshal(cfg)
 
@@ -60,7 +61,7 @@ func (das *DecerverAPIServer) handleDecerverGET(w http.ResponseWriter, r *http.R
 }
 
 func (das *DecerverAPIServer) handleDecerverPOST(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("[martini] POST decerver config")
+	logger.Println("POST decerver config")
 	contentType := r.Header.Get("Content-Type")
 
 	idx := strings.Index(contentType, ";")
@@ -104,10 +105,10 @@ func (das *DecerverAPIServer) handleModuleGET(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	fio := das.decerver.GetPaths()
+	fio := das.decerver.GetFileIO()
 
 	pt := fio.Modules() + "/" + mName
-	fmt.Printf("[martini] GET %s config\n", mName)
+	logger.Printf("GET %s config\n", mName)
 
 	bts, err := fio.ReadFile(pt, "config")
 
@@ -141,7 +142,7 @@ func (das *DecerverAPIServer) handleModulePOST(w http.ResponseWriter, r *http.Re
 		das.writeError(w, 404, "Malformed URL")
 		return
 	}
-	fmt.Printf("[martini] POST %s config\n", mName)
+	logger.Printf(" POST %s config\n", mName)
 
 	bts, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -149,7 +150,7 @@ func (das *DecerverAPIServer) handleModulePOST(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	fio := das.decerver.GetPaths()
+	fio := das.decerver.GetFileIO()
 	pt := fio.Modules() + "/" + mName
 
 	var tmp_int interface{}
@@ -178,7 +179,7 @@ func (das *DecerverAPIServer) handleDappSwitch(w http.ResponseWriter, r *http.Re
 		das.writeError(w, 404, "Malformed URL")
 		return
 	}
-	fmt.Println("Switching to dapp: ", mName)
+	logger.Println("Switching to dapp: ", mName)
 	err := das.dappreg.LoadDapp(mName)
 
 	if err != nil {

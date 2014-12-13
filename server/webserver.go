@@ -2,8 +2,9 @@ package server
 
 import (
 	"fmt"
+	"log"
 	"github.com/eris-ltd/decerver-interfaces/core"
-	"github.com/eris-ltd/decerver/dappregistry"
+	"github.com/eris-ltd/decerver-interfaces/dapps"
 	"github.com/go-martini/martini"
 )
 
@@ -13,11 +14,7 @@ const DECERVER_PORT = 3005 // For communication with the atom client back-end.
 const HTTP_BASE = "/http/"
 const WS_BASE = "/ws/"
 
-type endpoint struct {
-	method  string
-	route   string
-	handler interface{}
-}
+var logger *log.Logger = core.NewLogger("Webserver")
 
 type WebServer struct {
 	webServer             *martini.ClassicMartini
@@ -29,7 +26,7 @@ type WebServer struct {
 	was					  *WsAPIServer
 	has                   *HttpAPIServer
 	das					  *DecerverAPIServer
-	dr					  *dappregistry.DappRegistry
+	dr					  dapps.DappRegistry
 }
 
 func NewWebServer(maxConnections uint32, appDir string, port int, ate core.RuntimeManager, dc core.DeCerver) *WebServer {
@@ -55,12 +52,12 @@ func NewWebServer(maxConnections uint32, appDir string, port int, ate core.Runti
 }
 
 func (ws *WebServer) RegisterDapp(dappId string){
-	fmt.Println("Adding routes for: " + dappId)
+	logger.Println("Adding routes for: " + dappId)
 	ws.webServer.Any(HTTP_BASE + dappId, ws.has.handleHttp)
 	ws.webServer.Get(WS_BASE + dappId, ws.was.handleWs)
 }
 
-func (ws *WebServer) AddDappRegistry(dr *dappregistry.DappRegistry){
+func (ws *WebServer) AddDappRegistry(dr dapps.DappRegistry){
 	ws.dr = dr
 }
 

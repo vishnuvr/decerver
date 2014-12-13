@@ -1,9 +1,0 @@
-#!/usr/bin/python
-
-import sys
-import os
-import urllib2
-
-print 'a git hook', sys.argv, os.getcwd()
-
-print urllib2.urlopen("http://localhost:27182?pwd={0}".format(os.getcwd()))
