@@ -38,9 +38,13 @@ func (has *HttpAPIServer) handleHttp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	reqJson, _ := json.Marshal(r)
+	reqJson, errM := json.Marshal(r)
 	
-	ret, err := rt.CallFuncOnObj("network", "incomingHttp", reqJson)
+	if errM != nil {
+		logger.Println("Error when marshalling http request (this reeeeally should not happen) : " + errM.Error())
+	}
+	logger.Println("Http request json: " + string(reqJson))
+	ret, err := rt.CallFuncOnObj("network", "handleIncomingHttp", string(reqJson))
 
 	if err != nil {
 		has.writeError(w, 500, err.Error())
@@ -60,6 +64,8 @@ func (has *HttpAPIServer) handleHttp(w http.ResponseWriter, r *http.Request) {
 }
 
 func (has *HttpAPIServer) writeReq(resp *HttpResp, w http.ResponseWriter) {
+	logger.Printf("Response status message: %d\n", resp.Status);
+	logger.Printf("Response header stuff: %v\n", resp.Header);
 	w.WriteHeader(resp.Status)
 	for k, v := range resp.Header {
 		w.Header().Set(k,v)

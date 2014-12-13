@@ -40,14 +40,45 @@ func BindDefaults(runtime *JsRuntime) {
 		// Network is an object that encapsulates all networking activity.
 		var network = {};
 		
-		// Http...
+		// Http
 		
-		network.incomingHttpCallback = function(){};
+		network.getHttpResponse = function(){
+			return {
+				"Status" : 0,
+				"Header" : {},
+				"Body" : ""
+			};
+		}
+		
+		network.getHttpResponse500 = function(){
+			return {
+				"Status" : 500,
+				"Header" : {},
+				"Body" : "Internal error"
+			};
+		}
+		
+		// Just return ok.
+		network.incomingHttpCallback = function(){
+			return {
+				"Status" : 200,
+				"Header" : {"Content-Type" : "text/plain; charset=utf-8"},
+				"Body" : ""
+			};
+		}
 		
 		// Used internally.
 		network.handleIncomingHttp = function(httpReqAsJson){
-			var httpReq = JSON.parse(reqAsJson);
-			this.incomingHttpCallback(httpReq);
+			var httpReq = JSON.parse(httpReqAsJson);
+			var ret = this.incomingHttpCallback(httpReq);
+			var rets;
+			try {
+				rets = JSON.stringify(ret);
+				Println("Json string of resp obj:\n" + rets);
+				return rets;
+			} catch(err) {
+				return network.getHttpResponse500();
+			}
 		};
 		
 		network.registerIncomingHttpCallback = function(callback){

@@ -183,7 +183,7 @@ func (das *DecerverAPIServer) handleDappSwitch(w http.ResponseWriter, r *http.Re
 	err := das.dappreg.LoadDapp(mName)
 
 	if err != nil {
-		das.writeError(w, 500, err.Error())
+		das.writeError(w, 400, err.Error())
 		return
 	}
 

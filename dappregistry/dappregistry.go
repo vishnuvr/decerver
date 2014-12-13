@@ -243,8 +243,7 @@ func (dc *DappRegistry) LoadDapp(dappId string) error {
 	
 	if dc.runningDapp != nil {
 		if dc.runningDapp.packageFile.Id == dappId {
-			logger.Println("No switch, dapp already running: " + dappId)
-			return nil
+			return errors.New("Error loading dapp - already running: " + dappId)
 		}
 		dc.UnloadDapp(dc.runningDapp)
 	}
