@@ -26,8 +26,9 @@ type Paths struct {
 	log         string
 	blockchains string
 	filesystems string
-	dapps        string
+	dapps       string
 	system      string
+	adminpages  string
 }
 
 func (p *Paths) Root() string {
@@ -55,6 +56,10 @@ func (p *Paths) Filesystems() string {
 }
 
 func (p *Paths) System() string {
+	return p.system
+}
+
+func (p *Paths) Adminpages() string {
 	return p.system
 }
 
@@ -126,7 +131,7 @@ func (dc *DeCerver) Start() {
 
 	// Now everything is registered.
 	dc.isStarted = true
-	
+
 	// TODO Haxx until we got front end.
 	go func() {
 		time.Sleep(1000)
@@ -142,8 +147,10 @@ func (dc *DeCerver) Start() {
 }
 
 func (dc *DeCerver) createPaths() {
+	
 	dc.paths = &Paths{}
 	dc.paths.mutex = &sync.Mutex{}
+	
 	dc.paths.root = dc.config.RootDir
 	InitDir(dc.paths.root)
 	dc.paths.log = dc.paths.root + "/logs"
@@ -158,10 +165,12 @@ func (dc *DeCerver) createPaths() {
 	InitDir(dc.paths.blockchains)
 	dc.paths.system = dc.paths.root + "/system"
 	InitDir(dc.paths.system)
+	dc.paths.adminpages = dc.paths.system + "/adminpages"
+	InitDir(dc.paths.adminpages)
 }
 
 func (dc *DeCerver) createNetwork() {
-	dc.webServer = server.NewWebServer(uint32(dc.config.MaxClients), dc.paths.Dapps(), dc.config.Port, dc.ate, dc)
+	dc.webServer = server.NewWebServer(uint32(dc.config.MaxClients), dc.paths, dc.config.Port, dc.ate, dc)
 }
 
 func (dc *DeCerver) createEventProcessor() {
@@ -204,5 +213,3 @@ func (dc *DeCerver) initDapps() {
 func (dc *DeCerver) GetFileIO() core.FileIO {
 	return dc.paths
 }
-
-

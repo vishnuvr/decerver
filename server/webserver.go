@@ -19,7 +19,7 @@ var logger *log.Logger = core.NewLogger("Webserver")
 type WebServer struct {
 	webServer             *martini.ClassicMartini
 	maxConnections        uint32
-	appsDirectory         string
+	fio                   core.FileIO
 	port                  int
 	ate                   core.RuntimeManager
 	decerver              core.DeCerver
@@ -29,11 +29,11 @@ type WebServer struct {
 	dr					  dapps.DappRegistry
 }
 
-func NewWebServer(maxConnections uint32, appDir string, port int, ate core.RuntimeManager, dc core.DeCerver) *WebServer {
+func NewWebServer(maxConnections uint32, fio core.FileIO, port int, ate core.RuntimeManager, dc core.DeCerver) *WebServer {
 	ws := &WebServer{}
 	
 	ws.maxConnections = maxConnections
-	ws.appsDirectory = appDir
+	ws.fio = fio
 	if port <= 0 {
 		port = DEFAULT_PORT
 	}
@@ -63,7 +63,8 @@ func (ws *WebServer) AddDappRegistry(dr dapps.DappRegistry){
 
 func (ws *WebServer) Start() error {
 	
-	ws.webServer.Use(martini.Static(ws.appsDirectory))
+	ws.webServer.Use(martini.Static(ws.fio.Dapps()) )
+	ws.webServer.Use(martini.Static(ws.fio.Adminpages()) )
 
 	das := NewDecerverAPIServer(ws.decerver, ws.dr)
 
