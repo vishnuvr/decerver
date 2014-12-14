@@ -257,7 +257,7 @@ func BindDefaults(runtime *JsRuntime) {
 
 	// TODO add the socket Id to name.
 	_, err = vm.Run(`
-	
+		
 		// This is the events object. It handles events that comes
 		// in from the event processor.
 		var events = {};
@@ -268,12 +268,13 @@ func BindDefaults(runtime *JsRuntime) {
 		/*  Called to subscribe on an event.
 		 *
 		 *  Params:
-		 *  eventSource - the source module, ipfs, monk, etc.
-		 *  eventType   - the type of event. Could be 'newBlock' for monk.
-		 *  eventTarget - optional (not often used)
-		 *  callbackFn  - the callback function to use when the event 
+		 *  eventSource - the source module, ipfs, monk, etc. (string)
+		 *  eventType   - the type of event. Could be 'newBlock' for monk. (string)
+		 *  eventTarget - optional (string)
+		 *  callbackFn  - the callback function to use when the event (string). 
 		 *                comes in.
-		 *  uid         - usually the socket id. Used to make the id unique.
+		 *  uid         - usually the session id as a string. Used to make the id unique.
+		 *                Uid needs to be a string.
 		 */
 		events.subscribe = function(eventSource, eventType, eventTarget, callbackFn, uid){
 		
@@ -283,10 +284,9 @@ func BindDefaults(runtime *JsRuntime) {
 			var eventId = events.generateId(eventSource,eventType, uid);
 			// The jsr_events object has the go bindings to actually subscribe.
 			jsr_events.Subscribe(eventSource, eventType, eventTarget, eventId);
-			this.callbacks[eventId] = callbackFn;	
+			this.callbacks[eventId] = callbackFn;
 		}
 		
-		// Called to unsubscribe form an event.
 		events.unsubscribe = function(eventSource,eventName, uid){
 			var subId = events.generateId(eventSource,eventName, uid);
 			jsr_events.Unsubscribe(subId);
@@ -295,8 +295,8 @@ func BindDefaults(runtime *JsRuntime) {
 		
 		// Called by the go event processor.
 		events.post = function(eventJson){
-			
-			var event = JSON.parse(eventJson);			
+		
+			var event = JSON.parse(eventJson);
 			var eventId = events.generateId(event.Source, event.Event);
 			var cfn = this.callbacks[eventId];
 			if (typeof(cfn) === "function"){

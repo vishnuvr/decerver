@@ -14,7 +14,6 @@ import (
 	"os/signal"
 	"path"
 	"sync"
-	"time"
 )
 
 var logger *log.Logger = core.NewLogger("Decerver Core")
@@ -131,12 +130,6 @@ func (dc *DeCerver) Start() {
 
 	// Now everything is registered.
 	dc.isStarted = true
-
-	// TODO Haxx until we got front end.
-	go func() {
-		time.Sleep(1000)
-		dc.dappRegistry.LoadDapp("helloworld")
-	}()
 
 	logger.Println("Running...")
 	// Just block for now.
