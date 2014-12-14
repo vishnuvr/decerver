@@ -30,13 +30,6 @@ func BindDefaults(runtime *JsRuntime) {
 	// Networking.
 	_, err = vm.Run(`
 		
-		var E_PARSE = -32700;
-		var E_INVALID_REQ = -32600;
-		var	E_NO_METHOD = -32601;
-		var	E_BAD_PARAMS = -32602;
-		var	E_INTERNAL = -32603;
-		var	E_SERVER = -32000;
-		
 		// Network is an object that encapsulates all networking activity.
 		var network = {};
 		
@@ -90,16 +83,111 @@ func BindDefaults(runtime *JsRuntime) {
 		
 		// Websockets
 		
-		// Each session has a handler.
+		// Error codes for ESRPC
+		var E_PARSE = -32700;
+		var E_INVALID_REQ = -32600;
+		var	E_NO_METHOD = -32601;
+		var	E_BAD_PARAMS = -32602;
+		var	E_INTERNAL = -32603;
+		var	E_SERVER = -32000;
+		
+		// Convenience method for creating an ESPRC response.
+		network.getWsResponse = function(){
+			return {
+				"Protocol" : "EWSMP1",
+				"Method" : "",
+				"Result" : "",
+				"Error" : "",
+				"Time" : "",
+				"Id" : ""
+			};
+		}
+		
+		// Convenience method for creating an ESPRC response from
+		// an error.
+		network.getWsError = function(error){
+			if (typeof(error) !== "string") {
+				error = "Server passed non string to error function (bad server-side javascript).";
+			}
+			return {
+				"Protocol" : "EWSMP1",
+				"Method" : "",
+				"Result" : "",
+				"Timestamp" : "",
+				"Id" : "",
+				"Error" : {
+					"Code" : E_INTERNAL,
+					"Message" : error,
+					"Data" : null
+				  }
+			};
+		}
+		
+		// Convenience method for creating an ESPRC response from
+		// an error. This allows you to fill in more details then 
+		// network.getWsError
+		network.getWsErrorDetailed = function(code, message, data){
+			return {
+				"Protocol" : "ESRPC",
+				"Method" : "",
+				"Result" : "",
+				"Time" : "",
+				"Id" : "",
+				"Error" : {
+					"Code" : code,
+					"Message" : message,
+					"Data" : data
+				  }
+			};
+		}
+		
+		// Convenience method for creating an ESPRC response from
+		// a E_BAD_PARAMS error.
+		network.getWsBPError = function(msg){
+		
+			if(typeof(msg) !== "string") {
+				if(typeof(msg) !== "undefined") {
+					msg = "Server passed non string to error function (bad server-side javascript).";
+				} else {
+					msg = "Invalid params to method call.";
+				}
+			} else if(msg === ""){
+				msg = "Invalid params to method call.";
+			}
+			
+			return {
+				"Protocol" : "EWSMP1",
+				"Method" : "",
+				"Result" : "",
+				"Timestamp" : "",
+				"Id" : "",
+				"Error" : {
+					"Code" : E_BAD_PARAMS,
+					"Message" : msg,
+					"Data" : null
+				  }
+			};
+		}
+		
+		
+		// handlers for websockets.
 		network.wsHandlers = {};
+		// the websocket sessions themselves.
 		network.wsSessions = {};
 		
+		// This is used to set a callback for each new session.
+		// the default function does nothing, and should be 
+		// overriden in dapp backend javascript.
 		network.newWsCallback = function(sessionObj){
 			return function (){
 				Println("No callback registered for new websocket connections.");
 			};
 		};
 		
+		// This is called from go code as a response to newly negotiated
+		// websocket connections. It is used to bind the session object
+		// to the runtime.
+		// WARNING: Should not be used.
 		network.newWsSession = function(sessionObj){
 			var sId = sessionObj.SessionId();
 			Println("Adding new session: " + sId);
@@ -107,12 +195,15 @@ func BindDefaults(runtime *JsRuntime) {
 			network.wsSessions[sId] = sessionObj;
 		}
 		
+		// This is called whenever a session is deleted.
 		network.deleteWsCallback = function(sessionObj){
 			return function (){
 				Println("No callback registered for delete websocket connections.");
 			};
 		};
 		
+		// Called from go code to delete a session.
+		// WARNING: Should not be used.
 		network.deleteWsSession = function(sessionId){
 			var sId = sessionId;
 			var sessionObj = network.wsSessions[sId];
@@ -125,6 +216,8 @@ func BindDefaults(runtime *JsRuntime) {
 			network.deleteWsCallback(sessionObj);
 		}
 		
+		// This is called from go code when new messages arrive.
+		// WARNING: Should not be used.
 		network.incomingWsMsg = function(sessionId, reqJson) {
 			Println("Incoming websocket message.");
 			try {
@@ -154,59 +247,6 @@ func BindDefaults(runtime *JsRuntime) {
 			}
 		}
 		
-		network.newWsRequest = function(){
-			return {
-				"Protocol" : "EWSMP1",
-				"Method" : "",
-				"Params" : "",
-				"Time" : "",
-				"Id" : ""
-			};
-		}
-		
-		network.getWsResponse = function(){
-			return {
-				"Protocol" : "EWSMP1",
-				"Method" : "",
-				"Result" : "",
-				"Error" : "",
-				"Time" : "",
-				"Id" : ""
-			};
-		}
-		
-		network.getWsErrorDetailed = function(code, message, data){
-			return {
-				"Protocol" : "ESRPC",
-				"Method" : "",
-				"Result" : "",
-				"Time" : "",
-				"Id" : "",
-				"Error" : {
-					"Code" : code,
-					"Message" : message,
-					"Data" : data
-				  }
-			};
-		}
-		
-		network.getWsError = function(error){
-			if (typeof(error) !== "string") {
-				error = "Server passed non string to error function (bad server-side javascript).";
-			}
-			return {
-				"Protocol" : "EWSMP1",
-				"Method" : "",
-				"Result" : "",
-				"Timestamp" : "",
-				"Id" : "",
-				"Error" : {
-					"Code" : E_INTERNAL,
-					"Message" : error,
-					"Data" : null
-				  }
-			};
-		}
 	`)
 
 	if err != nil {
@@ -215,26 +255,40 @@ func BindDefaults(runtime *JsRuntime) {
 		logger.Println("Networking script loaded.")
 	}
 
+	// TODO add the socket Id to name.
 	_, err = vm.Run(`
 	
+		// This is the events object. It handles events that comes
+		// in from the event processor.
 		var events = {};
 		
+		// These are callbacks that are used for events.
 		events.callbacks = {};
 		
-		events.subscribe = function(eventSource, eventType, eventTarget, callbackFn){
+		/*  Called to subscribe on an event.
+		 *
+		 *  Params:
+		 *  eventSource - the source module, ipfs, monk, etc.
+		 *  eventType   - the type of event. Could be 'newBlock' for monk.
+		 *  eventTarget - optional (not often used)
+		 *  callbackFn  - the callback function to use when the event 
+		 *                comes in.
+		 *  uid         - usually the socket id. Used to make the id unique.
+		 */
+		events.subscribe = function(eventSource, eventType, eventTarget, callbackFn, uid){
 		
 			if(typeof(callbackFn) !== "function"){
 				throw new Error("Trying to register a non callback function as callback.");
 			}
-			
-			var eventId = events.generateId(eventSource,eventType);
+			var eventId = events.generateId(eventSource,eventType, uid);
 			// The jsr_events object has the go bindings to actually subscribe.
 			jsr_events.Subscribe(eventSource, eventType, eventTarget, eventId);
 			this.callbacks[eventId] = callbackFn;	
 		}
 		
-		events.unsubscribe = function(eventSource,eventName){
-			var subId = events.generateId(eventSource,eventName);
+		// Called to unsubscribe form an event.
+		events.unsubscribe = function(eventSource,eventName, uid){
+			var subId = events.generateId(eventSource,eventName, uid);
 			jsr_events.Unsubscribe(subId);
 			events.callbacks[subId] = null;
 		}
@@ -253,8 +307,10 @@ func BindDefaults(runtime *JsRuntime) {
 			return;
 		}
 		
-		events.generateId = function(evtSource,evtName){
-			return RuntimeId + "_" + evtSource + "_" + evtName; 
+		// used by events to generate unique subscriber Ids based on
+		// the event source and name.
+		events.generateId = function(evtSource,evtName, uid){
+			return RuntimeId + "_" + evtSource + "_" + evtName + "_" + uid; 
 		}
 	`)
 

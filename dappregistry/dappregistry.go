@@ -7,7 +7,7 @@ import (
 	//"encoding/hex"
 	"encoding/json"
 	"errors"
-	"github.com/eris-ltd/decerver-interfaces/api"
+	"github.com/eris-ltd/decerver-interfaces/network"
 	"github.com/eris-ltd/decerver-interfaces/core"
 	"github.com/eris-ltd/decerver-interfaces/dapps"
 	"github.com/eris-ltd/decerver-interfaces/modules"
@@ -54,13 +54,13 @@ type DappRegistry struct {
 	keys   map[string]string
 	dapps  map[string]*Dapp
 	ate    core.RuntimeManager
-	server api.Server
+	server network.Server
 //	hashDB *leveldb.DB
 	runningDapp *Dapp
 	moduleReg modules.ModuleRegistry
 }
 
-func NewDappRegistry(ate core.RuntimeManager, server api.Server, mr modules.ModuleRegistry) *DappRegistry {
+func NewDappRegistry(ate core.RuntimeManager, server network.Server, mr modules.ModuleRegistry) *DappRegistry {
 	dr := &DappRegistry{}
 	dr.keys = make(map[string]string)
 	dr.dapps = make(map[string]*Dapp)

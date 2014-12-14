@@ -144,6 +144,7 @@ func (dc *DeCerver) Start() {
 	signal.Notify(c, os.Interrupt, os.Kill)
 	<-c
 	logger.Println("Shutting down.")
+	dc.moduleRegistry.Shutdown()
 }
 
 func (dc *DeCerver) createPaths() {
