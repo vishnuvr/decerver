@@ -26,11 +26,11 @@ func NewDecerverAPIServer(dc core.DeCerver, dr dapps.DappRegistry) *DecerverAPIS
 
 func (das *DecerverAPIServer) handleReadyGET(w http.ResponseWriter, r *http.Request) {
 	logger.Println("GET decerver ready")
-	
-	if !das.decerver.IsStarted(){
-		das.writeError(w,400,"decerver not started")
+
+	if !das.decerver.IsStarted() {
+		das.writeError(w, 400, "decerver not started")
 	}
-	
+
 	dapplist := das.dappreg.GetDappList()
 	bts, err := json.Marshal(dapplist)
 
@@ -175,7 +175,7 @@ func (das *DecerverAPIServer) handleDappSwitch(w http.ResponseWriter, r *http.Re
 	url := r.URL.String()
 	mName := path.Base(url)
 	fmt.Println("Url: " + url)
-	if mName == "." || mName == "/" || mName == ""{
+	if mName == "." || mName == "/" || mName == "" {
 		das.writeError(w, 404, "Malformed URL")
 		return
 	}
@@ -188,15 +188,14 @@ func (das *DecerverAPIServer) handleDappSwitch(w http.ResponseWriter, r *http.Re
 	}
 
 	w.WriteHeader(200)
-	
+
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	// Whatever...
 	fmt.Fprint(w, "success")
 }
 
-
 func (das *DecerverAPIServer) handleFoF(w http.ResponseWriter, r *http.Request) {
-	das.writeError(w,400,"The route not open (the dapp is not in focus).")
+	das.writeError(w, 400, "The route not open (the dapp is not in focus).")
 }
 
 func (das *DecerverAPIServer) writeError(w http.ResponseWriter, status int, msg string) {

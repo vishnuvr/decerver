@@ -378,7 +378,7 @@ func bindHelpers(vm *otto.Otto) {
 		result, _ := vm.ToValue("0x" + hex.EncodeToString(p0.Mod(p0, p1).Bytes()))
 		return result
 	})
-	
+
 	vm.Set("Equals", func(call otto.FunctionCall) otto.Value {
 		p0, p1, errP := parseBin(call)
 		if errP != nil {
@@ -386,7 +386,7 @@ func bindHelpers(vm *otto.Otto) {
 		}
 		ret := false
 		if p0.Cmp(p1) == 0 {
-			ret = true;
+			ret = true
 		}
 		result, _ := vm.ToValue(ret)
 		return result
@@ -419,12 +419,12 @@ func bindHelpers(vm *otto.Otto) {
 			fmt.Println(err0)
 			return otto.UndefinedValue()
 		}
-		if(prm == "" || prm == "0x0" || prm == "0x" || prm == "0"){
-			logger.Println("Getting zero hex string from otto, returning empty string");
+		if prm == "" || prm == "0x0" || prm == "0x" || prm == "0" {
+			logger.Println("Getting zero hex string from otto, returning empty string")
 			r, _ := vm.ToValue("")
 			return r
 		}
-		if(prm[1] == 'x'){
+		if prm[1] == 'x' {
 			prm = prm[2:]
 		}
 		bts, err1 := hex.DecodeString(prm)
@@ -443,14 +443,14 @@ func bindHelpers(vm *otto.Otto) {
 			return otto.UndefinedValue()
 		}
 		bts := []byte(prm)
-		
+
 		if 32 > len(bts) {
-			zeros := make([]byte, 32 - len(bts) )
-			bts = append(zeros,bts...)
+			zeros := make([]byte, 32-len(bts))
+			bts = append(zeros, bts...)
 		}
 		res := "0x" + hex.EncodeToString(bts)
 		result, _ := vm.ToValue(res)
-		
+
 		return result
 	})
 
@@ -468,7 +468,7 @@ func bindHelpers(vm *otto.Otto) {
 			return otto.UndefinedValue()
 		}
 		if len(prm) == 0 {
-			logger.Printf("Trying to hash an empty string.");
+			logger.Printf("Trying to hash an empty string.")
 			return otto.UndefinedValue()
 		}
 		if prm[1] == 'x' {
@@ -482,7 +482,7 @@ func bindHelpers(vm *otto.Otto) {
 		d := sha3.NewKeccak256()
 		d.Write(h)
 		v := hex.EncodeToString(d.Sum(nil))
-//		fmt.Println("SHA3: " + v)
+		//		fmt.Println("SHA3: " + v)
 		result, _ := vm.ToValue("0x" + v)
 
 		return result

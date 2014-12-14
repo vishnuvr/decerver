@@ -5,8 +5,8 @@ package server
 
 import (
 	"github.com/gorilla/websocket"
-	"time"
 	"io/ioutil"
+	"time"
 )
 
 const (
@@ -87,7 +87,7 @@ func reader(ss *Session) {
 	//wsc.conn.SetReadDeadline(time.Now().Add(downWait))
 	conn.SetReadDeadline(time.Time{})
 	//wsc.ws.SetPongHandler(func(string) error { c.ws.SetReadDeadline(time.Now().Add(downWait)); return nil })
-	
+
 	// TODO add back the reader timeout?
 	for {
 
@@ -128,7 +128,7 @@ func writer(ss *Session) {
 			return
 		}
 
-		if err := conn.WriteMessage(websocket.TextMessage,message.Data); err != nil {
+		if err := conn.WriteMessage(websocket.TextMessage, message.Data); err != nil {
 			return
 		}
 

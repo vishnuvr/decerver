@@ -18,7 +18,7 @@ func InitDir(Datadir string) {
 	if err != nil {
 		if os.IsNotExist(err) {
 			fmt.Printf("Data directory '%s' doesn't exist, creating it\n", Datadir)
-			
+
 			os.MkdirAll(Datadir, 0777)
 		}
 	}

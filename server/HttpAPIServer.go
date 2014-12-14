@@ -9,9 +9,9 @@ import (
 )
 
 type HttpResp struct {
-	Status int				  `json:"status"`
-	Header map[string]string  `json:"header"`
-	Body   string             `json:"body"`
+	Status int               `json:"status"`
+	Header map[string]string `json:"header"`
+	Body   string            `json:"body"`
 }
 
 type HttpAPIServer struct {
@@ -28,7 +28,7 @@ func (has *HttpAPIServer) handleHttp(w http.ResponseWriter, r *http.Request) {
 	u := r.URL
 	p := u.Path
 	caller := path.Base(p)
-	
+
 	rt := has.ate.GetRuntime(caller)
 	// TODO Update this. It's basically how we check if dapp is ready now.
 	if rt == nil {
@@ -37,9 +37,9 @@ func (has *HttpAPIServer) handleHttp(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "Dapp not in focus")
 		return
 	}
-	
+
 	reqJson, errM := json.Marshal(r)
-	
+
 	if errM != nil {
 		logger.Println("Error when marshalling http request (this reeeeally should not happen) : " + errM.Error())
 	}
@@ -50,25 +50,25 @@ func (has *HttpAPIServer) handleHttp(w http.ResponseWriter, r *http.Request) {
 		has.writeError(w, 500, err.Error())
 		return
 	}
-	
+
 	rStr := ret.(string)
 	hr := &HttpResp{}
 	errJson := json.Unmarshal([]byte(rStr), hr)
-	
+
 	if errJson != nil {
 		has.writeError(w, 500, errJson.Error())
 		return
 	}
-	
-	has.writeReq(hr,w)
+
+	has.writeReq(hr, w)
 }
 
 func (has *HttpAPIServer) writeReq(resp *HttpResp, w http.ResponseWriter) {
-	logger.Printf("Response status message: %d\n", resp.Status);
-	logger.Printf("Response header stuff: %v\n", resp.Header);
+	logger.Printf("Response status message: %d\n", resp.Status)
+	logger.Printf("Response header stuff: %v\n", resp.Header)
 	w.WriteHeader(resp.Status)
 	for k, v := range resp.Header {
-		w.Header().Set(k,v)
+		w.Header().Set(k, v)
 	}
 	w.Write([]byte(resp.Body))
 }

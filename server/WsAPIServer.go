@@ -64,7 +64,7 @@ func (srv *WsAPIServer) handleWs(w http.ResponseWriter, r *http.Request) {
 	u := r.URL
 	p := u.Path
 	caller := path.Base(p)
-	
+
 	rt := srv.ate.GetRuntime(caller)
 	// TODO Update this. It's basically how we check if dapp is ready now.
 	if rt == nil {
@@ -73,7 +73,7 @@ func (srv *WsAPIServer) handleWs(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "Dapp not in focus")
 		return
 	}
-	
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		logger.Printf("Failed to upgrade to websocket (%s)\n", err.Error())
@@ -84,17 +84,17 @@ func (srv *WsAPIServer) handleWs(w http.ResponseWriter, r *http.Request) {
 		writeMsgChannel:   make(chan *Message, 256),
 		writeCloseChannel: make(chan *Message, 256),
 	}
-	
+
 	ss := srv.CreateSession(caller, rt, wsConn)
 	// We add this session to the callers (dapps) runtime.
 	err = rt.BindScriptObject("tempObj", NewSessionJs(ss))
-	
+
 	if err != nil {
 		panic(err.Error())
 	}
-	
+
 	// TODO expose toValue in runtime?
-	rt.AddScript("network.newWsSession(tempObj); tempObj = null;");
+	rt.AddScript("network.newWsSession(tempObj); tempObj = null;")
 	//rt.CallFuncOnObj("network", "newWsSession", val)
 	go writer(ss)
 	reader(ss)
@@ -122,20 +122,20 @@ func (ss *Session) Close() {
 	logger.Printf("CLOSING SESSION: %d\n", ss.wsConn.sessionId)
 	// Deregister ourselves.
 	ss.server.RemoveSession(ss)
-	ss.runtime.CallFuncOnObj("network","deleteWsSession",int(ss.SessionId()))
+	ss.runtime.CallFuncOnObj("network", "deleteWsSession", int(ss.SessionId()))
 	if ss.wsConn.conn != nil {
 		err := ss.wsConn.conn.Close()
 		if err != nil {
 			logger.Printf("Failed to close websocket connection, already removed: %d\n", ss.wsConn.sessionId)
 		}
 	}
-	
+
 }
 
 func (ss *Session) handleRequest(rpcReq string) {
 	logger.Println("RPC Message: " + rpcReq)
 	ret, err := ss.runtime.CallFuncOnObj("network", "incomingWsMsg", int(ss.wsConn.sessionId), rpcReq)
-	
+
 	if err != nil {
 		logger.Printf("Js runtime error, could not pass message. Closing socket. (sesion: %d)\nMessage dump: %s\n", ss.SessionId(), rpcReq)
 		ss.wsConn.writeCloseChannel <- GetCloseMessage()

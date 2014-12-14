@@ -24,8 +24,7 @@ type JsObj struct {
 	Object interface{}
 }
 
-
-// Implements RuntimeManager. Even though we call it Atë, 
+// Implements RuntimeManager. Even though we call it Atë,
 // RuntimeManager makes more sense to module devs I think.
 // - Andreas
 type Ate struct {
@@ -38,8 +37,8 @@ type Ate struct {
 func NewAte(er events.EventRegistry) *Ate {
 	return &Ate{
 		make(map[string]*JsRuntime),
-		make([]*JsObj,0),
-		make([]string,0),
+		make([]*JsObj, 0),
+		make([]string, 0),
 		er,
 	}
 }
@@ -69,7 +68,7 @@ func (ate *Ate) CreateRuntime(name string) core.Runtime {
 			fmt.Println(err.Error())
 		}
 	}
-	
+
 	logger.Printf("Creating new runtime: " + name)
 	// DEBUG
 	logger.Printf("Runtimes: %v\n", ate.runtimes)
@@ -88,7 +87,7 @@ func (ate *Ate) GetRuntime(name string) core.Runtime {
 func (ate *Ate) RemoveRuntime(name string) {
 	rt, ok := ate.runtimes[name]
 	if ok {
-		delete(ate.runtimes,name)
+		delete(ate.runtimes, name)
 		rt.Shutdown()
 	}
 }
@@ -175,7 +174,7 @@ func (jsr *JsRuntime) CallFuncOnObj(objName, funcName string, param ...interface
 		fmt.Println(err.Error())
 		return nil, err
 	}
-	
+
 	val, callErr := ob.Object().Call(funcName, param...)
 
 	if callErr != nil {

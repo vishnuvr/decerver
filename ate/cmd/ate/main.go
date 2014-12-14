@@ -7,7 +7,7 @@ import (
 )
 
 type TestStruct struct {
-	Val0 string       `json:"val0"`
+	Val0 string      `json:"val0"`
 	Val1 TestStruct2 `json:"val1"`
 	Val2 []string
 }
@@ -30,18 +30,18 @@ type TestStruct2 struct {
 
 func main() {
 	ts := &TestStruct{"test",
-		TestStruct2{"testInner"}, 
+		TestStruct2{"testInner"},
 		[]string{"testInString"},
 	}
 	/*
-	valMap := make(map[string]interface{})
-	valMap["testString"] = "test"
-	valMap["testStringArray"] = []string{"testing"}
-	
-	intMap := make(map[string]interface{})
-	intMap["test"] = 55
-	
-	valMap["testIntMap"] = intMap
+		valMap := make(map[string]interface{})
+		valMap["testString"] = "test"
+		valMap["testStringArray"] = []string{"testing"}
+
+		intMap := make(map[string]interface{})
+		intMap["test"] = 55
+
+		valMap["testIntMap"] = intMap
 	*/
 	vm := otto.New()
 

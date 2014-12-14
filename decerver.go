@@ -141,10 +141,10 @@ func (dc *DeCerver) Start() {
 }
 
 func (dc *DeCerver) createPaths() {
-	
+
 	dc.paths = &Paths{}
 	dc.paths.mutex = &sync.Mutex{}
-	
+
 	dc.paths.root = dc.config.RootDir
 	InitDir(dc.paths.root)
 	dc.paths.log = dc.paths.root + "/logs"

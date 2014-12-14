@@ -51,20 +51,20 @@ func (mr *ModuleRegistry) Init() error {
 
 func (mr *ModuleRegistry) Start() error {
 	for _, mod := range mr.modules {
-		go func(){
+		go func() {
 			mod.Start()
 		}()
-		
+
 	}
 	return nil
 }
 
 func (mr *ModuleRegistry) Shutdown() error {
 	for _, mod := range mr.modules {
-		go func(){
+		go func() {
 			mod.Shutdown()
 		}()
-		
+
 	}
 	return nil
 }
