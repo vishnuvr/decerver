@@ -1,22 +1,13 @@
 package server
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/eris-ltd/decerver-interfaces/api"
 	"github.com/eris-ltd/decerver-interfaces/core"
 	"github.com/eris-ltd/decerver-interfaces/util"
 	"github.com/gorilla/websocket"
 	"net/http"
 	"path"
 )
-
-func getErrorResponse(err *api.Error) []byte {
-	rsp := &api.Response{}
-	rsp.Error = err
-	bts, _ := json.Marshal(rsp)
-	return bts
-}
 
 // The websocket server handles connections.
 type WsAPIServer struct {
@@ -60,14 +51,13 @@ func (srv *WsAPIServer) CreateSession(caller string, rt core.Runtime, wsConn *Ws
 	id := srv.idPool.GetId()
 	ss.wsConn.sessionId = id
 	srv.sessions[id] = ss
-	logger.Printf("ACTIVE CONNECTIONS: %v\n", srv.sessions)
 	return ss
 }
 
 // This is passed to the Martini server.
 // Find out what endpoint they called and create a session based on that.
 func (srv *WsAPIServer) handleWs(w http.ResponseWriter, r *http.Request) {
-	logger.Println("New connection.")
+	logger.Println("New websocket connection registering.")
 	if srv.activeConnections == srv.maxConnections {
 		logger.Println("Connection failed: Already at capacity.")
 	}
@@ -147,12 +137,8 @@ func (ss *Session) handleRequest(rpcReq string) {
 	ret, err := ss.runtime.CallFuncOnObj("network", "incomingWsMsg", int(ss.wsConn.sessionId), rpcReq)
 	
 	if err != nil {
-		err := &api.Error{
-			Code:    api.E_SERVER,
-			Message: "Js runtime error: " + ss.caller + " (Error: " + err.Error() + ")",
-			Data:    rpcReq,
-		}
-		ss.wsConn.writeMsgChannel <- &Message{Data: getErrorResponse(err), Type: websocket.TextMessage}
+		logger.Printf("Js runtime error, could not pass message. Closing socket. (sesion: %d)\nMessage dump: %s\n", ss.SessionId(), rpcReq)
+		ss.wsConn.writeCloseChannel <- GetCloseMessage()
 		return
 	}
 	if ret == nil {

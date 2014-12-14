@@ -58,3 +58,13 @@ func (mr *ModuleRegistry) Start() error {
 	}
 	return nil
 }
+
+func (mr *ModuleRegistry) Shutdown() error {
+	for _, mod := range mr.modules {
+		go func(){
+			mod.Shutdown()
+		}()
+		
+	}
+	return nil
+}
