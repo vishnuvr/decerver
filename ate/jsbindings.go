@@ -255,7 +255,6 @@ func BindDefaults(runtime *JsRuntime) {
 		logger.Println("Networking script loaded.")
 	}
 
-	// TODO add the socket Id to name.
 	_, err = vm.Run(`
 		
 		// This is the events object. It handles events that comes
@@ -318,6 +317,129 @@ func BindDefaults(runtime *JsRuntime) {
 		logger.Println("Error while bootstrapping js event-processing: " + err.Error())
 	} else {
 		logger.Println("Event processing script loaded.")
+	}
+	
+	_, err = vm.Run(`
+		
+		// (Integer) math done on strings. The strings can be
+		// either hex or decimal. Hex strings should be prepended
+		// by '0x'. All arithmetic operations has integer inputs and
+		// outputs (no floating point numbers).
+		//
+		// If the returned value is a number, as in 'add' or 'mul', 
+		// then it is always a hex-string.
+		var smath = {};
+		
+		// Add the two numbers A and B
+		//
+		// Params: A and B (as strings)
+		// Returns: The sum of A and B (as a string)
+		smath.add = function(A,B){
+			return Add(A,B);
+		}
+		
+		// Subtract number B from the number A
+		//
+		// Params: A and B (as strings)
+		// Returns: The difference between A and B (as a string)
+		smath.sub = function(A,B){
+			return Sub(A,B);
+		}
+		
+		// Multiply the two numbers A and B
+		//
+		// Params: A and B (as strings)
+		// Returns: The product of A and B (as a string)
+		smath.mul = function(A,B){
+			return Mul(A,B);
+		}
+		
+		// Divide the two numbers A and B
+		//
+		// Params: A and B (as strings)
+		// Returns: The quota of A and B (as a string)
+		//          Division by 0 is undefined.
+		smath.div = function(A,B){
+			return Div(A,B);
+		}
+		
+		// Calculates A mod B
+		//
+		// Params: A and B (as strings)
+		// Returns: A mod B (as a string)
+		//          A mod 0 is undefined
+		smath.mod = function(A,B){
+			return Mod(A,B);
+		}
+		
+		// Calculates A ^ B (A raised to the power of B)
+		//
+		// Params: A and B (as strings)
+		// Returns: A ^ B
+		smath.exp = function(A,B){
+			return Exp(A,B);
+		}
+		
+		// Calculates whether the input is equal to zero or not.
+		// This is true if the input is "0", "0x0", or "0x" (eth quirk)
+		//
+		// Params: The number (as a string) to try
+		// Returns: true if equal to zero, otehrwise false
+		smath.isZero = function(sNum){
+			return IsZero(A,B);
+		}
+		
+		// Calculates whether the two input number-strings are equal.
+		// This is true if the two numbers evaluate to the same
+		// Go-lang big integer value, meaning that regardless of
+		// base or format, tey must represent the same numeric value.
+		//
+		// Params: The two number-strings to compare
+		// Returns: true if equal, otehrwise false
+		smath.equals = function(A,B){
+			return Equals(A,B);
+		}
+		
+		// A few easy-to-use string utility functions, such as converting
+		// between a string value and a hex representation of that string.
+		var sutil = {}; 
+		
+		// Takes a string and converts it into a 32 byte left-padded 
+		// hex string. This is useful when passing strings as arguments
+		// to blockchain transactions.
+		//
+		// Note: Don't attempt UTF strings. That's not fully supported (yet).
+		sutil.stringToHex = function(stringVal){
+			return StringToHex(stringVal);
+		}
+		
+		// Takes a hex string and converts it into a normal string. It does
+		// so by converting the hex string into bytes, then converts the
+		// bytes into a string.
+		//
+		// Example:
+		// The hex string "0x4142" is converted to the byte array [0x41,0x42],
+		// which is the string "AB". 
+		//
+		// Note: Don't attempt UTF strings. That's not fully supported (yet).
+		sutil.hexToString = function(stringVal){
+			return hexToString(stringVal);
+		}
+		
+		// Crypto utility
+		var scrypto = {};
+		
+		// Takes the sha3 digest of the argument string.
+		scrypto.sha3 = function(stringVal){
+			return SHA3(stringVal);
+		}
+					
+	`)
+
+	if err != nil {
+		logger.Println("Error while bootstrapping js utilities: " + err.Error())
+	} else {
+		logger.Println("Utilities script loaded.")
 	}
 
 }

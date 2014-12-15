@@ -4,9 +4,11 @@
 ; (calldataload 32) is the hash
 
 ; Definitions
-
+{
 (def "filename" $0)		; $N is shorthand for (calldataload N)
 (def "filehash" $32)
+
+[[0x10]] 0xDEADBEEF
 
 ; Here starts the init section. There is no code in init - we just return the body.
 
@@ -25,3 +27,5 @@
 		)
 		 
 	} )
+	
+}
