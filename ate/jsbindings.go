@@ -293,10 +293,8 @@ func BindDefaults(runtime *JsRuntime) {
 		}
 		
 		// Called by the go event processor.
-		events.post = function(eventJson){
-		
+		events.post = function(eventId, eventJson){
 			var event = JSON.parse(eventJson);
-			var eventId = events.generateId(event.Source, event.Event);
 			var cfn = this.callbacks[eventId];
 			if (typeof(cfn) === "function"){
 				cfn(event);

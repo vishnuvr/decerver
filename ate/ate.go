@@ -242,7 +242,7 @@ func (jsre *JsrEvents) Subscribe(evtSource, evtType, evtTarget, subId string) {
 			if err != nil {
 				logger.Println("Error when posting event to ate: " + err.Error())
 			}
-			s.rt.CallFuncOnObj("events", "post", string(jsonString))
+			s.rt.CallFuncOnObj("events", "post", sub.Id(), string(jsonString))
 		}
 	}(sub)
 }

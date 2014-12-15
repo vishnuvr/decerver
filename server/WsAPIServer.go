@@ -94,7 +94,7 @@ func (srv *WsAPIServer) handleWs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO expose toValue in runtime?
-	rt.AddScript("network.newWsSession(tempObj); tempObj = null;")
+	rt.AddScript("tempObj.sessionId = function(){return this.SessionId()};tempObj.writeJson = function(data){return this.WriteJson(data)};network.newWsSession(tempObj); tempObj = null;")
 	//rt.CallFuncOnObj("network", "newWsSession", val)
 	go writer(ss)
 	reader(ss)
