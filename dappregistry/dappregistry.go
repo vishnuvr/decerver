@@ -45,7 +45,7 @@ func (dapp *Dapp) GetPackageFile() *dapps.PackageFile {
 }
 
 func NewDapp() *Dapp {
-	dapp := &Dapp{models: make([]string, 0)}
+	dapp := &Dapp{}
 	return dapp
 }
 
@@ -158,10 +158,76 @@ func (dc *DappRegistry) RegisterDapp(dir string) {
 		logger.Printf("No models in model dir for app '%s', skipping.\n", dir)
 		return
 	}
+	
+		// Look for a config.json where loding order is defined. If there
+	// is no such file, we just load them alphabetically.
+	
+	loConf := path.Join(modelDir,dapps.LOADING_ORDER_FILE_NAME)
+	_, errLoc := os.Stat(loConf)
+	if errLoc != nil {
+		logger.Printf("Error loading 'config.json' for dapp '%s' models js loading. Skipping...\n", dir)
+		logger.Println(errLoc.Error())
+		return
+	}
 
+	locBts, errL := ioutil.ReadFile(loConf)
+
+	if errL != nil {
+		logger.Printf("Error loading 'config.json' for dapp '%s' models js loading. Skipping...\n", dir)
+		logger.Println(errL.Error())
+		return
+	}
+
+	loadConf := &dapps.LoadOrderConfig{}
+	lcUnmErr := json.Unmarshal(locBts, loadConf)
+
+	if lcUnmErr != nil {
+		logger.Printf("The 'config.json' file for dapp '%s' model loading is corrupted. Skipping...\n", dir)
+		logger.Println(pkUnmErr.Error())
+		return
+	}
+	
+	if len(loadConf.LoadingOrder) == 0 {
+		logger.Printf("The loading order file list in the 'config.json' file for dapp '%s' model loading contains no files. Skipping...\n", dir)
+		return
+	}
+	
+	models := make([]string, 0)
+
+	// TODO recursively and perhaps also a require.js type load file
+	// to ensure the proper loading order.
+	for _, mfName := range loadConf.LoadingOrder {
+		fp := path.Join(modelDir, mfName)
+		/* if fileInfo.IsDir() {
+			logger.Println("Action models cannot be loaded recursively (yet). Skipping directory: " + fp)
+			// Skip for now.
+			continue
+		}
+		*/
+
+		if strings.ToLower(path.Ext(fp)) != ".js" {
+			//fmt.Println("[Dapp Registry] Skipping non .js file: " + fp)
+			continue
+		}
+
+		fileBts, errFile := ioutil.ReadFile(fp)
+		if errFile != nil {
+			logger.Println("Error reading javascript file: " + fp)
+		}
+
+		jsFile := string(fileBts)
+
+		logger.Printf("Loaded javascript file '%s'\n", path.Base(fp))
+
+		models = append(models, jsFile)
+
+	}
+
+	// Create the dapp object and set it up.
 	dapp := NewDapp()
 	dapp.path = dir
 	dapp.packageFile = packageFile
+	dapp.models = models
 
 	/*
 
@@ -196,34 +262,6 @@ func (dc *DappRegistry) RegisterDapp(dir string) {
 	*/
 
 	dc.dapps[packageFile.Id] = dapp
-
-	// TODO recursively and perhaps also a require.js type load file
-	// to ensure the proper loading order.
-	for _, fileInfo := range files {
-		fp := path.Join(modelDir, fileInfo.Name())
-		if fileInfo.IsDir() {
-			logger.Println("Action models are not gotten recursively (yet). Skipping directory: " + fp)
-			// Skip for now.
-			continue
-		}
-
-		if strings.ToLower(path.Ext(fp)) != ".js" {
-			//fmt.Println("[Dapp Registry] Skipping non .js file: " + fp)
-			continue
-		}
-
-		fileBts, errFile := ioutil.ReadFile(fp)
-		if errFile != nil {
-			logger.Println("Error reading javascript file: " + fp)
-		}
-
-		jsFile := string(fileBts)
-
-		logger.Printf("Loaded javascript file '%s'\n", path.Base(fp))
-
-		dapp.models = append(dapp.models, jsFile)
-
-	}
 
 	// Register the handlers right away.
 	dc.server.RegisterDapp(dapp.packageFile.Id)
