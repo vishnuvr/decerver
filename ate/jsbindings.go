@@ -51,6 +51,14 @@ func BindDefaults(runtime *JsRuntime) {
 			};
 		}
 		
+		network.getHttpResponseJSON = function(jsonString){
+			return {
+				"Status" : 200,
+				"Header" : {},
+				"Body" : jsonString
+			};
+		}
+		
 		// Just return ok.
 		network.incomingHttpCallback = function(){
 			return {
@@ -576,7 +584,7 @@ func bindHelpers(vm *otto.Otto) {
 
 	// Millisecond time.
 	vm.Set("TimeMS", func(call otto.FunctionCall) otto.Value {
-		ts := time.Now().UnixNano() >> 6
+		ts := time.Now().UnixNano() >> 9
 		result, _ := vm.ToValue(ts)
 		return result
 	})

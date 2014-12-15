@@ -52,8 +52,8 @@ func NewWebServer(maxConnections uint32, fio core.FileIO, port int, ate core.Run
 }
 
 func (ws *WebServer) RegisterDapp(dappId string) {
-	logger.Println("Adding routes for: " + dappId)
-	ws.webServer.Any(HTTP_BASE+dappId, ws.has.handleHttp)
+	logger.Println("Adding routes for: " + dappId + " path http: " + HTTP_BASE+dappId + "/(.*)")
+	ws.webServer.Any(HTTP_BASE+dappId + "/(.*)", ws.has.handleHttp)
 	ws.webServer.Get(WS_BASE+dappId, ws.was.handleWs)
 }
 
@@ -64,7 +64,6 @@ func (ws *WebServer) AddDappRegistry(dr dapps.DappRegistry) {
 func (ws *WebServer) Start() error {
 
 	ws.webServer.Use(martini.Static(ws.fio.Dapps()))
-	ws.webServer.Use(martini.Static(ws.fio.Adminpages()))
 
 	das := NewDecerverAPIServer(ws.decerver, ws.dr)
 
@@ -85,6 +84,6 @@ func (ws *WebServer) Start() error {
 	go func() {
 		ws.webServer.RunOnAddr("localhost:" + fmt.Sprintf("%d", ws.port))
 	}()
-
+	
 	return nil
 }

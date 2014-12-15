@@ -2,7 +2,9 @@ package moduleregistry
 
 import (
 	"errors"
+	"fmt"
 	"github.com/eris-ltd/decerver-interfaces/modules"
+	"time"
 )
 
 // The module registry is where the different modules are kept. Currently, modules has
@@ -49,22 +51,24 @@ func (mr *ModuleRegistry) Init() error {
 	return nil
 }
 
+// TODO Sync modules better. This stuff really has to be put in the module 
+// wrapper layer. This is a high priority issue.
 func (mr *ModuleRegistry) Start() error {
-	for _, mod := range mr.modules {
-		go func() {
-			mod.Start()
-		}()
-
-	}
+		for _, mod := range mr.modules {
+			
+			go func() {
+				fmt.Println("Loading module: " + mod.Name())
+				mod.Start()
+			}()
+			// TODO get channels from module glue instead.
+			time.Sleep(300);
+		}
 	return nil
 }
 
 func (mr *ModuleRegistry) Shutdown() error {
 	for _, mod := range mr.modules {
-		go func() {
-			mod.Shutdown()
-		}()
-
+		mod.Shutdown()
 	}
 	return nil
 }

@@ -20,6 +20,7 @@ import (
 	"strings"
 	"sync"
 	//"time"
+	"github.com/robertkrimen/otto/parser"
 )
 
 var logger *log.Logger = core.NewLogger("Dapp Registry")
@@ -193,7 +194,7 @@ func (dc *DappRegistry) RegisterDapp(dir string) {
 	}
 	
 	models := make([]string, 0)
-
+	
 	// TODO recursively and perhaps also a require.js type load file
 	// to ensure the proper loading order.
 	for _, mfName := range loadConf.LoadingOrder {
@@ -216,6 +217,15 @@ func (dc *DappRegistry) RegisterDapp(dir string) {
 		}
 
 		jsFile := string(fileBts)
+
+		// Catch some parse errors early on.
+		_ , errParse := parser.ParseFile(nil, "", jsFile, 0)
+		
+		if errParse != nil {
+			logger.Printf("Error parsing javascript file '%s'. DUMP: %s\nError: %s\n", mfName,jsFile, errParse.Error())
+			logger.Println("Skipping dapp: " + dir)
+			return
+		}
 
 		logger.Printf("Loaded javascript file '%s'\n", path.Base(fp))
 

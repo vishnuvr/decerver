@@ -27,7 +27,6 @@ type Paths struct {
 	filesystems string
 	dapps       string
 	system      string
-	adminpages  string
 }
 
 func (p *Paths) Root() string {
@@ -55,10 +54,6 @@ func (p *Paths) Filesystems() string {
 }
 
 func (p *Paths) System() string {
-	return p.system
-}
-
-func (p *Paths) Adminpages() string {
 	return p.system
 }
 
@@ -135,9 +130,10 @@ func (dc *DeCerver) Start() {
 	// Just block for now.
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, os.Kill)
-	<-c
-	logger.Println("Shutting down.")
+	sig := <-c
+	logger.Println("Shutting down: " + sig.String())
 	dc.moduleRegistry.Shutdown()
+	logger.Println("Bye.")
 }
 
 func (dc *DeCerver) createPaths() {
@@ -159,8 +155,6 @@ func (dc *DeCerver) createPaths() {
 	InitDir(dc.paths.blockchains)
 	dc.paths.system = dc.paths.root + "/system"
 	InitDir(dc.paths.system)
-	dc.paths.adminpages = dc.paths.system + "/adminpages"
-	InitDir(dc.paths.adminpages)
 }
 
 func (dc *DeCerver) createNetwork() {
