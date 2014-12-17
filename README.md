@@ -1,66 +1,43 @@
-[![Stories in Ready](https://badge.waffle.io/eris-ltd/deCerver.png?label=ready&title=Ready)](https://waffle.io/eris-ltd/deCerver)
+[![Stories in Ready](https://badge.waffle.io/eris-ltd/deCerver.png?label=ready&title=Ready)](https://waffle.io/eris-ltd/deCerver)[![GoDoc](https://godoc.org/github.com/decerver?status.png)](https://godoc.org/github.com/eris-ltd/decerver)
 
-## The deCerver
+![deCerver logo](docs/images/decerver-color.png)
 
-A worker for a decentralized stack. The deCerver is **the** hub for Decentralized Applications (DAPPs).
+## The Decerver
+
+A worker for a decentralized stack. The Decerver is the application server for Distributed Applications (DAPPs).
 
 ## What is This Thing?
 
-Generalized worker and server for decentralized applications which utilize p2p messaging, file sharing, and blockchain based database technology.
+The Decerver helps developers build applications which leverage opt-in data ownership and significantly increased data utility for both customers and businesses – a software design paradigm we call **Participatory Architecture**. Using peer-to-peer and distributed systems, the Decerver allows the creation of web style, data-driven, interactive distributed applications that can be safely, securely, and reliably deployed and managed. The Decerver significantly lowers the barrier to entry for the production, distribution and maintenance of distributed applications. All while allowing users to participate in the scaling and data security of the application.
 
-## Overview of the deCerver
+More specifically, the Decerver is a distributed application server harmonizes actions across various modules which act as distributed file stores, distributed data stores, or other utility modules. The Decerver integrates distributed data stores (blockchains), a distributed filesystem, a scripting layer, and a legal integrator to incorporate [Legal Markdown](https://lmd.io/)-based contracts into the smart contract stack – effectively putting the “contract” into “smart contracts.”
 
-The `decerver` package defines the main types and interfaces of the decentralized stack which the deCerver is built to manage.
+Applications built for the Decerver are based on web design modalities. In other words, the user interfaces for these applications are written in languages which almost any developer, and even some [heads of state](http://techcrunch.com/2014/12/08/barack-obama-becomes-the-first-president-to-write-code/), can write. Applications for the Decerver use HTML, CSS, and Javascript to provide their user interface.
 
-Out of the box, the following generalized interfaces are provided:
+Each of the modules which the Decerver utilizes has an established interface which exposes functions to a javascript runtime that executes inside of the Decerver’s core. These exposed functions allow a distributed application developer to design and implement a distributed application almost entirely in javascript – with the exception that if a blockchain that uses smart contracts is needed for that distributed application, the developer will need to use one of the smart contract languages to build those smart contracts (and the other exceptions of html and css of course).
 
-- API server
-  - acts as the frontend for the deCerver so that the deCerver can always be accessed via a normal browser at localhost
-- decentralized databases
-  - three databases are compiled by default: bitcoin, ethereum, and [thelonius](https://github.com/eris-ltd/thelonius)
-  - if and when other blockchains come online we will happily accept pull requests for interfaces which wrap those packages
-- decentralized filesystem
-  - for now, only IPFS is supported
-  - if and when other decentralized file stores come online we will happily accept pull requests for interfaces which wrap those packages
-- legal integrator
-  - for integrating real world, [legalmarkdown](https://github.com/eris-ltd/legalmarkdown) based contracts into your smart contract or decentralized stack
-- scripts runner
-  - for running jobs either in response to an inbound API call, in response to an event within one of the decentralized stack modules, or on a schedule
+## Installation
 
-For each of these packages, the deCerver acts as the hub for the entire system allowing all of these layers to talk to one another via a mediated -- javascript based scripting layer. The entire system operates in the manner shown below:
+You must have [Go](https://golang.org/) installed.
 
-TODO-CSK: Fix this ====>
-
-![deCerver architecture](docs/images/deCerver Structure.png)
-
-In the image shown above the deCerver package is in Blue. As stated, it acts as the hub for the system.
-
-Packages which *cannot interact* with users or systems outside of the context of the deCerver are:
-
-* the eris fork of the ethereum package
-* the legal integrator which controls real contract factories and changes to real contracts
-* the decentralized file system
-* the p2p communication system (TBD)
-
-Packages which *can interact* with users or systems outside of the context of the deCerver are:
-
-* the scripts runner which is made to predominantly make API calls to other systems and return data to the ethereum layer
-* the notifier which is made to ensure that private keys of users are retained in user's control and also to ensure that legalities surrounding `offer` and `acceptance` for valid contractual arrangements are abided by
-
-## Config
-
-Every module type should also have a config type, and must have methods `WriteConfig(path)`, `ReadConfig(path)`, and `SetConfig(interface{})`. If you wan't to set non-default configs from the decerver level, we can do it with ReadConfig and SetConfig (and also use them for implementing flags. But flags at the decerver level. Though, each module should provide a standalone cli with a set of flags, and for testing.) We will have to talk more about standardizing configuration. For convenience, for now, config types should have json bindings, eg:
-
-```go
-type ChainConfig struct{
-    Port int        `json:"port"`
-    Mining bool     `json:"mining"`
-    MaxPeers int    `json:"max_peers"`
-    ConfigFile string `json:"config_file"`
-    RootDir string  `json:"root_dir"`
-    Name string     `json:"name"`
-    LogFile string  `json:"log_file"`
-}
 ```
-This way, SetConfig can be passed json read in from a config file, or from main, or can be passed an initialized config struct itself. SetConfig boilerplate necessary.
+go get github.com/eris-ltd/decerver
+cd $GOPATH/src/github.com/eris-ltd/decerver/cmd/decerver
+go install
+```
 
+That's it! If you have problems building please do let us know by filing an issue here on Github. We will do our best to assist.
+
+**Please note** at this time we have not effectively tested Decerver on Windows so if you have a windows machine we welcome your feedback if you run into any problems (or if you do not!).
+
+## Usage
+
+For Usage and Tutorials, please see the [Decerver](https://decerver.io) site.
+
+## Contributions
+
+1. Fork
+2. Hack
+3. Pull Request
+
+Please note that any pull requests which are merged into this repository explicitly accept the licensing thereof.
