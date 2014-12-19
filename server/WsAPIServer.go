@@ -129,7 +129,6 @@ func (ss *Session) Close() {
 			logger.Printf("Failed to close websocket connection, already removed: %d\n", ss.wsConn.sessionId)
 		}
 	}
-
 }
 
 func (ss *Session) handleRequest(rpcReq string) {

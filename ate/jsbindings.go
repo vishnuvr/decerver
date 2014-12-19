@@ -35,6 +35,7 @@ func BindDefaults(runtime *JsRuntime) {
 		
 		// Http
 		
+		// Returns a default response object. Status is 0, header and body is empty.
 		network.getHttpResponse = function(){
 			return {
 				"Status" : 0,
@@ -43,6 +44,7 @@ func BindDefaults(runtime *JsRuntime) {
 			};
 		}
 		
+		// Returns a response object with status 500, empty header, and body set to: "Internal error"
 		network.getHttpResponse500 = function(){
 			return {
 				"Status" : 500,
@@ -51,6 +53,8 @@ func BindDefaults(runtime *JsRuntime) {
 			};
 		}
 		
+		// Returns a http request with status 200, empty header, and (what should be) a json formatted
+		// string as body.
 		network.getHttpResponseJSON = function(jsonString){
 			return {
 				"Status" : 200,
@@ -59,8 +63,11 @@ func BindDefaults(runtime *JsRuntime) {
 			};
 		}
 		
-		// Just return ok.
-		network.incomingHttpCallback = function(){
+		// This should be overridden by dapps. It is called whenever a new http request arrives, and
+		// will pass the request object as argument to the function.
+		//
+		// The default funciton will return a 200 with header set to plain-text.
+		network.incomingHttpCallback = function(httpReq){
 			return {
 				"Status" : 200,
 				"Header" : {"Content-Type" : "text/plain; charset=utf-8"},
@@ -68,7 +75,7 @@ func BindDefaults(runtime *JsRuntime) {
 			};
 		}
 		
-		// Used internally.
+		// Used internally. Do not call this from javascript.
 		network.handleIncomingHttp = function(httpReqAsJson){
 			var httpReq = JSON.parse(httpReqAsJson);
 			var ret = this.incomingHttpCallback(httpReq);
@@ -83,10 +90,10 @@ func BindDefaults(runtime *JsRuntime) {
 		};
 		
 		network.registerIncomingHttpCallback = function(callback){
-			if(typeof handler !== "function"){
-				throw Error("Attempting to register a non-function as incoming http handler");
+			if(typeof callback !== "function"){
+				throw Error("Attempting to register a non-function as incoming http callback");
 			}
-			network.httpHandler = handler;
+			network.incomingHttpCallback = callback;
 		}
 		
 		// Websockets
