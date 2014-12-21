@@ -23,7 +23,7 @@ You must have [Go](https://golang.org/) installed.
 ```
 go get github.com/eris-ltd/decerver
 cd $GOPATH/src/github.com/eris-ltd/decerver/cmd/decerver
-go get -d
+go get -d .
 go install
 ```
 
