@@ -73,10 +73,18 @@ func (p *Paths) WriteFile(directory, name string, data []byte) error {
 }
 
 // Creates a new directory for a module, and returns the path.
-func (p *Paths) CreateDirectory(moduleName string) string {
+func (p *Paths) CreateModuleDirectory(moduleName string) error {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
 	dir := p.modules + "/" + moduleName
-	InitDir(dir)
-	return dir
+	return InitDir(dir)
+}
+
+// Helper function to create directories.
+func (p *Paths) CreateDirectory(dir string) error {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	return InitDir(dir)
 }
 
 type DeCerver struct {
@@ -184,6 +192,7 @@ func (dc *DeCerver) createDappRegistry() {
 
 func (dc *DeCerver) LoadModule(md modules.Module) {
 	// TODO re-add
+	dc.paths.CreateModuleDirectory(md.Name())
 	md.Register(dc.paths, dc.ate, dc.ep)
 	dc.moduleRegistry.Add(md)
 	logger.Printf("Registering module '%s'.\n", md.Name())

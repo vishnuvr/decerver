@@ -5,6 +5,7 @@ import (
 	"github.com/eris-ltd/decerver-interfaces/glue/ipfs"
 	"github.com/eris-ltd/decerver-interfaces/glue/legalmarkdown"
 	"github.com/eris-ltd/decerver-interfaces/glue/monk"
+	//"github.com/eris-ltd/decerver-interfaces/glue/blockchaininfo"
 )
 
 func main() {
@@ -12,10 +13,12 @@ func main() {
 	mjs := monkjs.NewMonkJs()
 	fm := ipfs.NewIpfs()
 	lmd := legalmarkdown.NewLmdModule()
+	//bci := blockchaininfo.NewBlkChainInfo()
 
 	dc.LoadModule(lmd)
 	dc.LoadModule(mjs)
 	dc.LoadModule(fm)
+	//dc.LoadModule(bci)
 
 	dc.Init()
 
