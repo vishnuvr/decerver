@@ -307,6 +307,10 @@ func (dc *DappRegistry) LoadDapp(dappId string) error {
 	// Monk hack until we script
 	deps := dapp.packageFile.ModuleDependencies
 
+	// TODO This module-implementation dependent block is only temporary. Once the 
+	// package.json file includes paths to config files, it will be possible to just 
+	// add the config file to the module when restarting it. No need to worry about 
+	// specific field names (or their types). 
 	if deps != nil {
 		for _, d := range deps {
 			if d.Name == "monk" {

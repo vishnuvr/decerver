@@ -1,0 +1,7 @@
+=============== Jan 4, 2015 (CET) ===============
+17:57:40.024229 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock D·DeletedEntry L·Level Q·SeqNum T·TimeElapsed
+17:57:40.034057 db@open opening
+17:57:40.065526 db@janitor F·2 G·0
+17:57:40.065557 db@open done T·31.487873ms
+17:57:40.067265 db@close closing
+17:57:40.067388 db@close done T·122.223us

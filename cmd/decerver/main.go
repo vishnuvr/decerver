@@ -11,7 +11,7 @@ import (
 func main() {
 	dc := decerver.NewDeCerver()
 	mjs := monkjs.NewMonkJs()
-	fm := ipfs.NewIpfs()
+	fm := ipfs.NewIpfsModule()
 	lmd := legalmarkdown.NewLmdModule()
 	//bci := blockchaininfo.NewBlkChainInfo()
 

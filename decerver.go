@@ -16,6 +16,8 @@ import (
 	"sync"
 )
 
+const version = "0.1.0"
+
 var logger *log.Logger = core.NewLogger("Decerver Core")
 
 type Paths struct {
