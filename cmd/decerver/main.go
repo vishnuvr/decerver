@@ -2,10 +2,10 @@ package main
 
 import (
 	"github.com/eris-ltd/decerver"
-	"github.com/eris-ltd/decerver-interfaces/glue/ipfs"
-	"github.com/eris-ltd/decerver-interfaces/glue/legalmarkdown"
-	"github.com/eris-ltd/decerver-interfaces/glue/monk"
-	//"github.com/eris-ltd/decerver-interfaces/glue/blockchaininfo"
+	"github.com/eris-ltd/modules/ipfs"
+	"github.com/eris-ltd/modules/legalmarkdown"
+	"github.com/eris-ltd/modules/monk"
+	//"github.com/eris-ltd/modules/blockchaininfo"
 )
 
 func main() {
