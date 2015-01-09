@@ -1,6 +1,7 @@
 package decerver
 
 import (
+	"encoding/json"
 	"github.com/eris-ltd/decerver-interfaces/core"
 	"github.com/eris-ltd/decerver-interfaces/modules"
 	"github.com/eris-ltd/decerver/ate"
@@ -66,6 +67,18 @@ func (p *Paths) ReadFile(directory, name string) ([]byte, error) {
 	return ioutil.ReadFile((path.Join(directory, name)))
 }
 
+// Thread safe read file function. It'll read the given file and attempt to
+// unmarshal it into the provided object.
+func (p *Paths) UnmarshalJsonFromFile(directory, name string, object interface{}) error {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	bts, err := ioutil.ReadFile((path.Join(directory, name)))
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(bts, object)
+}
+
 // Thread safe write file function. Writes the provided byte slice into the file 'name'
 // in directory 'directory'. Uses filemode 0600.
 func (p *Paths) WriteFile(directory, name string, data []byte) error {
@@ -74,19 +87,31 @@ func (p *Paths) WriteFile(directory, name string, data []byte) error {
 	return ioutil.WriteFile((path.Join(directory, name)), data, 0600)
 }
 
+// Thread safe write file function. Writes the provided object into a file after
+// marshaling it into json. Uses filemode 0600.
+func (p *Paths) MarshalJsonToFile(directory, name string, object interface{}) error {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	bts, err := json.MarshalIndent(object, "", "\t")
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile((path.Join(directory, name)), bts, 0600)
+}
+
 // Creates a new directory for a module, and returns the path.
 func (p *Paths) CreateModuleDirectory(moduleName string) error {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	dir := p.modules + "/" + moduleName
-	return InitDir(dir)
+	return initDir(dir)
 }
 
 // Helper function to create directories.
 func (p *Paths) CreateDirectory(dir string) error {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
-	return InitDir(dir)
+	return initDir(dir)
 }
 
 type DeCerver struct {
@@ -152,19 +177,19 @@ func (dc *DeCerver) createPaths() {
 	dc.paths.mutex = &sync.Mutex{}
 
 	dc.paths.root = dc.config.RootDir
-	InitDir(dc.paths.root)
+	initDir(dc.paths.root)
 	dc.paths.log = dc.paths.root + "/logs"
-	InitDir(dc.paths.log)
+	initDir(dc.paths.log)
 	dc.paths.modules = dc.paths.root + "/modules"
-	InitDir(dc.paths.modules)
+	initDir(dc.paths.modules)
 	dc.paths.dapps = dc.paths.root + "/dapps"
-	InitDir(dc.paths.dapps)
+	initDir(dc.paths.dapps)
 	dc.paths.filesystems = dc.paths.root + "/filesystems"
-	InitDir(dc.paths.filesystems)
+	initDir(dc.paths.filesystems)
 	dc.paths.blockchains = dc.paths.root + "/blockchains"
-	InitDir(dc.paths.blockchains)
+	initDir(dc.paths.blockchains)
 	dc.paths.system = dc.paths.root + "/system"
-	InitDir(dc.paths.system)
+	initDir(dc.paths.system)
 }
 
 func (dc *DeCerver) createNetwork() {
