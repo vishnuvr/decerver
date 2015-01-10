@@ -3,7 +3,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/eris-ltd/decerver-interfaces/core"
+	"github.com/eris-ltd/decerver/interfaces/core"
 	"io/ioutil"
 	"net/http"
 	"net/url"

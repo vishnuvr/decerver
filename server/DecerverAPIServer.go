@@ -3,8 +3,8 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/eris-ltd/decerver-interfaces/core"
-	"github.com/eris-ltd/decerver-interfaces/dapps"
+	"github.com/eris-ltd/decerver/interfaces/core"
+	"github.com/eris-ltd/decerver/interfaces/dapps"
 	"io/ioutil"
 	"net/http"
 	"path"

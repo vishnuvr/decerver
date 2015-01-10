@@ -2,8 +2,8 @@ package server
 
 import (
 	"fmt"
-	"github.com/eris-ltd/decerver-interfaces/core"
-	"github.com/eris-ltd/decerver-interfaces/util"
+	"github.com/eris-ltd/decerver/interfaces/core"
+	"github.com/eris-ltd/decerver/util"
 	"github.com/gorilla/websocket"
 	"net/http"
 	"path"

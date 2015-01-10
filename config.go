@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"github.com/eris-ltd/decerver-interfaces/core"
+	"github.com/eris-ltd/decerver/interfaces/core"
 	"io/ioutil"
 	"os"
 	"os/user"

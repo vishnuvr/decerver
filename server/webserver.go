@@ -2,8 +2,8 @@ package server
 
 import (
 	"fmt"
-	"github.com/eris-ltd/decerver-interfaces/core"
-	"github.com/eris-ltd/decerver-interfaces/dapps"
+	"github.com/eris-ltd/decerver/interfaces/core"
+	"github.com/eris-ltd/decerver/interfaces/dapps"
 	"github.com/go-martini/martini"
 	"log"
 )

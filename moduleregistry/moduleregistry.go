@@ -3,7 +3,7 @@ package moduleregistry
 import (
 	"errors"
 	"fmt"
-	"github.com/eris-ltd/decerver-interfaces/modules"
+	"github.com/eris-ltd/decerver/interfaces/modules"
 	"time"
 )
 

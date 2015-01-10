@@ -8,9 +8,9 @@ package events
 // is in control of all channel mechanics (closing, opening,
 // buffer sizes etc.).
 import (
-	"github.com/eris-ltd/decerver-interfaces/core"
-	"github.com/eris-ltd/decerver-interfaces/events"
-	"github.com/eris-ltd/decerver-interfaces/modules"
+	"github.com/eris-ltd/decerver/interfaces/core"
+	"github.com/eris-ltd/decerver/interfaces/events"
+	"github.com/eris-ltd/decerver/interfaces/modules"
 	"log"
 	"sync"
 )
