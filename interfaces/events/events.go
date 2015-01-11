@@ -7,12 +7,14 @@ import (
 	"time"
 )
 
-// This interface allow modules to subscribe to and publish events. It is implemented by the
-// event processor.
-type EventRegistry interface {
-	Post(e Event)
-	Subscribe(sub Subscriber)
-	Unsubscribe(id string)
+type EventChan chan *Event
+
+// This interface allow modules to subscribe to and publish events.
+type EventProcessor interface {
+	Post(e Event) error
+	Subscribe(sub Subscriber) error
+	Unsubscribe(id string) error
+	TrafficData() string
 }
 
 // A default object that implements 'Event'
@@ -26,14 +28,13 @@ type Event struct {
 
 // A subscriber listens to events.
 type Subscriber interface {
-	// Events will be passed on this channel
-	SetChannel(chan Event)
-	Channel() chan Event
+	// Post an event
+	Post(Event)
 	// The subscriber only listen to events published by this source
 	Source() string
 	// The subscriber Id (must be unique).
 	Id() string
-	// The type of event it subscribes for.
+	// The type of event it subscribes to.
 	Event() string
 	// The target (if any).
 	Target() string

@@ -12,9 +12,9 @@ const (
 )
 
 type Dapp interface {
-	GetModels() []string
-	GetPath() string
-	GetPackageFile() *PackageFile
+	Models() []string
+	Path() string
+	PackageFile() *PackageFile
 }
 
 // Structs that are mapped to the package file.
@@ -103,7 +103,8 @@ func NewPackageFileFromJson(pfJson []byte) (*PackageFile, error) {
 	return pf, nil
 }
 
-type DappRegistry interface {
-	GetDappList() []*DappInfo
+type DappManager interface {
+	DappList() []*DappInfo
 	LoadDapp(dappId string) error
+	RegisterDapps(string,string) error
 }

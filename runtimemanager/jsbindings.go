@@ -1,11 +1,11 @@
-package ate
+package runtimemanager
 
 import (
 	"encoding/hex"
 	"fmt"
 	"github.com/obscuren/sha3"
 	"github.com/robertkrimen/otto"
-	"github.com/eris-ltd/decerver/interfaces/core"
+	"github.com/eris-ltd/decerver/interfaces/logging"
 	"log"
 	"math/big"
 	"time"
@@ -17,9 +17,9 @@ func isZero(i *big.Int) bool {
 	return i.Cmp(BZERO) == 0
 }
 
-var ottoLog *log.Logger = core.NewLogger("JsRuntime")
+var ottoLog *log.Logger = logging.NewLogger("Runtime")
 
-func BindDefaults(runtime *JsRuntime) {
+func BindDefaults(runtime *Runtime) {
 	vm := runtime.vm
 
 	var err error
@@ -75,8 +75,7 @@ func BindDefaults(runtime *JsRuntime) {
 		}
 		
 		// Used internally. Do not call this from javascript.
-		network.handleIncomingHttp = function(httpReqAsJson){
-			var httpReq = JSON.parse(httpReqAsJson);
+		network.handleIncomingHttp = function(httpReq){
 			var ret = this.incomingHttpCallback(httpReq);
 			var rets;
 			try {
@@ -296,20 +295,19 @@ func BindDefaults(runtime *JsRuntime) {
 			}
 			var eventId = events.generateId(eventSource,eventType, uid);
 			// The jsr_events object has the go bindings to actually subscribe.
-			jsr_events.Subscribe(eventSource, eventType, eventTarget, eventId);
+			events_subscribe(eventSource, eventType, eventTarget, eventId);
 			this.callbacks[eventId] = callbackFn;
 		}
 		
 		events.unsubscribe = function(eventSource,eventName, uid){
 			var subId = events.generateId(eventSource,eventName, uid);
-			jsr_events.Unsubscribe(subId);
+			events_unsubscribe(subId);
 			events.callbacks[subId] = null;
 		}
 		
 		// Called by the go event processor.
-		events.post = function(eventId, eventJson){
-			var event = JSON.parse(eventJson);
-			var cfn = this.callbacks[eventId];
+		events.post = function(subId, event){
+			var cfn = this.callbacks[subId];
 			if (typeof(cfn) === "function"){
 				cfn(event);
 			} else {

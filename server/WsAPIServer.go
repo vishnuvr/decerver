@@ -2,7 +2,7 @@ package server
 
 import (
 	"fmt"
-	"github.com/eris-ltd/decerver/interfaces/core"
+	"github.com/eris-ltd/decerver/interfaces/scripting"
 	"github.com/eris-ltd/decerver/util"
 	"github.com/gorilla/websocket"
 	"net/http"
@@ -11,19 +11,19 @@ import (
 
 // The websocket server handles connections.
 type WsAPIServer struct {
-	ate               core.RuntimeManager
+	rm                scripting.RuntimeManager
 	activeConnections uint32
 	maxConnections    uint32
 	idPool            *util.IdPool
 	sessions          map[uint32]*Session
 }
 
-func NewWsAPIServer(ate core.RuntimeManager, maxConnections uint32) *WsAPIServer {
+func NewWsAPIServer(rm scripting.RuntimeManager, maxConnections uint32) *WsAPIServer {
 	srv := &WsAPIServer{}
 	srv.sessions = make(map[uint32]*Session)
 	srv.maxConnections = maxConnections
 	srv.idPool = util.NewIdPool(maxConnections)
-	srv.ate = ate
+	srv.rm = rm
 	return srv
 }
 
@@ -41,7 +41,7 @@ func (srv *WsAPIServer) RemoveSession(ss *Session) {
 	delete(srv.sessions, ss.wsConn.SessionId())
 }
 
-func (srv *WsAPIServer) CreateSession(caller string, rt core.Runtime, wsConn *WsConn) *Session {
+func (srv *WsAPIServer) CreateSession(caller string, rt scripting.Runtime, wsConn *WsConn) *Session {
 	ss := &Session{}
 	ss.wsConn = wsConn
 	ss.server = srv
@@ -65,7 +65,7 @@ func (srv *WsAPIServer) handleWs(w http.ResponseWriter, r *http.Request) {
 	p := u.Path
 	caller := path.Base(p)
 
-	rt := srv.ate.GetRuntime(caller)
+	rt := srv.rm.GetRuntime(caller)
 	// TODO Update this. It's basically how we check if dapp is ready now.
 	if rt == nil {
 		w.WriteHeader(400)
@@ -79,6 +79,7 @@ func (srv *WsAPIServer) handleWs(w http.ResponseWriter, r *http.Request) {
 		logger.Printf("Failed to upgrade to websocket (%s)\n", err.Error())
 		return
 	}
+	// TODO buffering...
 	wsConn := &WsConn{
 		conn:              conn,
 		writeMsgChannel:   make(chan *Message, 256),
@@ -93,7 +94,7 @@ func (srv *WsAPIServer) handleWs(w http.ResponseWriter, r *http.Request) {
 		panic(err.Error())
 	}
 
-	// TODO expose toValue in runtime?
+	// TODO fix...
 	rt.AddScript("tempObj.sessionId = function(){return this.SessionId()};tempObj.writeJson = function(data){return this.WriteJson(data)};network.newWsSession(tempObj); tempObj = null;")
 	//rt.CallFuncOnObj("network", "newWsSession", val)
 	go writer(ss)
@@ -104,7 +105,7 @@ func (srv *WsAPIServer) handleWs(w http.ResponseWriter, r *http.Request) {
 
 type Session struct {
 	caller    string
-	runtime   core.Runtime
+	runtime   scripting.Runtime
 	server    *WsAPIServer
 	wsConn    *WsConn
 	sessionJs *SessionJs

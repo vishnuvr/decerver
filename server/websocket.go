@@ -23,7 +23,7 @@ const (
 	maxMessageSize = 8192
 )
 
-// TODO lower these
+// TODO need to look over this and maxMessageSize
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  8192,
 	WriteBufferSize: 8192,

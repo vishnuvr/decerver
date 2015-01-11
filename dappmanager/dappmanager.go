@@ -1,16 +1,18 @@
-package dappregistry
+package dappmanager
 
 import (
 	// "path/filepath"
-	//"bytes"
-	"crypto/sha1"
-	//"encoding/hex"
+	// "bytes"
+	// "crypto/sha1"
+	// "encoding/hex"
 	"encoding/json"
 	"errors"
-	"github.com/eris-ltd/decerver/interfaces/core"
 	"github.com/eris-ltd/decerver/interfaces/dapps"
+	"github.com/eris-ltd/decerver/interfaces/decerver"
+	"github.com/eris-ltd/decerver/interfaces/logging"
 	"github.com/eris-ltd/decerver/interfaces/modules"
 	"github.com/eris-ltd/decerver/interfaces/network"
+	"github.com/eris-ltd/decerver/interfaces/scripting"
 	// "github.com/syndtr/goleveldb/leveldb"
 	"io/ioutil"
 	"log"
@@ -23,7 +25,7 @@ import (
 	"github.com/robertkrimen/otto/parser"
 )
 
-var logger *log.Logger = core.NewLogger("Dapp Registry")
+var logger *log.Logger = logging.NewLogger("Dapp Manager")
 
 // const REG_URL = "http://localhost:9999"
 
@@ -33,46 +35,46 @@ type Dapp struct {
 	packageFile *dapps.PackageFile
 }
 
-func (dapp *Dapp) GetModels() []string {
+func (dapp *Dapp) Models() []string {
 	return dapp.models
 }
 
-func (dapp *Dapp) GetPath() string {
+func (dapp *Dapp) Path() string {
 	return dapp.path
 }
 
-func (dapp *Dapp) GetPackageFile() *dapps.PackageFile {
+func (dapp *Dapp) PackageFile() *dapps.PackageFile {
 	return dapp.packageFile
 }
 
-func NewDapp() *Dapp {
+func newDapp() *Dapp {
 	dapp := &Dapp{}
 	return dapp
 }
 
-type DappRegistry struct {
+type DappManager struct {
 	mutex  *sync.Mutex
 	keys   map[string]string
-	dapps  map[string]*Dapp
-	ate    core.RuntimeManager
+	dapps  map[string]dapps.Dapp
+	rm     scripting.RuntimeManager
 	server network.Server
 	//	hashDB *leveldb.DB
-	runningDapp *Dapp
-	moduleReg   modules.ModuleRegistry
+	runningDapp   dapps.Dapp
+	mm modules.ModuleManager
 }
 
-func NewDappRegistry(ate core.RuntimeManager, server network.Server, mr modules.ModuleRegistry) *DappRegistry {
-	dr := &DappRegistry{}
-	dr.keys = make(map[string]string)
-	dr.dapps = make(map[string]*Dapp)
-	dr.mutex = &sync.Mutex{}
-	dr.ate = ate
-	dr.server = server
-	dr.moduleReg = mr
-	return dr
+func NewDappManager(dc decerver.Decerver) dapps.DappManager {
+	dm := &DappManager{}
+	dm.keys = make(map[string]string)
+	dm.dapps = make(map[string]dapps.Dapp)
+	dm.mutex = &sync.Mutex{}
+	dm.rm = dc.RuntimeManager()
+	dm.mm = dc.ModuleManager()
+	dm.server = dc.Server()
+	return dm
 }
 
-func (dc *DappRegistry) RegisterDapps(directory, dbDir string) error {
+func (dm *DappManager) RegisterDapps(directory, dbDir string) error {
 	//	dbDir = path.Join(dbDir,"dapp_stored_hashes")
 	//	dc.hashDB, _ = leveldb.OpenFile(dbDir,nil)
 	//	defer dc.hashDB.Close()
@@ -91,14 +93,14 @@ func (dc *DappRegistry) RegisterDapps(directory, dbDir string) error {
 	for _, fileInfo := range files {
 		if fileInfo.IsDir() {
 			pth := path.Join(directory, fileInfo.Name())
-			dc.RegisterDapp(pth)
+			dm.RegisterDapp(pth)
 		}
 	}
 	logger.Println("Done loading dapps.")
 	return nil
 }
 
-func (dc *DappRegistry) RegisterDapp(dir string) {
+func (dm *DappManager) RegisterDapp(dir string) {
 
 	pkDir := path.Join(dir, dapps.PACKAGE_FILE_NAME)
 	_, errPfn := os.Stat(pkDir)
@@ -159,11 +161,11 @@ func (dc *DappRegistry) RegisterDapp(dir string) {
 		logger.Printf("No models in model dir for app '%s', skipping.\n", dir)
 		return
 	}
-	
-		// Look for a config.json where loding order is defined. If there
+
+	// Look for a config.json where loding order is defined. If there
 	// is no such file, we just load them alphabetically.
-	
-	loConf := path.Join(modelDir,dapps.LOADING_ORDER_FILE_NAME)
+
+	loConf := path.Join(modelDir, dapps.LOADING_ORDER_FILE_NAME)
 	_, errLoc := os.Stat(loConf)
 	if errLoc != nil {
 		logger.Printf("Error loading 'config.json' for dapp '%s' models js loading. Skipping...\n", dir)
@@ -187,14 +189,14 @@ func (dc *DappRegistry) RegisterDapp(dir string) {
 		logger.Println(pkUnmErr.Error())
 		return
 	}
-	
+
 	if len(loadConf.LoadingOrder) == 0 {
 		logger.Printf("The loading order file list in the 'config.json' file for dapp '%s' model loading contains no files. Skipping...\n", dir)
 		return
 	}
-	
+
 	models := make([]string, 0)
-	
+
 	// TODO recursively and perhaps also a require.js type load file
 	// to ensure the proper loading order.
 	for _, mfName := range loadConf.LoadingOrder {
@@ -219,10 +221,10 @@ func (dc *DappRegistry) RegisterDapp(dir string) {
 		jsFile := string(fileBts)
 
 		// Catch some parse errors early on.
-		_ , errParse := parser.ParseFile(nil, "", jsFile, 0)
-		
+		_, errParse := parser.ParseFile(nil, "", jsFile, 0)
+
 		if errParse != nil {
-			logger.Printf("Error parsing javascript file '%s'. DUMP: %s\nError: %s\n", mfName,jsFile, errParse.Error())
+			logger.Printf("Error parsing javascript file '%s'. DUMP: %s\nError: %s\n", mfName, jsFile, errParse.Error())
 			logger.Println("Skipping dapp: " + dir)
 			return
 		}
@@ -234,7 +236,7 @@ func (dc *DappRegistry) RegisterDapp(dir string) {
 	}
 
 	// Create the dapp object and set it up.
-	dapp := NewDapp()
+	dapp := newDapp()
 	dapp.path = dir
 	dapp.packageFile = packageFile
 	dapp.models = models
@@ -271,46 +273,46 @@ func (dc *DappRegistry) RegisterDapp(dir string) {
 		}
 	*/
 
-	dc.dapps[packageFile.Id] = dapp
+	dm.dapps[packageFile.Id] = dapp
 
 	// Register the handlers right away.
-	dc.server.RegisterDapp(dapp.packageFile.Id)
+	dm.server.RegisterDapp(dapp.packageFile.Id)
 
 	return
 }
 
 // TODO check dependencies.
-func (dc *DappRegistry) LoadDapp(dappId string) error {
+func (dm *DappManager) LoadDapp(dappId string) error {
 
-	dc.mutex.Lock()
-	defer dc.mutex.Unlock()
-	dapp, ok := dc.dapps[dappId]
+	dm.mutex.Lock()
+	defer dm.mutex.Unlock()
+	dapp, ok := dm.dapps[dappId]
 	if !ok {
 		return errors.New("Error loading dapp: " + dappId + ". No dapp with that name has been registered.")
 	}
 
-	if dc.runningDapp != nil {
-		if dc.runningDapp.packageFile.Id == dappId {
+	if dm.runningDapp != nil {
+		if dm.runningDapp.PackageFile().Id == dappId {
 			return errors.New("Error loading dapp - already running: " + dappId)
 		}
-		dc.UnloadDapp(dc.runningDapp)
+		dm.UnloadDapp()
 	}
 
 	logger.Println("Loading dapp: " + dappId)
 
-	rt := dc.ate.CreateRuntime(dappId)
+	rt := dm.rm.CreateRuntime(dappId)
 
-	for _, js := range dapp.models {
+	for _, js := range dapp.Models() {
 		rt.AddScript(js)
 	}
 
 	// Monk hack until we script
-	deps := dapp.packageFile.ModuleDependencies
+	deps := dapp.PackageFile().ModuleDependencies
 
-	// TODO This module-implementation dependent block is only temporary. Once the 
-	// package.json file includes paths to config files, it will be possible to just 
-	// add the config file to the module when restarting it. No need to worry about 
-	// specific field names (or their types). 
+	// TODO This module-implementation dependent block is only temporary. Once the
+	// package.json file includes paths to config files, it will be possible to just
+	// add the config file to the module when restarting it. No need to worry about
+	// specific field names (or their types).
 	if deps != nil {
 		for _, d := range deps {
 			if d.Name == "monk" {
@@ -319,9 +321,9 @@ func (dc *DappRegistry) LoadDapp(dappId string) error {
 					monkData := &dapps.MonkData{}
 					err := json.Unmarshal(mData, monkData)
 					if err != nil {
-						logger.Fatal("Blockchain will not work. Chain data for monk not available in dapp package file: " + dapp.packageFile.Name)
+						logger.Fatal("Blockchain will not work. Chain data for monk not available in dapp package file: " + dapp.PackageFile().Name)
 					}
-					monkMod, ok := dc.moduleReg.GetModules()["monk"]
+					monkMod, ok := dm.mm.Modules()["monk"]
 					if !ok {
 						logger.Fatal("Blockchain will not work. There is no Monk module.")
 					}
@@ -347,23 +349,24 @@ func (dc *DappRegistry) LoadDapp(dappId string) error {
 					<-cr
 					rt.BindScriptObject("RootContract", monkData.RootContract)
 				} else {
-					logger.Fatal("Blockchain will not work. Chain data for monk not available in dapp package file: " + dapp.packageFile.Name)
+					logger.Fatal("Blockchain will not work. Chain data for monk not available in dapp package file: " + dapp.PackageFile().Name)
 				}
 			}
 		}
 	}
 
-	dc.runningDapp = dapp
+	dm.runningDapp = dapp
 	return nil
 }
 
-func (dc *DappRegistry) UnloadDapp(dapp *Dapp) {
+func (dm *DappManager) UnloadDapp() {
 	// TODO cleanup
-	dappId := dapp.packageFile.Id
+	dappId := dm.runningDapp.PackageFile().Id
 	logger.Println("Unregistering dapp: " + dappId)
-	dc.ate.RemoveRuntime(dappId)
+	dm.rm.RemoveRuntime(dappId)
 }
 
+/*
 func (dc *DappRegistry) HashApp(dir string) []byte {
 	logger.Println("Hashing models folder: " + dir)
 	hashes := dc.HashDir(dir)
@@ -373,7 +376,9 @@ func (dc *DappRegistry) HashApp(dir string) []byte {
 	hash := sha1.Sum(hashes)
 	return hash[:]
 }
+*/
 
+/*
 func (dc *DappRegistry) HashDir(directory string) []byte {
 	files, err := ioutil.ReadDir(directory)
 	if err != nil {
@@ -408,12 +413,13 @@ func (dc *DappRegistry) HashDir(directory string) []byte {
 	}
 	return hashes
 }
+*/
 
-func (dc *DappRegistry) GetDappList() []*dapps.DappInfo {
-	arr := make([]*dapps.DappInfo, len(dc.dapps))
+func (dm *DappManager) DappList() []*dapps.DappInfo {
+	arr := make([]*dapps.DappInfo, len(dm.dapps))
 	ctr := 0
-	for _, dapp := range dc.dapps {
-		arr[ctr] = dapps.DappInfoFromPackageFile(dapp.packageFile)
+	for _, dapp := range dm.dapps {
+		arr[ctr] = dapps.DappInfoFromPackageFile(dapp.PackageFile())
 		ctr++
 	}
 	return arr

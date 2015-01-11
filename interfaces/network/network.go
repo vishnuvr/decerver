@@ -1,10 +1,10 @@
 package network
 
-// Since most networking takes place inside the js runtime, this is
-// not used a lot.
-import ()
+import (
+	"github.com/eris-ltd/decerver/interfaces/dapps"		
+)
 
-// Websocket rpc
+// Websocket session
 type WsSession interface {
 	SessionId() uint32
 	WriteJsonMsg(msg interface{})
@@ -13,5 +13,7 @@ type WsSession interface {
 
 // Webserver
 type Server interface {
+	AddDappManager(dapps.DappManager)
 	RegisterDapp(dappId string)
+	Start() error
 }

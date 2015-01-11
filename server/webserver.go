@@ -2,47 +2,47 @@ package server
 
 import (
 	"fmt"
-	"github.com/eris-ltd/decerver/interfaces/core"
+	"github.com/eris-ltd/decerver/interfaces/logging"
+	"github.com/eris-ltd/decerver/interfaces/decerver"
 	"github.com/eris-ltd/decerver/interfaces/dapps"
 	"github.com/go-martini/martini"
 	"log"
 )
 
 const DEFAULT_PORT = 3000  // For communicating with dapps (the atom browser).
-const DECERVER_PORT = 3005 // For communication with the atom client back-end.
+// const DECERVER_PORT = 3100 // For communication with the atom client back-end.
 
 const HTTP_BASE = "/http/"
 const WS_BASE = "/ws/"
 
-var logger *log.Logger = core.NewLogger("Webserver")
+var logger *log.Logger = logging.NewLogger("Webserver")
 
 type WebServer struct {
 	webServer      *martini.ClassicMartini
 	maxConnections uint32
-	fio            core.FileIO
+	host		   string
 	port           int
-	ate            core.RuntimeManager
-	decerver       core.DeCerver
+	dc       	   decerver.Decerver
 	was            *WsAPIServer
 	has            *HttpAPIServer
 	das            *DecerverAPIServer
-	dr             dapps.DappRegistry
+	dm             dapps.DappManager
 }
 
-func NewWebServer(maxConnections uint32, fio core.FileIO, port int, ate core.RuntimeManager, dc core.DeCerver) *WebServer {
+func NewWebServer(dc decerver.Decerver) *WebServer {
 	ws := &WebServer{}
-
-	ws.maxConnections = maxConnections
-	ws.fio = fio
+	
+	ws.maxConnections = uint32(dc.Config().MaxClients)
+	port := dc.Config().Port
 	if port <= 0 {
 		port = DEFAULT_PORT
 	}
 	ws.port = port
-	ws.ate = ate
-	ws.decerver = dc
-
-	ws.was = NewWsAPIServer(ws.ate, ws.maxConnections)
-	ws.has = NewHttpAPIServer(ws.ate)
+	ws.host = dc.Config().Hostname
+	ws.dc = dc
+	rm := dc.RuntimeManager()
+	ws.was = NewWsAPIServer(rm, ws.maxConnections)
+	ws.has = NewHttpAPIServer(rm)
 
 	ws.webServer = martini.Classic()
 	// TODO remember to change to martini.Prod
@@ -57,15 +57,15 @@ func (ws *WebServer) RegisterDapp(dappId string) {
 	ws.webServer.Get(WS_BASE+dappId, ws.was.handleWs)
 }
 
-func (ws *WebServer) AddDappRegistry(dr dapps.DappRegistry) {
-	ws.dr = dr
+func (ws *WebServer) AddDappManager(dm dapps.DappManager) {
+	ws.dm = dm
 }
 
 func (ws *WebServer) Start() error {
 
-	ws.webServer.Use(martini.Static(ws.fio.Dapps()))
+	ws.webServer.Use(martini.Static(ws.dc.FileIO().Dapps()))
 
-	das := NewDecerverAPIServer(ws.decerver, ws.dr)
+	das := NewDecerverAPIServer(ws.dc, ws.dm)
 
 	// Decerver ready
 	ws.webServer.Get("/admin/ready", das.handleReadyGET)
@@ -81,8 +81,10 @@ func (ws *WebServer) Start() error {
 	// Decerver configuration
 	ws.webServer.Get("/admin/switch/(.*)", das.handleDappSwitch)
 
+	// TODO Close down properly. Removed that third party stuff since 
+	// it was a mess.
 	go func() {
-		ws.webServer.RunOnAddr("localhost:" + fmt.Sprintf("%d", ws.port))
+		ws.webServer.RunOnAddr(ws.host + ":" + fmt.Sprintf("%d", ws.port))
 	}()
 	
 	return nil
