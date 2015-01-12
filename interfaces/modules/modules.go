@@ -3,11 +3,7 @@ package modules
 import (
 	"github.com/eris-ltd/decerver/interfaces/events"
 	"github.com/eris-ltd/decerver/interfaces/files"
-	"github.com/eris-ltd/decerver/interfaces/types"
 )
-
-// typedef for javascript objects.
-type JsObject map[string]interface{}
 
 type (
 	ModuleInfo struct {
@@ -63,23 +59,3 @@ type (
 		FileIO() files.FileIO
 	}
 )
-
-// Converts a data and an error values into a javascript ready object.
-
-// If there is no error
-func JsReturnValNoErr(data interface{}) JsObject {
-	ret := make(JsObject)
-	ret["Error"] = ""
-	ret["Data"] = types.ToJsValue(data)
-	ret["Status"] = 0
-	return ret
-}
-
-// If there is an error
-func JsReturnValErr(err error, statusCode int) JsObject {
-	ret := make(JsObject)
-	ret["Data"] = nil
-	ret["Error"] = err.Error()
-	ret["Status"] = statusCode
-	return ret
-}
