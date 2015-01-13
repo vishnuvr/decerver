@@ -136,7 +136,7 @@ func (dc *DeCerver) createEventProcessor() {
 }
 
 func (dc *DeCerver) createRuntimeManager() {
-	dc.rm = runtimemanager.NewRuntimeManager(dc.ep)
+	dc.rm = runtimemanager.NewRuntimeManager(dc)
 }
 
 func (dc *DeCerver) IsStarted() bool {

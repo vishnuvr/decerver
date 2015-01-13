@@ -363,7 +363,7 @@ func bindCore(vm *otto.Otto){
 		scrypto.sha3 = function(stringVal){
 			return SHA3(stringVal);
 		}
-					
+		
 	`)
 
 	if err != nil {
@@ -424,7 +424,8 @@ func bindNetworking(vm *otto.Otto){
 		}
 		
 		// Used internally. Do not call this from javascript.
-		network.handleIncomingHttp = function(httpReq){
+		network.handleIncomingHttp = function(httpReqAsJson){
+			var httpReq = JSON.parse(httpReqAsJson);
 			var ret = this.incomingHttpCallback(httpReq);
 			var rets;
 			try {
@@ -690,7 +691,7 @@ func bindUtilities(vm *otto.Otto) {
 		var STATUS_ERROR = 2;
 		var STATUS_CRITICAL = 3;
 		
-		function validator = new function(){
+		var validator = new function(){
 			
 			// TODO add
 			this.validateBlockchain = function(blockchain){

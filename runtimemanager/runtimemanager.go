@@ -3,7 +3,9 @@ package runtimemanager
 
 import (
 	"fmt"
+	"github.com/eris-ltd/decerver/interfaces/decerver"
 	"github.com/eris-ltd/decerver/interfaces/events"
+	"github.com/eris-ltd/decerver/interfaces/files"
 	"github.com/eris-ltd/decerver/interfaces/logging"
 	"github.com/eris-ltd/decerver/interfaces/scripting"
 	"github.com/eris-ltd/decerver/interfaces/types"
@@ -30,14 +32,16 @@ type RuntimeManager struct {
 	apiObjs   []*JsObj
 	apiScript []string
 	ep        events.EventProcessor
+	fio		  files.FileIO
 }
 
-func NewRuntimeManager(ep events.EventProcessor) scripting.RuntimeManager {
+func NewRuntimeManager(dc decerver.Decerver) scripting.RuntimeManager {
 	return &RuntimeManager{
 		make(map[string]scripting.Runtime),
 		make([]*JsObj, 0),
 		make([]string, 0),
-		ep,
+		dc.EventProcessor(),
+		dc.FileIO(),
 	}
 }
 
@@ -48,7 +52,7 @@ func (rm *RuntimeManager) ShutdownRuntimes() {
 }
 
 func (rm *RuntimeManager) CreateRuntime(name string) scripting.Runtime {
-	rt := newRuntime(name, rm.ep)
+	rt := newRuntime(name, rm.ep, rm.fio)
 	rm.runtimes[name] = rt
 
 	rt.Init(name)
@@ -100,18 +104,19 @@ func (rm *RuntimeManager) RegisterApiScript(script string) {
 type Runtime struct {
 	vm            *otto.Otto
 	ep            events.EventProcessor
+	fio		      files.FileIO
 	name          string
 	mutex         *sync.Mutex
-	lockLvl       int
 }
 
 // Package private
-func newRuntime(name string, ep events.EventProcessor) scripting.Runtime {
+func newRuntime(name string, ep events.EventProcessor, fio files.FileIO) scripting.Runtime {
 	vm := otto.New()
 	rt := &Runtime{}
 	rt.vm = vm
 	rt.ep = ep
 	rt.name = name
+	rt.fio = fio
 	rt.mutex = &sync.Mutex{}
 	return rt
 }
@@ -140,6 +145,27 @@ func (rt *Runtime) Init(name string) {
 	    rt.ep.Unsubscribe(id)
 	    return otto.Value{}
 	})
+	
+	// Bind an event unsubscribe function to otto
+	rt.vm.Set("WriteTempFile", func(call otto.FunctionCall) otto.Value {
+	    filename, err := call.Argument(0).ToString()
+	    if err != nil {
+	    	logger.Println("File not written: " + err.Error())
+	    	return otto.FalseValue()	
+	    }
+	    data, err1 := call.Argument(1).ToString()
+	    if err1 != nil {
+	    	logger.Println("File not written: " + err1.Error())
+	    	return otto.FalseValue()	
+	    }
+	    err2 := rt.fio.WriteDappTempFile(rt.name,filename,[]byte(data))
+	    if err2 != nil {
+	    	logger.Println("File not written: " + err2.Error())
+	    	return otto.FalseValue()	
+	    }
+	    return otto.TrueValue()
+	})
+	
 	// Bind the runtime id (it's name)
 	rt.vm.Set("RuntimeId", name)
 	// Bind all the normal things.

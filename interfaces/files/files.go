@@ -13,16 +13,19 @@ type FileIO interface {
 	InitPaths() error
 	// Useful when you want to load a file inside of a directory gotten by the
 	// 'Paths' object. Reads and returns the bytes.
-	ReadFile(directory, name string) ([]byte, error)
+	ReadFile(string,string) ([]byte, error)
 	// Useful when you want to save a file into a directory gotten by the 'Paths'
 	// object.
-	WriteFile(directory, name string, data []byte) error
+	WriteFile(string, string, []byte) error
 	// Useful when you want to load json encoded files into objects.
-	UnmarshalJsonFromFile(directory, name string, object interface{}) error
+	UnmarshalJsonFromFile(string, string, interface{}) error
 	// Useful when you want to store json encoding of objects in files.
-	MarshalJsonToFile(directory, name string, object interface{}) error
+	MarshalJsonToFile(string, string, interface{}) error
 	// Convenience method for creating module directories.
-	CreateModuleDirectory(moduleName string) error
+	CreateModuleDirectory(string) error
 	// Convenience method for creating directories.
-	CreateDirectory(dir string) error
+	CreateDirectory(string) error
+	// Convenience method for writing dapp and module tempfiles
+	WriteDappTempFile(string, string, []byte) error
+	WriteModuleTempFile(string, string, []byte) error
 }

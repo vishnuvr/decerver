@@ -4,14 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/eris-ltd/decerver/interfaces/scripting"
-	"github.com/eris-ltd/decerver/interfaces/types"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
 )
 
-type HttpRespProxy struct {
+type HttpReqProxy struct {
 	URL *url.URL
 	Method string
 	Host string
@@ -19,20 +18,19 @@ type HttpRespProxy struct {
 	Body string
 }
 
-func ProxyFromHttpReq(r *http.Request) (map[string]interface{}, error) {
+func ProxyFromHttpReq(r *http.Request) (*HttpReqProxy, error) {
 	
 	bts, err := ioutil.ReadAll(r.Body);
 	if err != nil {
 		return nil, err;
 	} else {
 		// Make a runtime compatible object
-		p := make(map[string]interface{})
-		p["Method"] = r.Method
-		p["Host"] = r.Host
-		p["URL"] = r.URL
-		p["Header"] = r.Header
-		p["Cookies"] = types.ToJsValue(r.Cookies())
-		p["Body"] = string(bts)
+		p := &HttpReqProxy{}
+		p.Method = r.Method
+		p.Host = r.Host
+		p.URL = r.URL
+		p.Header = r.Header
+		p.Body = string(bts)
 		return p, nil
 	} 
 }
@@ -75,15 +73,15 @@ func (has *HttpAPIServer) handleHttp(w http.ResponseWriter, r *http.Request) {
 		has.writeError(w, 400, errpr.Error())
 		return
 	}
-	
-	// logger.Println("Http request json: " + string(reqJson))
-	ret, err := rt.CallFuncOnObj("network", "handleIncomingHttp", prx)
+	// TODO this is a bad solution. It should be possible to pass objects (at least maps) right in.
+	bts, _ := json.Marshal(prx)
+	ret, err := rt.CallFuncOnObj("network", "handleIncomingHttp", string(bts))
 
 	if err != nil {
 		has.writeError(w, 500, err.Error())
 		return
 	}
-
+	
 	rStr, sOk := ret.(string)
 	if !sOk {
 		has.writeError(w, 500, "Passing non string as return value from otto.")
@@ -96,7 +94,7 @@ func (has *HttpAPIServer) handleHttp(w http.ResponseWriter, r *http.Request) {
 		has.writeError(w, 500, errJson.Error())
 		return
 	}
-
+	
 	has.writeReq(hr, w)
 }
 

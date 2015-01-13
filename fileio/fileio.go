@@ -18,6 +18,7 @@ type FileIO struct {
 	filesystems string
 	dapps       string
 	system      string
+	tempfiles	string
 }
 
 func NewFileIO(rootDir string) *FileIO {
@@ -98,8 +99,26 @@ func (fio *FileIO) MarshalJsonToFile(directory, name string, object interface{})
 func (fio *FileIO) CreateModuleDirectory(moduleName string) error {
 	fio.mutex.Lock()
 	defer fio.mutex.Unlock()
-	dir := fio.modules + "/" + moduleName
+	dir := path.Join(fio.modules,moduleName)
 	return initDir(dir)
+}
+
+// Creates a new directory for a module, and returns the path.
+func (fio *FileIO) WriteDappTempFile(dappName, fileName string, data []byte) error {
+	fio.mutex.Lock()
+	defer fio.mutex.Unlock()
+	dir := path.Join(fio.tempfiles,dappName)
+	initDir(dir)
+	return ioutil.WriteFile((path.Join(dir, fileName)), data, 0600)
+}
+
+// Creates a new directory for a module, and returns the path.
+func (fio *FileIO) WriteModuleTempFile(moduleName, fileName string, data []byte) error {
+	fio.mutex.Lock()
+	defer fio.mutex.Unlock()
+	dir := path.Join(fio.tempfiles,moduleName)
+	initDir(dir)
+	return ioutil.WriteFile((path.Join(dir, fileName)), data, 0600)
 }
 
 // Helper function to create directories.
@@ -151,6 +170,22 @@ func (fio *FileIO) InitPaths() error {
 	
 	fio.system = fio.root + "/system"
 	err = initDir(fio.system)
+	if err != nil {
+		return err
+	}
+	
+	fio.tempfiles = fio.root + "/tempfiles"
+	err = initDir(fio.tempfiles)
+	if err != nil {
+		return err
+	}
+	
+	err = initDir(path.Join(fio.tempfiles,"modules"))
+	if err != nil {
+		return err
+	}
+	
+	err = initDir(path.Join(fio.tempfiles,"dapps"))
 	if err != nil {
 		return err
 	}
