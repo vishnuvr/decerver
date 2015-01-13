@@ -166,9 +166,28 @@ func (rt *Runtime) Init(name string) {
 	    return otto.TrueValue()
 	})
 	
+	// Bind an event unsubscribe function to otto
+	rt.vm.Set("ReadTempFile", func(call otto.FunctionCall) otto.Value {
+	    filename, err := call.Argument(0).ToString()
+	    if err != nil {
+	    	logger.Println("File not read: " + err.Error())
+	    	r, _ := otto.ToValue("")
+	    	return r
+	    }
+	    bts, err1 := rt.fio.ReadDappTempFile(rt.name,filename)
+	    if err1 != nil {
+	    	logger.Println("File not written: " + err1.Error())
+	    	r1, _ := otto.ToValue("")
+	    	return r1
+	    }
+	    ret, _ := otto.ToValue(string(bts))
+	    return ret
+	})
+	
 	// Bind the runtime id (it's name)
 	rt.vm.Set("RuntimeId", name)
-	// Bind all the normal things.
+	
+	// Bind all the defaults.
 	BindDefaults(rt)
 }
 

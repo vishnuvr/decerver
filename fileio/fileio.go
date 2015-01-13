@@ -121,6 +121,20 @@ func (fio *FileIO) WriteModuleTempFile(moduleName, fileName string, data []byte)
 	return ioutil.WriteFile((path.Join(dir, fileName)), data, 0600)
 }
 
+// Thread safe read file function. Reads an entire file and returns the bytes.
+func (fio *FileIO) ReadDappTempFile(dappName, fileName string) ([]byte, error) {
+	fio.mutex.Lock()
+	defer fio.mutex.Unlock()
+	return ioutil.ReadFile((path.Join(fio.tempfiles,dappName, fileName)))
+}
+
+// Thread safe read file function. Reads an entire file and returns the bytes.
+func (fio *FileIO) ReadModuleTempFile(moduleName, fileName string) ([]byte, error) {
+	fio.mutex.Lock()
+	defer fio.mutex.Unlock()
+	return ioutil.ReadFile((path.Join(fio.tempfiles,moduleName, fileName)))
+}
+
 // Helper function to create directories.
 func (fio *FileIO) CreateDirectory(dir string) error {
 	fio.mutex.Lock()

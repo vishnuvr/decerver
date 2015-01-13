@@ -27,5 +27,7 @@ type FileIO interface {
 	CreateDirectory(string) error
 	// Convenience method for writing dapp and module tempfiles
 	WriteDappTempFile(string, string, []byte) error
+	ReadDappTempFile(string, string) ([]byte,error)
 	WriteModuleTempFile(string, string, []byte) error
+	ReadModuleTempFile(string, string) ([]byte,error)
 }
