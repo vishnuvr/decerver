@@ -29,6 +29,8 @@ type(
 	Runtime interface {
 		Init(string)
 		Shutdown()
+		// This is normally the same as the dapp id when running decerver.
+		Id() string
 		BindScriptObject(name string, val interface{}) error
 		LoadScriptFile(fileName string) error
 		LoadScriptFiles(fileName ...string) error

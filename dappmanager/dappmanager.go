@@ -347,6 +347,8 @@ func (dm *DappManager) LoadDapp(dappId string) error {
 						cr <- true
 					}()
 					<-cr
+					logger.Println("Root contract: " + monkData.RootContract)
+					logger.Println("Runtime ID: " + rt.Id() )
 					rt.BindScriptObject("RootContract", monkData.RootContract)
 				} else {
 					logger.Fatal("Blockchain will not work. Chain data for monk not available in dapp package file: " + dapp.PackageFile().Name)
@@ -364,6 +366,7 @@ func (dm *DappManager) UnloadDapp() {
 	dappId := dm.runningDapp.PackageFile().Id
 	logger.Println("Unregistering dapp: " + dappId)
 	dm.rm.RemoveRuntime(dappId)
+	dm.runningDapp = nil
 }
 
 /*

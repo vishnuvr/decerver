@@ -126,6 +126,10 @@ func (rt *Runtime) Shutdown() {
 	// TODO implement
 }
 
+func (rt *Runtime) Id() string {
+	return rt.name
+}
+
 // TODO add an interrupt channel.
 func (rt *Runtime) Init(name string) {
 	// Bind an event subscribe function to otto

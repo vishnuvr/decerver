@@ -56,6 +56,10 @@ func (fio *FileIO) System() string {
 	return fio.system
 }
 
+func (fio *FileIO) Tempfiles() string {
+	return fio.tempfiles
+}
+
 // Thread safe read file function. Reads an entire file and returns the bytes.
 func (fio *FileIO) ReadFile(directory, name string) ([]byte, error) {
 	fio.mutex.Lock()

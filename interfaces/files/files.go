@@ -10,6 +10,7 @@ type FileIO interface {
 	Filesystems() string
 	Modules() string
 	System() string
+	Tempfiles() string
 	InitPaths() error
 	// Useful when you want to load a file inside of a directory gotten by the
 	// 'Paths' object. Reads and returns the bytes.
