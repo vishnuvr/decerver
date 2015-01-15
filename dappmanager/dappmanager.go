@@ -9,6 +9,7 @@ import (
 	"errors"
 	"github.com/eris-ltd/decerver/interfaces/dapps"
 	"github.com/eris-ltd/decerver/interfaces/decerver"
+	"github.com/eris-ltd/decerver/interfaces/files"
 	"github.com/eris-ltd/decerver/interfaces/logging"
 	"github.com/eris-ltd/decerver/interfaces/modules"
 	"github.com/eris-ltd/decerver/interfaces/network"
@@ -53,14 +54,15 @@ func newDapp() *Dapp {
 }
 
 type DappManager struct {
-	mutex  *sync.Mutex
-	keys   map[string]string
-	dapps  map[string]dapps.Dapp
-	rm     scripting.RuntimeManager
-	server network.Server
+	mutex       *sync.Mutex
+	keys        map[string]string
+	dapps       map[string]dapps.Dapp
+	rm          scripting.RuntimeManager
+	server      network.Server
+	runningDapp dapps.Dapp
+	mm          modules.ModuleManager
+	fio         files.FileIO
 	//	hashDB *leveldb.DB
-	runningDapp   dapps.Dapp
-	mm modules.ModuleManager
 }
 
 func NewDappManager(dc decerver.Decerver) dapps.DappManager {
@@ -71,6 +73,7 @@ func NewDappManager(dc decerver.Decerver) dapps.DappManager {
 	dm.rm = dc.RuntimeManager()
 	dm.mm = dc.ModuleManager()
 	dm.server = dc.Server()
+	dm.fio = dc.FileIO()
 	return dm
 }
 
@@ -338,6 +341,7 @@ func (dm *DappManager) LoadDapp(dappId string) error {
 						logger.Fatal("Blockchain will not work. Malformed peerserver url (port not an integer)")
 					}
 
+					monkMod.SetProperty("RootDir", path.Join(dm.fio.Blockchains(), "thelonious", monkData.ChainId))
 					monkMod.SetProperty("RemoteHost", addAndPort[0])
 					monkMod.SetProperty("RemotePort", port)
 					monkMod.SetProperty("ChainId", monkData.ChainId)
@@ -348,7 +352,7 @@ func (dm *DappManager) LoadDapp(dappId string) error {
 					}()
 					<-cr
 					logger.Println("Root contract: " + monkData.RootContract)
-					logger.Println("Runtime ID: " + rt.Id() )
+					logger.Println("Runtime ID: " + rt.Id())
 					rt.BindScriptObject("RootContract", monkData.RootContract)
 				} else {
 					logger.Fatal("Blockchain will not work. Chain data for monk not available in dapp package file: " + dapp.PackageFile().Name)
