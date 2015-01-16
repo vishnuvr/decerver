@@ -658,7 +658,8 @@ func bindEvents(vm *otto.Otto){
 		}
 		
 		// Called by the go event processor.
-		events.post = function(subId, event){
+		events.post = function(subId, eventJson){
+			var event = JSON.parse(eventJson)
 			var cfn = this.callbacks[subId];
 			if (typeof(cfn) === "function"){
 				cfn(event);

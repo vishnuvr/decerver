@@ -1,8 +1,8 @@
 package modules
 
 import (
-	"github.com/eris-ltd/decerver/interfaces/events"
 	"github.com/eris-ltd/decerver/interfaces/files"
+	"github.com/eris-ltd/modules/types"
 )
 
 type (
@@ -29,7 +29,7 @@ type (
 		Restart() error
 		Shutdown() error
 		Name() string
-		Subscribe(name, event, target string) error
+		Subscribe(name, event, target string) chan types.Event
 		UnSubscribe(name string)
 
 		SetProperty(name string, data interface{})
@@ -53,8 +53,6 @@ type (
 		RegisterRuntimeObject(string,interface{})
 		// Register script in the form of a string
 		RegisterRuntimeScript(string)
-		// Post an event.
-		PostEvent(events.Event)
 		// File and folder management tool.
 		FileIO() files.FileIO
 	}

@@ -5,13 +5,11 @@ package events
 // it implements the Subscriber interface and pass it to the event system.
 import (
 	"time"
+	"github.com/eris-ltd/modules/types"
 )
-
-type EventChan chan *Event
 
 // This interface allow modules to subscribe to and publish events.
 type EventProcessor interface {
-	Post(e Event) error
 	Subscribe(sub Subscriber) error
 	Unsubscribe(id string) error
 	TrafficData() string
@@ -29,7 +27,7 @@ type Event struct {
 // A subscriber listens to events.
 type Subscriber interface {
 	// Post an event
-	Post(Event)
+	Post(types.Event)
 	// The subscriber only listen to events published by this source
 	Source() string
 	// The subscriber Id (must be unique).

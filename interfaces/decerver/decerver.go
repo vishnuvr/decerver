@@ -15,7 +15,7 @@ type DCConfig struct {
 	MaxClients int    `json:"max_clients"`
 	Hostname   string `json:"hostname"`
 	Port       int    `json:"port"`
-	DebugMode  bool   `json:"log_events"`
+	DebugMode  bool   `json:"debug_mode"`
 }
 
 

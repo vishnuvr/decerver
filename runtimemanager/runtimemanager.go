@@ -8,11 +8,12 @@ import (
 	"github.com/eris-ltd/decerver/interfaces/files"
 	"github.com/eris-ltd/decerver/interfaces/logging"
 	"github.com/eris-ltd/decerver/interfaces/scripting"
-	"github.com/eris-ltd/decerver/interfaces/types"
+	mtypes "github.com/eris-ltd/modules/types"
 	"github.com/robertkrimen/otto"
 	"io/ioutil"
 	"log"
 	"sync"
+	"encoding/json"
 )
 
 var logger *log.Logger = logging.NewLogger("ScriptEngine")
@@ -314,6 +315,7 @@ func (rs *RuntimeSub) Event() string {
 }
 
 // Passing along the sub ID means the right callback is used.
-func (rs *RuntimeSub) Post(e events.Event) {
-	rs.rt.CallFuncOnObj("events", "post", rs.id, types.ToJsValue(e) )
+func (rs *RuntimeSub) Post(e mtypes.Event) {
+	bts, _ := json.Marshal(e)
+	rs.rt.CallFuncOnObj("events", "post", rs.id, string(bts) )
 }

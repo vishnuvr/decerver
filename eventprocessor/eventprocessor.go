@@ -3,13 +3,14 @@
 package eventprocessor
 
 import (
+	"fmt"
 	"encoding/json"
+	"github.com/eris-ltd/modules/types"
 	"github.com/eris-ltd/decerver/interfaces/decerver"
 	"github.com/eris-ltd/decerver/interfaces/events"
 	"github.com/eris-ltd/decerver/interfaces/logging"
 	"github.com/eris-ltd/decerver/interfaces/modules"
 	"log"
-	"sync"
 )
 
 var logger *log.Logger = logging.NewLogger("Event Processor")
@@ -116,8 +117,6 @@ func (td *trafficData) incrementReceived(src string) {
 
 // The event processor handles subscribers and events.
 type EventProcessor struct {
-	// Mutex for subscribe, unsubscribe and post.
-	mutex *sync.Mutex
 	// Store subscribers by source (which module they're subscribing to)
 	subs map[string]SubMap
 	// Store subs by id. This keeps a map of subID->sub for fast (constant speed) removal.
@@ -130,28 +129,60 @@ type EventProcessor struct {
 	td *trafficData
 	// Whether or not we're in debugging mode.
 	debug bool
+	// Main event channel
+	mainEvts chan types.Event
+	mainClose chan interface{}
+	subChan chan events.Subscriber
+	unsubChan chan string
+	incomingChans map[string]chan types.Event
+	closeChan chan interface{}
 }
 
 func NewEventProcessor(dc decerver.Decerver) events.EventProcessor {
 	ep := &EventProcessor{}
-	ep.mutex = &sync.Mutex{}
+	
 	ep.subs = make(map[string]SubMap)
 	ep.byId = make(map[string]events.Subscriber)
 	ep.moduleManager = dc.ModuleManager()
+	ep.debug = dc.Config().DebugMode
+	if ep.debug {
+		ep.td = newTrafficData()
+	}
+	ep.mainEvts = make(chan types.Event)
+	ep.subChan = make(chan events.Subscriber)
+	ep.unsubChan = make(chan string)
+	ep.incomingChans = make(map[string]chan types.Event)
+	ep.closeChan = make(chan interface{})
+	
+	go func(ep *EventProcessor){
+		for {
+			select{
+				case evt := <- ep.mainEvts:
+					fmt.Printf("Event: %v\n", evt)
+					ep.post(evt)
+				case sub := <- ep.subChan:
+					ep.subscribe(sub)
+				case id := <- ep.unsubChan:
+					ep.unsubscribe(id)
+				case _ = <- ep.closeChan:
+					return
+			}
+		}
+		
+	}(ep)
+	
 	return ep
 }
 
 // TODO Not sure what the error is supposed to do yet
-func (ep *EventProcessor) Post(e events.Event) error {
-	ep.mutex.Lock()
-	defer ep.mutex.Unlock()
+func (ep *EventProcessor) post(e types.Event) error {
 	src := e.Source
 	ee := e.Event
 	if ep.debug {
 		ep.td.incPosted(src)
 		logger.Println("Receiving event '" + ee + "' from '" + src + "'.")
 	}
-
+	
 	sourceSubs := ep.subs[src]
 	if sourceSubs == nil || len(sourceSubs) == 0 {
 		if ep.debug {
@@ -184,8 +215,11 @@ func (ep *EventProcessor) Post(e events.Event) error {
 }
 
 func (ep *EventProcessor) Subscribe(sub events.Subscriber) error {
-	ep.mutex.Lock()
-	defer ep.mutex.Unlock()
+	ep.subChan <- sub
+	return nil
+}
+
+func (ep *EventProcessor) subscribe(sub events.Subscriber) error {
 	src := sub.Source()
 	if ep.debug {
 		logger.Println("New subscription registering: " + src)
@@ -207,22 +241,42 @@ func (ep *EventProcessor) Subscribe(sub events.Subscriber) error {
 	evts.add(sub)
 	ep.byId[sub.Id()] = sub
 
-	// Call subscribe on module to let it do filtering etc.
-	ep.moduleManager.Modules()[src].Subscribe(sub.Id(), sub.Event(), sub.Target())
+	// Call subscribe on module.
+	eChan := ep.moduleManager.Modules()[src].Subscribe(sub.Id(), sub.Event(), sub.Target())
+	ep.incomingChans[sub.Id()] = eChan
+	go func(ch chan types.Event){
+		for {
+			evt, ok := <- ch
+			if !ok {
+				return
+			} else {
+				ep.mainEvts <- evt
+			}
+		}
+	}(eChan)
 	logger.Printf("New subscriber added to: %s (%s)\n", sub.Source(), sub.Event())
 	return nil
 }
 
 // TODO not sure what the error is supposed to do yet
 func (ep *EventProcessor) Unsubscribe(id string) error {
-	ep.mutex.Lock()
-	defer ep.mutex.Unlock()
+	ep.unsubChan <- id
+	return nil
+}
+
+// TODO not sure what the error is supposed to do yet
+func (ep *EventProcessor) unsubscribe(id string) error {
 	sub, ok := ep.byId[id]
 	if !ok {
 		logger.Println("No subscriber with id: " + id)
 		return nil
 	}
 	ep.moduleManager.Modules()[sub.Source()].UnSubscribe(sub.Id())
+	// This is the crux. If module closes automatically, then it's wrong. No good way of checking.
+	// close(ep.incomingChans[id])
+	delete(ep.incomingChans,id)
+	// Clean out the sub (both from subs and from the map that stores by id)
+	// TODO this is temporary but otherwise store the channel in the subById? Make a struct?
 	ep.subs[sub.Source()][sub.Event()].remove(id)
 	delete(ep.byId, id)
 	return nil

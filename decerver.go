@@ -220,10 +220,6 @@ func (dma *DecerverModuleApi) RegisterRuntimeScript(script string) {
 	dma.rm.RegisterApiScript(script)
 }
 
-func (dma *DecerverModuleApi) PostEvent(evt events.Event) {
-	dma.ep.Post(evt)
-}
-
 func (dma *DecerverModuleApi) FileIO() files.FileIO {
 	return dma.fileIO
 }
