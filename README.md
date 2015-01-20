@@ -18,7 +18,7 @@ It is a module platform, such as for example the Netbeans platform. It allows yo
 
 In the decerver-modules repository, you can see how our modules are built. Legal markdown is by far the simplest one, and only has the basic module wrapper + a single API method. The others are more complex.
 
-Currently, modules has to be compiled together with the decerver in order to be used, which makes it look as if  Thelonious, IFPS and the other modules we've included are part of decerver itself, but they are not. IPFS, for example, is a stand alone library. We just put a module wrapper on it and gave it a javascript API. It has the same module wrapper as all the other modules we use. Decerver and dapp programmers could do this with any library they want, however, we currently do not support dynamic module loading... Once we get dynamic module loading in place (https://github.com/eris-ltd/decerver/issues/86), it will be possible to just switch modules out depending on what the (distributed) application needs. I would not recommend getting too deep into module development at this point, since the module API is going to change. Right now it's about application and not module making.
+Currently, modules has to be compiled together with the decerver in order to be used, which makes it look as if  Thelonious, IFPS and the other modules we've included are part of decerver itself, but they are not. IPFS, for example, is a stand alone library. We just put a module wrapper on it and gave it a javascript API. It has the same module wrapper as all the other modules we use. Decerver and dapp programmers could do this with any library they want, however, we currently do not support dynamic module loading. Once we get dynamic module loading in place (https://github.com/eris-ltd/decerver/issues/86), it will be possible to just switch modules during runtime, depending on what the currently loaded application needs. I would not recommend getting too deep into module development at this point, since the module API is going to change. Right now it's about application and not module making.
 
 
 ## What is it not?
@@ -27,7 +27,7 @@ It is not a blockchain. It does not have a blockchain do any of its work. Decerv
 
 It is not a key manager. Decerver does not store keys, it does not create them, and it does not sign any messages. If a module uses cryptographic keys, then it is also managing those keys. Central key management will be added to decerver, but only in the form of utility functions. The actual management itself will still be done externally.
 
-It is not a program that is in competition with Ethereum. At least not Ethereum in its current form. It is a complement (see all the previous points). To be perfectly honest, though, the Eris system has its place in a distributed application stack. It is legitimate software that solves a lot of problems us early dapp makers faced in a good way. It needs and deserves to be around. If it happens to be in competition with other systems out there then too bad (for them mostly).
+It is not a program that is in competition with Ethereum. It is a complement. Bla bla bla. Imo the Eris ecosystem has its place in any distributed application stack. It is legitimate software that solves a lot of problems us early dapp makers faced, and it does it in a good way. We shouldn't have to apologize for it. This stuff needs and deserves to be around. If it happens to be in competition with other systems out there then too bad (for them mostly).
 
 ## Overview of the deCerver
 
