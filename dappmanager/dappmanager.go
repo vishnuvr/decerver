@@ -14,6 +14,7 @@ import (
 	"github.com/eris-ltd/decerver/interfaces/modules"
 	"github.com/eris-ltd/decerver/interfaces/network"
 	"github.com/eris-ltd/decerver/interfaces/scripting"
+	"github.com/eris-ltd/epm-go/chains"
 	// "github.com/syndtr/goleveldb/leveldb"
 	"io/ioutil"
 	"log"
@@ -341,7 +342,7 @@ func (dm *DappManager) LoadDapp(dappId string) error {
 						logger.Fatal("Blockchain will not work. Malformed peerserver url (port not an integer)")
 					}
 
-					monkMod.SetProperty("RootDir", path.Join(dm.fio.Blockchains(), "thelonious", monkData.ChainId))
+					monkMod.SetProperty("RootDir", chains.ComposeRoot("thelonious", monkData.ChainId))
 					monkMod.SetProperty("RemoteHost", addAndPort[0])
 					monkMod.SetProperty("RemotePort", port)
 					monkMod.SetProperty("ChainId", monkData.ChainId)
