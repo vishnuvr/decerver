@@ -1,7 +1,8 @@
 package scripting
 
 import (
-	"github.com/eris-ltd/decerver/interfaces/types"	
+	"github.com/robertkrimen/otto"
+	"github.com/eris-ltd/decerver/interfaces/types"
 )
 
 const (
@@ -31,6 +32,7 @@ type(
 		Shutdown()
 		// This is normally the same as the dapp id when running decerver.
 		Id() string
+		ToValue(obj interface{}) (otto.Value,error)
 		BindScriptObject(name string, val interface{}) error
 		LoadScriptFile(fileName string) error
 		LoadScriptFiles(fileName ...string) error

@@ -424,8 +424,8 @@ func bindNetworking(vm *otto.Otto){
 		}
 		
 		// Used internally. Do not call this from javascript.
-		network.handleIncomingHttp = function(httpReqAsJson){
-			var httpReq = JSON.parse(httpReqAsJson);
+		network.handleIncomingHttp = function(httpReq){
+			//var httpReq = JSON.parse(httpReqAsJson);
 			var ret = this.incomingHttpCallback(httpReq);
 			var rets;
 			try {

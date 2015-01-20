@@ -218,6 +218,10 @@ func (rt *Runtime) LoadScriptFiles(fileName ...string) error {
 	return nil
 }
 
+func (rt *Runtime) ToValue(obj interface{}) (otto.Value,error) {
+	return rt.vm.ToValue(obj)
+}
+
 func (rt *Runtime) BindScriptObject(name string, val interface{}) error {
 	rt.mutex.Lock()
 	defer rt.mutex.Unlock()

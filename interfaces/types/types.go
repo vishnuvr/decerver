@@ -82,7 +82,11 @@ func ToJsValue(input interface{}) interface{} {
 		return ret128
 	} else if kind == reflect.Ptr {
 		// Call this recursively.
-		return ToJsValue(rv.Elem().Interface())
+		if !rv.IsNil() {
+			return ToJsValue(rv.Elem().Interface())
+		} else {
+			return nil
+		}
 	} else {
 		panic("Unsupported type: " + rv.Kind().String())
 	}

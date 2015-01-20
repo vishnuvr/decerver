@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/eris-ltd/decerver/interfaces/scripting"
+	// "github.com/eris-ltd/decerver/interfaces/types"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -73,9 +74,8 @@ func (has *HttpAPIServer) handleHttp(w http.ResponseWriter, r *http.Request) {
 		has.writeError(w, 400, errpr.Error())
 		return
 	}
-	// TODO this is a bad solution. It should be possible to pass objects (at least maps) right in.
-	bts, _ := json.Marshal(prx)
-	ret, err := rt.CallFuncOnObj("network", "handleIncomingHttp", string(bts))
+	vvv, _ := rt.ToValue(prx)
+	ret, err := rt.CallFuncOnObj("network", "handleIncomingHttp", vvv)
 
 	if err != nil {
 		has.writeError(w, 500, err.Error())
