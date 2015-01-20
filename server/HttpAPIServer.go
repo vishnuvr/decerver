@@ -3,14 +3,14 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/eris-ltd/decerver-interfaces/core"
+	"github.com/eris-ltd/decerver/interfaces/scripting"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
 )
 
-type HttpRespProxy struct {
+type HttpReqProxy struct {
 	URL *url.URL
 	Method string
 	Host string
@@ -18,16 +18,18 @@ type HttpRespProxy struct {
 	Body string
 }
 
-func ProxyFromHttpReq(r *http.Request) (*HttpRespProxy, error) {
-	p := &HttpRespProxy{}
-	p.Method = r.Method
-	r.Host = r.Host
-	p.URL = r.URL
-	p.Header = r.Header
+func ProxyFromHttpReq(r *http.Request) (*HttpReqProxy, error) {
+	
 	bts, err := ioutil.ReadAll(r.Body);
 	if err != nil {
 		return nil, err;
 	} else {
+		// Make a runtime compatible object
+		p := &HttpReqProxy{}
+		p.Method = r.Method
+		p.Host = r.Host
+		p.URL = r.URL
+		p.Header = r.Header
 		p.Body = string(bts)
 		return p, nil
 	} 
@@ -40,10 +42,10 @@ type HttpResp struct {
 }
 
 type HttpAPIServer struct {
-	ate core.RuntimeManager
+	rm scripting.RuntimeManager
 }
 
-func NewHttpAPIServer(rm core.RuntimeManager) *HttpAPIServer {
+func NewHttpAPIServer(rm scripting.RuntimeManager) *HttpAPIServer {
 	return &HttpAPIServer{rm}
 }
 
@@ -54,7 +56,7 @@ func (has *HttpAPIServer) handleHttp(w http.ResponseWriter, r *http.Request) {
 	p := u.Path 
 	caller := strings.Split(strings.TrimLeft(p,"/"),"/")[1];
 	
-	rt := has.ate.GetRuntime(caller)
+	rt := has.rm.GetRuntime(caller)
 	// TODO Update this. It's basically how we check if dapp is ready now.
 	if rt == nil {
 		w.WriteHeader(400)
@@ -71,19 +73,15 @@ func (has *HttpAPIServer) handleHttp(w http.ResponseWriter, r *http.Request) {
 		has.writeError(w, 400, errpr.Error())
 		return
 	}
-	reqJson, errM := json.Marshal(prx)
-
-	if errM != nil {
-		logger.Println("Error when marshalling http request (this really should not happen) : " + errM.Error())
-	}
-	// logger.Println("Http request json: " + string(reqJson))
-	ret, err := rt.CallFuncOnObj("network", "handleIncomingHttp", string(reqJson))
+	// TODO this is a bad solution. It should be possible to pass objects (at least maps) right in.
+	bts, _ := json.Marshal(prx)
+	ret, err := rt.CallFuncOnObj("network", "handleIncomingHttp", string(bts))
 
 	if err != nil {
 		has.writeError(w, 500, err.Error())
 		return
 	}
-
+	
 	rStr, sOk := ret.(string)
 	if !sOk {
 		has.writeError(w, 500, "Passing non string as return value from otto.")
@@ -96,7 +94,7 @@ func (has *HttpAPIServer) handleHttp(w http.ResponseWriter, r *http.Request) {
 		has.writeError(w, 500, errJson.Error())
 		return
 	}
-
+	
 	has.writeReq(hr, w)
 }
 

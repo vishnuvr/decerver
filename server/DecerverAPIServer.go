@@ -3,8 +3,8 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/eris-ltd/decerver-interfaces/core"
-	"github.com/eris-ltd/decerver-interfaces/dapps"
+	"github.com/eris-ltd/decerver/interfaces/decerver"
+	"github.com/eris-ltd/decerver/interfaces/dapps"
 	"io/ioutil"
 	"net/http"
 	"path"
@@ -16,22 +16,22 @@ type SwitchName struct {
 }
 
 type DecerverAPIServer struct {
-	decerver core.DeCerver
-	dappreg  dapps.DappRegistry
+	dc decerver.Decerver
+	dm  dapps.DappManager
 }
 
-func NewDecerverAPIServer(dc core.DeCerver, dr dapps.DappRegistry) *DecerverAPIServer {
-	return &DecerverAPIServer{dc, dr}
+func NewDecerverAPIServer(dc decerver.Decerver, dm dapps.DappManager) *DecerverAPIServer {
+	return &DecerverAPIServer{dc, dm}
 }
 
 func (das *DecerverAPIServer) handleReadyGET(w http.ResponseWriter, r *http.Request) {
 	logger.Println("GET decerver ready")
 
-	if !das.decerver.IsStarted() {
+	if !das.dc.IsStarted() {
 		das.writeError(w, 400, "decerver not started")
 	}
 
-	dapplist := das.dappreg.GetDappList()
+	dapplist := das.dm.DappList()
 	bts, err := json.Marshal(dapplist)
 
 	if err != nil {
@@ -48,7 +48,7 @@ func (das *DecerverAPIServer) handleReadyGET(w http.ResponseWriter, r *http.Requ
 
 func (das *DecerverAPIServer) handleDecerverGET(w http.ResponseWriter, r *http.Request) {
 	logger.Println("GET decerver config")
-	cfg := das.decerver.GetConfig()
+	cfg := das.dc.Config()
 	bts, err := json.Marshal(cfg)
 
 	if err != nil {
@@ -71,7 +71,7 @@ func (das *DecerverAPIServer) handleDecerverPOST(w http.ResponseWriter, r *http.
 	ct := strings.ToLower(contentType)
 
 	if ct != "application/json" {
-		das.writeError(w, 415, "unrecognized Content-Type: "+contentType)
+		das.writeError(w, 415, "unrecognized Content-Type: "+ contentType)
 		return
 	}
 
@@ -81,7 +81,7 @@ func (das *DecerverAPIServer) handleDecerverPOST(w http.ResponseWriter, r *http.
 		das.writeError(w, 400, err.Error())
 		return
 	}
-	cfg := &core.DCConfig{}
+	cfg := &decerver.DCConfig{}
 	fmt.Print(string(bts))
 	err = json.Unmarshal(bts, cfg)
 
@@ -89,8 +89,8 @@ func (das *DecerverAPIServer) handleDecerverPOST(w http.ResponseWriter, r *http.
 		das.writeError(w, 422, err.Error())
 		return
 	}
-
-	das.decerver.WriteConfig(cfg)
+	fio := das.dc.FileIO()
+	fio.MarshalJsonToFile(fio.Root(),"config",cfg)
 
 	w.WriteHeader(204)
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
@@ -105,7 +105,7 @@ func (das *DecerverAPIServer) handleModuleGET(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	fio := das.decerver.GetFileIO()
+	fio := das.dc.FileIO()
 
 	pt := fio.Modules() + "/" + mName
 	logger.Printf("GET %s config\n", mName)
@@ -150,7 +150,7 @@ func (das *DecerverAPIServer) handleModulePOST(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	fio := das.decerver.GetFileIO()
+	fio := das.dc.FileIO()
 	pt := fio.Modules() + "/" + mName
 
 	var tmp_int interface{}
@@ -180,7 +180,7 @@ func (das *DecerverAPIServer) handleDappSwitch(w http.ResponseWriter, r *http.Re
 		return
 	}
 	logger.Println("Switching to dapp: ", mName)
-	err := das.dappreg.LoadDapp(mName)
+	err := das.dm.LoadDapp(mName)
 
 	if err != nil {
 		das.writeError(w, 400, err.Error())

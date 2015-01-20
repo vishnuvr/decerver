@@ -1,24 +1,39 @@
 package main
 
 import (
+	"fmt"
 	"github.com/eris-ltd/decerver"
-	"github.com/eris-ltd/decerver-interfaces/glue/ipfs"
-	"github.com/eris-ltd/decerver-interfaces/glue/legalmarkdown"
-	"github.com/eris-ltd/decerver-interfaces/glue/monk"
+	"github.com/eris-ltd/decerver-modules/ipfs"
+	"github.com/eris-ltd/decerver-modules/legalmarkdown"
+	"github.com/eris-ltd/decerver-modules/monk"
+	//"github.com/eris-ltd/modules/blockchaininfo"
+	"os"
 )
 
 func main() {
 	dc := decerver.NewDeCerver()
-	mjs := monkjs.NewMonkJs()
-	fm := ipfs.NewIpfs()
+	fm := ipfs.NewIpfsModule()
 	lmd := legalmarkdown.NewLmdModule()
-
-	dc.LoadModule(lmd)
-	dc.LoadModule(mjs)
+	mjs := monkjs.NewMonkModule()
+	//bci := blockchaininfo.NewBlkChainInfo()
+	
 	dc.LoadModule(fm)
-
-	dc.Init()
-
+	dc.LoadModule(lmd)
+	//dc.LoadModule(bci)
+	dc.LoadModule(mjs)
+	
+	errInit := dc.Init()
+	if errInit != nil {
+		fmt.Printf("Module failed to initialize: %s. Shutting down.\n", errInit.Error())
+		os.Exit(1)
+	}
+	
 	//Run decerver
-	dc.Start()
+	errStart := dc.Start()
+	if errStart != nil {
+		fmt.Printf("Module failed to start: %s. Shutting down.\n", errStart.Error())
+		os.Exit(1)
+	}
+	
+	dc.Shutdown()
 }

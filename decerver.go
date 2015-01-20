@@ -1,126 +1,105 @@
 package decerver
 
 import (
-	"github.com/eris-ltd/decerver-interfaces/core"
-	"github.com/eris-ltd/decerver-interfaces/modules"
-	"github.com/eris-ltd/decerver/ate"
-	"github.com/eris-ltd/decerver/dappregistry"
-	"github.com/eris-ltd/decerver/events"
-	"github.com/eris-ltd/decerver/moduleregistry"
+	"github.com/eris-ltd/decerver/dappmanager"
+	"github.com/eris-ltd/decerver/eventprocessor"
+	"github.com/eris-ltd/decerver/fileio"
+	"github.com/eris-ltd/decerver/interfaces/dapps"
+	"github.com/eris-ltd/decerver/interfaces/decerver"
+	"github.com/eris-ltd/decerver/interfaces/events"
+	"github.com/eris-ltd/decerver/interfaces/files"
+	"github.com/eris-ltd/decerver/interfaces/logging"
+	"github.com/eris-ltd/decerver/interfaces/modules"
+	"github.com/eris-ltd/decerver/interfaces/network"
+	"github.com/eris-ltd/decerver/interfaces/scripting"
+	"github.com/eris-ltd/decerver/modulemanager"
+	"github.com/eris-ltd/decerver/runtimemanager"
 	"github.com/eris-ltd/decerver/server"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
+	"os/user"
 	"path"
-	"sync"
 )
 
-var logger *log.Logger = core.NewLogger("Decerver Core")
+const version = "1.0.0"
 
-type Paths struct {
-	mutex       *sync.Mutex
-	root        string
-	modules     string
-	log         string
-	blockchains string
-	filesystems string
-	dapps       string
-	system      string
-}
+var logger *log.Logger = logging.NewLogger("Decerver Core")
 
-func (p *Paths) Root() string {
-	return p.root
-}
-
-func (p *Paths) Modules() string {
-	return p.modules
-}
-
-func (p *Paths) Log() string {
-	return p.log
-}
-
-func (p *Paths) Dapps() string {
-	return p.dapps
-}
-
-func (p *Paths) Blockchains() string {
-	return p.blockchains
-}
-
-func (p *Paths) Filesystems() string {
-	return p.filesystems
-}
-
-func (p *Paths) System() string {
-	return p.system
-}
-
-// Thread safe read file function. Reads an entire file and returns the bytes.
-func (p *Paths) ReadFile(directory, name string) ([]byte, error) {
-	p.mutex.Lock()
-	defer p.mutex.Unlock()
-	return ioutil.ReadFile((path.Join(directory, name)))
-}
-
-// Thread safe write file function. Writes the provided byte slice into the file 'name'
-// in directory 'directory'. Uses filemode 0600.
-func (p *Paths) WriteFile(directory, name string, data []byte) error {
-	p.mutex.Lock()
-	defer p.mutex.Unlock()
-	return ioutil.WriteFile((path.Join(directory, name)), data, 0600)
-}
-
-// Creates a new directory for a module, and returns the path.
-func (p *Paths) CreateDirectory(moduleName string) string {
-	dir := p.modules + "/" + moduleName
-	InitDir(dir)
-	return dir
+// default config object
+var DefaultConfig = &decerver.DCConfig{
+	LogFile:       "",
+	MaxClients:    10,
+	Hostname:      "localhost",
+	Port:          3000,
+	DebugMode:     true,
 }
 
 type DeCerver struct {
-	config         *core.DCConfig
-	paths          *Paths
-	ep             *events.EventProcessor
-	ate            *ate.Ate
-	webServer      *server.WebServer
-	moduleRegistry *moduleregistry.ModuleRegistry
-	dappRegistry   *dappregistry.DappRegistry
-	isStarted      bool
+	config        *decerver.DCConfig
+	modApi        modules.DecerverModuleApi
+	fileIO        files.FileIO
+	ep            events.EventProcessor
+	rm            scripting.RuntimeManager
+	webServer     network.Server
+	moduleManager modules.ModuleManager
+	dappManager   dapps.DappManager
+	isStarted     bool
 }
 
 func NewDeCerver() *DeCerver {
 	dc := &DeCerver{}
 	logger.Println("Starting decerver bootstrapping sequence.")
-	dc.ReadConfig("")
-	dc.createPaths()
-	dc.WriteConfig(dc.config)
-	dc.createModuleRegistry()
+	dc.createFileIO()
+	dc.loadConfig()
+	dc.createModuleManager()
 	dc.createEventProcessor()
-	dc.createAte()
-	dc.createNetwork()
-	dc.createDappRegistry()
+	dc.createRuntimeManager()
+	dc.createServer()
+	dc.createDappManager()
+	dc.modApi = newDecerverModuleApi(dc)
 	return dc
 }
 
-func (dc *DeCerver) Init() {
-	err := dc.moduleRegistry.Init()
+func (dc *DeCerver) createFileIO() {
+	usr, err := user.Current()
 	if err != nil {
-		logger.Printf("Module failed to initialize: %s. Shutting down.\n", err.Error())
-		os.Exit(-1)
+		panic("User error: " + err.Error())
 	}
-	dc.initDapps()
+	root := path.Join(usr.HomeDir, ".decerver")
+	dc.fileIO = fileio.NewFileIO(root)
+	dc.fileIO.InitPaths()
 }
 
-func (dc *DeCerver) Start() {
+func (dc *DeCerver) loadConfig(){
+	fio := dc.fileIO
+	config := &decerver.DCConfig{} 
+	err := fio.UnmarshalJsonFromFile(fio.Root(),"config",config)
+	if err != nil {
+		logger.Println("Failed to load config: " + err.Error() )
+		logger.Println("Generating...")
+		config = DefaultConfig
+		fio.MarshalJsonToFile(fio.Root(),"config",config)
+	}
+	dc.config = config
+}
+
+func (dc *DeCerver) Init() error {
+	err := dc.moduleManager.Init()
+	if err != nil {
+		return err
+	}
+	dc.initDapps()
+	return nil
+}
+
+func (dc *DeCerver) Start() error {
 	dc.webServer.Start()
 	logger.Println("Server started.")
 
-	err := dc.moduleRegistry.Start()
+	err := dc.moduleManager.Start()
 	if err != nil {
-		logger.Printf("Module failed to start: %s. Shutting down.\n", err.Error())
-		os.Exit(-1)
+		return err
 	}
 
 	// Now everything is registered.
@@ -128,69 +107,61 @@ func (dc *DeCerver) Start() {
 
 	logger.Println("Running...")
 	// Just block for now.
+	ss := block()
+
+	logger.Println("Shutting down: " + ss)
+	return nil
+}
+
+// TODO stuff
+func (dc *DeCerver) Shutdown() error {
+	dc.moduleManager.Shutdown()
+	logger.Println("Bye.")
+	return nil
+}
+
+func block() string {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, os.Kill)
 	sig := <-c
-	logger.Println("Shutting down: " + sig.String())
-	dc.moduleRegistry.Shutdown()
-	logger.Println("Bye.")
+	return sig.String()
 }
 
-func (dc *DeCerver) createPaths() {
-
-	dc.paths = &Paths{}
-	dc.paths.mutex = &sync.Mutex{}
-
-	dc.paths.root = dc.config.RootDir
-	InitDir(dc.paths.root)
-	dc.paths.log = dc.paths.root + "/logs"
-	InitDir(dc.paths.log)
-	dc.paths.modules = dc.paths.root + "/modules"
-	InitDir(dc.paths.modules)
-	dc.paths.dapps = dc.paths.root + "/dapps"
-	InitDir(dc.paths.dapps)
-	dc.paths.filesystems = dc.paths.root + "/filesystems"
-	InitDir(dc.paths.filesystems)
-	dc.paths.blockchains = dc.paths.root + "/blockchains"
-	InitDir(dc.paths.blockchains)
-	dc.paths.system = dc.paths.root + "/system"
-	InitDir(dc.paths.system)
-}
-
-func (dc *DeCerver) createNetwork() {
-	dc.webServer = server.NewWebServer(uint32(dc.config.MaxClients), dc.paths, dc.config.Port, dc.ate, dc)
+func (dc *DeCerver) createServer() {
+	dc.webServer = server.NewWebServer(dc)
 }
 
 func (dc *DeCerver) createEventProcessor() {
-	dc.ep = events.NewEventProcessor(dc.moduleRegistry)
+	dc.ep = eventprocessor.NewEventProcessor(dc)
 }
 
-func (dc *DeCerver) createAte() {
-	dc.ate = ate.NewAte(dc.ep)
+func (dc *DeCerver) createRuntimeManager() {
+	dc.rm = runtimemanager.NewRuntimeManager(dc)
 }
 
 func (dc *DeCerver) IsStarted() bool {
 	return dc.isStarted
 }
 
-func (dc *DeCerver) createModuleRegistry() {
-	dc.moduleRegistry = moduleregistry.NewModuleRegistry()
+func (dc *DeCerver) createModuleManager() {
+	dc.moduleManager = modulemanager.NewModuleManager()
 }
 
-func (dc *DeCerver) createDappRegistry() {
-	dc.dappRegistry = dappregistry.NewDappRegistry(dc.ate, dc.webServer, dc.moduleRegistry)
-	dc.webServer.AddDappRegistry(dc.dappRegistry)
+func (dc *DeCerver) createDappManager() {
+	dc.dappManager = dappmanager.NewDappManager(dc)
+	dc.webServer.AddDappManager(dc.dappManager)
 }
 
 func (dc *DeCerver) LoadModule(md modules.Module) {
 	// TODO re-add
-	md.Register(dc.paths, dc.ate, dc.ep)
-	dc.moduleRegistry.Add(md)
+	dc.FileIO().CreateModuleDirectory(md.Name())
+	md.Register(dc.modApi)
+	dc.moduleManager.Add(md)
 	logger.Printf("Registering module '%s'.\n", md.Name())
 }
 
 func (dc *DeCerver) initDapps() {
-	err := dc.dappRegistry.RegisterDapps(dc.paths.Dapps(), dc.paths.System())
+	err := dc.dappManager.RegisterDapps(dc.FileIO().Dapps(), dc.FileIO().System())
 
 	if err != nil {
 		logger.Println("Error loading dapps: " + err.Error())
@@ -198,6 +169,57 @@ func (dc *DeCerver) initDapps() {
 	}
 }
 
-func (dc *DeCerver) GetFileIO() core.FileIO {
-	return dc.paths
+func (dc *DeCerver) Config() *decerver.DCConfig {
+	return dc.config
+}
+
+func (dc *DeCerver) FileIO() files.FileIO {
+	return dc.fileIO
+}
+
+func (dc *DeCerver) DappManager() dapps.DappManager {
+	return dc.dappManager
+}
+
+func (dc *DeCerver) EventProcessor() events.EventProcessor {
+	return dc.ep
+}
+
+func (dc *DeCerver) ModuleManager() modules.ModuleManager {
+	return dc.moduleManager
+}
+
+func (dc *DeCerver) RuntimeManager() scripting.RuntimeManager {
+	return dc.rm
+}
+
+func (dc *DeCerver) Server() network.Server {
+	return dc.webServer
+}
+
+// Satisfies the DecerverModuleAPI interface
+type DecerverModuleApi struct {
+	fileIO files.FileIO
+	ep     events.EventProcessor
+	rm     scripting.RuntimeManager
+}
+
+func newDecerverModuleApi(dc *DeCerver) modules.DecerverModuleApi {
+	dma := &DecerverModuleApi{}
+	dma.ep = dc.ep
+	dma.fileIO = dc.fileIO
+	dma.rm = dc.rm
+	return dma
+}
+
+func (dma *DecerverModuleApi) RegisterRuntimeObject(name string, obj interface{}) {
+	dma.rm.RegisterApiObject(name, obj)
+}
+
+func (dma *DecerverModuleApi) RegisterRuntimeScript(script string) {
+	dma.rm.RegisterApiScript(script)
+}
+
+func (dma *DecerverModuleApi) FileIO() files.FileIO {
+	return dma.fileIO
 }
