@@ -3,9 +3,9 @@ package runtimemanager
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/eris-ltd/decerver/interfaces/logging"
 	"github.com/obscuren/sha3"
 	"github.com/robertkrimen/otto"
-	"github.com/eris-ltd/decerver/interfaces/logging"
 	"log"
 	"math/big"
 	"time"
@@ -22,9 +22,9 @@ var ottoLog *log.Logger = logging.NewLogger("Runtime")
 // TODO clean up the scripts. Make proper function objects.
 func BindDefaults(runtime *Runtime) {
 	vm := runtime.vm
-	
+
 	bindGo(vm)
-	
+
 	bindCore(vm)
 	bindNetworking(vm)
 	bindEvents(vm)
@@ -248,7 +248,7 @@ func bindGo(vm *otto.Otto) {
 	})
 }
 
-func bindCore(vm *otto.Otto){
+func bindCore(vm *otto.Otto) {
 	_, err := vm.Run(`
 		
 		// (Integer) math done on strings. The strings can be
@@ -332,8 +332,8 @@ func bindCore(vm *otto.Otto){
 		
 		// A few easy-to-use string utility functions, such as converting
 		// between a string value and a hex representation of that string.
-		var sutil = {}; 
-		
+		var sutil = {};
+				
 		// Takes a string and converts it into a 32 byte left-padded 
 		// hex string. This is useful when passing strings as arguments
 		// to blockchain transactions.
@@ -373,7 +373,7 @@ func bindCore(vm *otto.Otto){
 	}
 }
 
-func bindNetworking(vm *otto.Otto){
+func bindNetworking(vm *otto.Otto) {
 
 	// Networking.
 	_, err := vm.Run(`
@@ -384,11 +384,11 @@ func bindNetworking(vm *otto.Otto){
 		// Http
 		
 		// Returns a default response object. Status is 0, header and body is empty.
-		network.getHttpResponse = function(){
+		network.getHttpResponse = function(status,header,body){
 			return {
-				"Status" : 0,
-				"Header" : {},
-				"Body" : ""
+				"Status" : status || 0,
+				"Header" : header || {},
+				"Body" : body || ""
 			};
 		}
 		
@@ -610,6 +610,45 @@ func bindNetworking(vm *otto.Otto){
 			}
 		}
 		
+		// Parse the url of a request into a formatted URL object.
+		// TODO document and handle errors.
+		network.parseUrl = function(httpReq){
+			// This would become ["dappname", "whatever", ... ]
+			var p = httpReq.URL.Path;
+			var pSplit = p.slice(1,p.length - 1).split('/');
+			// We cut out "http" and "dappname" since they're not part of the request.
+			if (pSplit.length < 2){
+				return network.newUrlObj([],{},"Invalid URL");
+			}
+			pSplit = pSplit.slice(1);
+			
+			var opts = {};
+			
+			var rawQuery = httpReq.URL.RawQuery.split('&');
+			
+			for(var i = 0; i < rawQuery.length; i++) {
+				var q = rawQuery[i].split('=');
+				// TODO error
+				opts[q[0]] = q[1]; 
+			}
+			
+			var urlObj = network.newUrlObj(pSplit,opts,"");
+			return urlObj;
+		}
+		
+		// Called by network.parseUrl()
+		// 'path' is an array of strings 
+		// 'opts' is a string->string map
+		// 'error' is a string
+		// TODO document and handle errors
+		network.newUrlObj = function(path,opts,error){
+			if(arguments.length === 1 && typeof(arguments[0]) === "string"){
+				return network.newUrlObj([],{},arguments[0]);
+			} else {
+				return {"path" : path || [], "options" : opts || {}, "error" : error || ""};
+			}
+		}
+		
 	`)
 
 	if err != nil {
@@ -619,7 +658,7 @@ func bindNetworking(vm *otto.Otto){
 	}
 }
 
-func bindEvents(vm *otto.Otto){
+func bindEvents(vm *otto.Otto) {
 	_, err := vm.Run(`
 		
 		// This is the events object. It handles events that comes
@@ -684,7 +723,7 @@ func bindEvents(vm *otto.Otto){
 }
 
 func bindUtilities(vm *otto.Otto) {
-	
+
 	_, err := vm.Run(`
 		
 		var STATUS_NORMAL = 0;

@@ -12,9 +12,6 @@ import (
 const DEFAULT_PORT = 3000  // For communicating with dapps (the atom browser).
 // const DECERVER_PORT = 3100 // For communication with the atom client back-end.
 
-const HTTP_BASE = "/http/"
-const WS_BASE = "/ws/"
-
 var logger *log.Logger = logging.NewLogger("Webserver")
 
 type WebServer struct {
@@ -52,9 +49,8 @@ func NewWebServer(dc decerver.Decerver) *WebServer {
 }
 
 func (ws *WebServer) RegisterDapp(dappId string) {
-	logger.Println("Adding routes for: " + dappId + " path http: " + HTTP_BASE+dappId + "/(.*)")
-	ws.webServer.Any(HTTP_BASE+dappId + "/(.*)", ws.has.handleHttp)
-	ws.webServer.Get(WS_BASE+dappId, ws.was.handleWs)
+	fmt.Println("Registering path: " + dappId + "/(.*)")
+	ws.webServer.Any("/" + dappId + "/(.*)", ws.has.handleHttp)
 }
 
 func (ws *WebServer) AddDappManager(dm dapps.DappManager) {

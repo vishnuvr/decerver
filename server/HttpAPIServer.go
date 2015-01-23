@@ -54,7 +54,7 @@ func (has *HttpAPIServer) handleHttp(w http.ResponseWriter, r *http.Request) {
 
 	u := r.URL
 	p := u.Path 
-	caller := strings.Split(strings.TrimLeft(p,"/"),"/")[1];
+	caller := strings.Split(strings.TrimLeft(p,"/"),"/")[0];
 	
 	rt := has.rm.GetRuntime(caller)
 	// TODO Update this. It's basically how we check if dapp is ready now.
@@ -75,6 +75,8 @@ func (has *HttpAPIServer) handleHttp(w http.ResponseWriter, r *http.Request) {
 	}
 	// TODO this is a bad solution. It should be possible to pass objects (at least maps) right in.
 	bts, _ := json.Marshal(prx)
+	// DEBUG
+	fmt.Println("REQUEST: " + string(bts))
 	ret, err := rt.CallFuncOnObj("network", "handleIncomingHttp", string(bts))
 
 	if err != nil {
