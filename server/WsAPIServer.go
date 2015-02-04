@@ -64,7 +64,6 @@ func (srv *WsAPIServer) handleWs(w http.ResponseWriter, r *http.Request) {
 	u := r.URL
 	p := u.Path
 	caller := path.Base(p)
-
 	rt := srv.rm.GetRuntime(caller)
 	// TODO Update this. It's basically how we check if dapp is ready now.
 	if rt == nil {

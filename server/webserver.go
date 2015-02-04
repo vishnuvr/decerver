@@ -20,7 +20,6 @@ type WebServer struct {
 	host		   string
 	port           int
 	dc       	   decerver.Decerver
-	was            *WsAPIServer
 	has            *HttpAPIServer
 	das            *DecerverAPIServer
 	dm             dapps.DappManager
@@ -38,8 +37,7 @@ func NewWebServer(dc decerver.Decerver) *WebServer {
 	ws.host = dc.Config().Hostname
 	ws.dc = dc
 	rm := dc.RuntimeManager()
-	ws.was = NewWsAPIServer(rm, ws.maxConnections)
-	ws.has = NewHttpAPIServer(rm)
+	ws.has = NewHttpAPIServer(rm,ws.maxConnections)
 
 	ws.webServer = martini.Classic()
 	// TODO remember to change to martini.Prod
@@ -50,7 +48,7 @@ func NewWebServer(dc decerver.Decerver) *WebServer {
 
 func (ws *WebServer) RegisterDapp(dappId string) {
 	fmt.Println("Registering path: " + dappId + "/(.*)")
-	ws.webServer.Any("/" + dappId + "/(.*)", ws.has.handleHttp)
+	ws.webServer.Any("/apis/" + dappId + "/(.*)", ws.has.handleHttp)
 }
 
 func (ws *WebServer) AddDappManager(dm dapps.DappManager) {

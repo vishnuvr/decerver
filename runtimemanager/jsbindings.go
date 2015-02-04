@@ -386,9 +386,9 @@ func bindNetworking(vm *otto.Otto) {
 		// Returns a default response object. Status is 0, header and body is empty.
 		network.getHttpResponse = function(status,header,body){
 			return {
-				"Status" : status || 0,
+				"Status" : status || 400,
 				"Header" : header || {},
-				"Body" : body || ""
+				"Body" : body || "Not supported."
 			};
 		}
 		
@@ -403,11 +403,11 @@ func bindNetworking(vm *otto.Otto) {
 		
 		// Returns a http request with status 200, empty header, and (what should be) a json formatted
 		// string as body.
-		network.getHttpResponseJSON = function(jsonString){
+		network.getHttpResponseJSON = function(obj){
 			return {
 				"Status" : 200,
-				"Header" : {},
-				"Body" : jsonString
+				"Header" : {"Content-Type": "application/json"},
+				"Body" : JSON.stringify(obj)
 			};
 		}
 		
@@ -441,6 +441,7 @@ func bindNetworking(vm *otto.Otto) {
 			if(typeof callback !== "function"){
 				throw Error("Attempting to register a non-function as incoming http callback");
 			}
+			Println("New http request callback registered");
 			network.incomingHttpCallback = callback;
 		}
 		
@@ -613,14 +614,15 @@ func bindNetworking(vm *otto.Otto) {
 		// Parse the url of a request into a formatted URL object.
 		// TODO document and handle errors.
 		network.parseUrl = function(httpReq){
-			// This would become ["dappname", "whatever", ... ]
+			// This would become ["apis", "dappname", "whatever", ... ]
 			var p = httpReq.URL.Path;
-			var pSplit = p.slice(1,p.length - 1).split('/');
-			// We cut out "http" and "dappname" since they're not part of the request.
+			var pSplit = p.slice(1).split('/');
+			
+			// We cut out "apis" and "dappname".
 			if (pSplit.length < 2){
 				return network.newUrlObj([],{},"Invalid URL");
 			}
-			pSplit = pSplit.slice(1);
+			pSplit = pSplit.slice(2);
 			
 			var opts = {};
 			
@@ -680,11 +682,12 @@ func bindEvents(vm *otto.Otto) {
 		 *                Uid needs to be a string.
 		 */
 		events.subscribe = function(eventSource, eventType, eventTarget, callbackFn, uid){
-		
+			Println("Subscribing");
 			if(typeof(callbackFn) !== "function"){
 				throw new Error("Trying to register a non callback function as callback.");
 			}
 			var eventId = events.generateId(eventSource,eventType, uid);
+			Println("Adding sub: " + eventId);
 			// The jsr_events object has the go bindings to actually subscribe.
 			events_subscribe(eventSource, eventType, eventTarget, eventId);
 			this.callbacks[eventId] = callbackFn;
@@ -698,7 +701,7 @@ func bindEvents(vm *otto.Otto) {
 		
 		// Called by the go event processor.
 		events.post = function(subId, eventJson){
-			var event = JSON.parse(eventJson)
+			var event = JSON.parse(eventJson);
 			var cfn = this.callbacks[subId];
 			if (typeof(cfn) === "function"){
 				cfn(event);
@@ -711,7 +714,7 @@ func bindEvents(vm *otto.Otto) {
 		// used by events to generate unique subscriber Ids based on
 		// the event source and name.
 		events.generateId = function(evtSource,evtName, uid){
-			return RuntimeId + "_" + evtSource + "_" + evtName + "_" + uid; 
+			return RuntimeId + "_" + evtSource + "_" + evtName + "_" + uid;
 		}
 	`)
 
@@ -745,7 +748,7 @@ func bindUtilities(vm *otto.Otto) {
 		}		
 		
 		// This is a simple decerver API is for dapps. Gives access to monk, ipfs and legal markdown.
-		function DappCore(){
+		function LightApi(){
 			
 			// *************************** Variables *************************
 			

@@ -133,6 +133,10 @@ func (rt *Runtime) Id() string {
 
 // TODO add an interrupt channel.
 func (rt *Runtime) Init(name string) {
+	
+	// Bind the runtime id (it's name)
+	rt.vm.Set("RuntimeId", name)
+	
 	// Bind an event subscribe function to otto
 	rt.vm.Set("events_subscribe", func(call otto.FunctionCall) otto.Value {
 	    // TODO Error checking
@@ -188,9 +192,6 @@ func (rt *Runtime) Init(name string) {
 	    ret, _ := otto.ToValue(string(bts))
 	    return ret
 	})
-	
-	// Bind the runtime id (it's name)
-	rt.vm.Set("RuntimeId", name)
 	
 	// Bind all the defaults.
 	BindDefaults(rt)

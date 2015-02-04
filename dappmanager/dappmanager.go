@@ -306,10 +306,6 @@ func (dm *DappManager) LoadDapp(dappId string) error {
 
 	rt := dm.rm.CreateRuntime(dappId)
 
-	for _, js := range dapp.Models() {
-		rt.AddScript(js)
-	}
-
 	// Monk hack until we script
 	deps := dapp.PackageFile().ModuleDependencies
 
@@ -360,6 +356,10 @@ func (dm *DappManager) LoadDapp(dappId string) error {
 				}
 			}
 		}
+	}
+
+	for _, js := range dapp.Models() {
+		rt.AddScript(js)
 	}
 
 	dm.runningDapp = dapp

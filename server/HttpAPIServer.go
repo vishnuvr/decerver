@@ -42,19 +42,27 @@ type HttpResp struct {
 }
 
 type HttpAPIServer struct {
+	was *WsAPIServer
 	rm scripting.RuntimeManager
 }
 
-func NewHttpAPIServer(rm scripting.RuntimeManager) *HttpAPIServer {
-	return &HttpAPIServer{rm}
+func NewHttpAPIServer(rm scripting.RuntimeManager, maxConnections uint32) *HttpAPIServer {
+	was := NewWsAPIServer(rm,maxConnections)
+	return &HttpAPIServer{was, rm}
 }
 
 // This is our basic http receiver that takes the request and passes it into the js runtime.
 func (has *HttpAPIServer) handleHttp(w http.ResponseWriter, r *http.Request) {
-
+	fmt.Println("Stuff")
 	u := r.URL
+	fmt.Printf("URL %v\n",u)
+	if u.Scheme == "ws" {
+		has.was.handleWs(w,r)
+		return
+	}
+	
 	p := u.Path 
-	caller := strings.Split(strings.TrimLeft(p,"/"),"/")[0];
+	caller := strings.Split(strings.TrimLeft(p,"/"),"/")[1];
 	
 	rt := has.rm.GetRuntime(caller)
 	// TODO Update this. It's basically how we check if dapp is ready now.
