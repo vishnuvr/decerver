@@ -323,7 +323,7 @@ func (dm *DappManager) LoadDapp(dappId string) error {
 				mData := d.Data
 				if mData != nil {
 					monkData := &dapps.MonkData{}
-					err := json.Unmarshal(mData, monkData)
+					err := json.Unmarshal(*mData, monkData)
 					if err != nil {
 						logger.Fatal("Blockchain will not work. Chain data for monk not available in dapp package file: " + dapp.PackageFile().Name)
 					}
