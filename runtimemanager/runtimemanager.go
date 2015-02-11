@@ -1,6 +1,5 @@
 package runtimemanager
 
-
 import (
 	"fmt"
 	"github.com/eris-ltd/decerver/interfaces/decerver"
@@ -12,6 +11,7 @@ import (
 	"github.com/robertkrimen/otto"
 	"io/ioutil"
 	"log"
+	"path"
 	"sync"
 	"encoding/json"
 )
@@ -172,7 +172,10 @@ func (rt *Runtime) Init(name string) {
 	    	logger.Println("File not written: " + err2.Error())
 	    	return otto.FalseValue()	
 	    }
-	    return otto.TrueValue()
+		fPath := path.Join(rt.fio.Tempfiles(),rt.name,filename)
+		ret, _ := otto.ToValue(fPath)  
+		return ret 
+
 	})
 	
 	// Bind an event unsubscribe function to otto
