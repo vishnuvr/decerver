@@ -5,9 +5,9 @@ import (
 )
 
 const (
-	PACKAGE_FILE_NAME  = "package.json"
-	INDEX_FILE_NAME    = "index.html"
-	MODELS_FOLDER_NAME = "models"
+	PACKAGE_FILE_NAME       = "package.json"
+	INDEX_FILE_NAME         = "index.html"
+	MODELS_FOLDER_NAME      = "models"
 	LOADING_ORDER_FILE_NAME = "config.json"
 )
 
@@ -52,9 +52,9 @@ type (
 	}
 
 	ModuleDependency struct {
-		Name    string          `json:"name"`
-		Version string          `json:"version"`
-		Data    json.RawMessage `json:data`
+		Name    string           `json:"name"`
+		Version string           `json:"version"`
+		Data    *json.RawMessage `json:data`
 	}
 
 	MonkData struct {
@@ -106,5 +106,5 @@ func NewPackageFileFromJson(pfJson []byte) (*PackageFile, error) {
 type DappManager interface {
 	DappList() []*DappInfo
 	LoadDapp(dappId string) error
-	RegisterDapps(string,string) error
+	RegisterDapps(string, string) error
 }
