@@ -101,6 +101,58 @@ func bindGo(vm *otto.Otto) {
 		result, _ := vm.ToValue(ret)
 		return result
 	})
+	
+	vm.Set("LT", func(call otto.FunctionCall) otto.Value {
+		p0, p1, errP := parseBin(call)
+		if errP != nil {
+			return otto.UndefinedValue()
+		}
+		ret := false
+		if p0.Cmp(p1) < 0 {
+			ret = true
+		}
+		result, _ := vm.ToValue(ret)
+		return result
+	})
+	
+	vm.Set("LEQ", func(call otto.FunctionCall) otto.Value {
+		p0, p1, errP := parseBin(call)
+		if errP != nil {
+			return otto.UndefinedValue()
+		}
+		ret := false
+		if p0.Cmp(p1) <= 0 {
+			ret = true
+		}
+		result, _ := vm.ToValue(ret)
+		return result
+	})
+	
+	vm.Set("GT", func(call otto.FunctionCall) otto.Value {
+		p0, p1, errP := parseBin(call)
+		if errP != nil {
+			return otto.UndefinedValue()
+		}
+		ret := false
+		if p0.Cmp(p1) > 0 {
+			ret = true
+		}
+		result, _ := vm.ToValue(ret)
+		return result
+	})
+	
+	vm.Set("GEQ", func(call otto.FunctionCall) otto.Value {
+		p0, p1, errP := parseBin(call)
+		if errP != nil {
+			return otto.UndefinedValue()
+		}
+		ret := false
+		if p0.Cmp(p1) >= 0 {
+			ret = true
+		}
+		result, _ := vm.ToValue(ret)
+		return result
+	})
 
 	vm.Set("Exp", func(call otto.FunctionCall) otto.Value {
 		p0, p1, errP := parseBin(call)
@@ -316,7 +368,7 @@ func bindCore(vm *otto.Otto) {
 		// Params: The number (as a string) to try
 		// Returns: true if equal to zero, otehrwise false
 		smath.isZero = function(sNum){
-			return IsZero(A,B);
+			return IsZero(sNum);
 		}
 		
 		// Calculates whether the two input number-strings are equal.
