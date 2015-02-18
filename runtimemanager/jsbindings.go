@@ -9,6 +9,7 @@ import (
 	"log"
 	"math/big"
 	"time"
+	"os/user"
 )
 
 var BZERO *big.Int = big.NewInt(0)
@@ -220,6 +221,18 @@ func bindGo(vm *otto.Otto) {
 	vm.Set("TimeMS", func(call otto.FunctionCall) otto.Value {
 		ts := time.Now().UnixNano() >> 9
 		result, _ := vm.ToValue(ts)
+		return result
+	})
+	
+	// Millisecond time.
+	vm.Set("GetUserHome", func(call otto.FunctionCall) otto.Value {
+		fmt.Println("Getting user home.");
+		usr, err := user.Current();
+		if err != nil {
+			vv, _ := vm.ToValue("")
+			return vv
+		}
+		result, _ := vm.ToValue(usr.HomeDir)
 		return result
 	})
 

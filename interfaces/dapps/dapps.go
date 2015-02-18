@@ -54,7 +54,7 @@ type (
 	ModuleDependency struct {
 		Name    string          `json:"name"`
 		Version string          `json:"version"`
-		Data    json.RawMessage `json:data`
+		Data    *json.RawMessage `json:data`
 	}
 
 	MonkData struct {
