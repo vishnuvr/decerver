@@ -343,7 +343,6 @@ func (dm *DappManager) LoadDapp(dappId string) error {
 					monkMod.SetProperty("RootDir", chains.ComposeRoot("thelonious", chainId))
 					monkMod.SetProperty("RemoteHost", addAndPort[0])
 					monkMod.SetProperty("RemotePort", port)
-<<<<<<< HEAD
 					monkMod.SetProperty("ChainId", monkData.ChainId)
 					
 					monkMod.Restart()
@@ -352,16 +351,6 @@ func (dm *DappManager) LoadDapp(dappId string) error {
 						rc = "0x" + rc;
 					}
 					logger.Println("Root contract: " + rc )
-=======
-					monkMod.SetProperty("ChainId", chainId)
-					cr := make(chan bool)
-					go func() {
-						monkMod.Restart()
-						cr <- true
-					}()
-					<-cr
-					logger.Println("Root contract: " + monkData.RootContract)
->>>>>>> master
 					logger.Println("Runtime ID: " + rt.Id())
 					rt.BindScriptObject("RootContract", rc)
 				} else {
