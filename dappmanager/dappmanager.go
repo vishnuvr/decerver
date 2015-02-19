@@ -347,12 +347,13 @@ func (dm *DappManager) LoadDapp(dappId string) error {
 					
 					monkMod.Restart()
 					rc := monkData.RootContract
-					if(rc[1] != 'x'){
-						rc = "0x" + rc;
+					if(len(rc) > 2){
+						if(rc[1] != 'x'){
+							rc = "0x" + rc;
+						}
+						logger.Println("Root contract: " + rc )
+						rt.BindScriptObject("RootContract", rc)	
 					}
-					logger.Println("Root contract: " + rc )
-					logger.Println("Runtime ID: " + rt.Id())
-					rt.BindScriptObject("RootContract", rc)
 				} else {
 					logger.Fatal("Blockchain will not work. Chain data for monk not available in dapp package file: " + dapp.PackageFile().Name)
 				}
