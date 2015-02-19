@@ -42,17 +42,25 @@ type HttpResp struct {
 }
 
 type HttpAPIServer struct {
+	was *WsAPIServer
 	rm scripting.RuntimeManager
 }
 
-func NewHttpAPIServer(rm scripting.RuntimeManager) *HttpAPIServer {
-	return &HttpAPIServer{rm}
+func NewHttpAPIServer(rm scripting.RuntimeManager, maxConnections uint32) *HttpAPIServer {
+	was := NewWsAPIServer(rm,maxConnections)
+	return &HttpAPIServer{was, rm}
 }
 
 // This is our basic http receiver that takes the request and passes it into the js runtime.
 func (has *HttpAPIServer) handleHttp(w http.ResponseWriter, r *http.Request) {
-
+	fmt.Println("Stuff")
 	u := r.URL
+	fmt.Printf("URL %v\n",u)
+	if u.Scheme == "ws" {
+		has.was.handleWs(w,r)
+		return
+	}
+	
 	p := u.Path 
 	caller := strings.Split(strings.TrimLeft(p,"/"),"/")[1];
 	
@@ -75,6 +83,8 @@ func (has *HttpAPIServer) handleHttp(w http.ResponseWriter, r *http.Request) {
 	}
 	// TODO this is a bad solution. It should be possible to pass objects (at least maps) right in.
 	bts, _ := json.Marshal(prx)
+	// DEBUG
+	fmt.Println("REQUEST: " + string(bts))
 	ret, err := rt.CallFuncOnObj("network", "handleIncomingHttp", string(bts))
 
 	if err != nil {

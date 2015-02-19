@@ -3,12 +3,13 @@ package runtimemanager
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/eris-ltd/decerver/interfaces/logging"
 	"github.com/obscuren/sha3"
 	"github.com/robertkrimen/otto"
-	"github.com/eris-ltd/decerver/interfaces/logging"
 	"log"
 	"math/big"
 	"time"
+	"os/user"
 )
 
 var BZERO *big.Int = big.NewInt(0)
@@ -22,9 +23,9 @@ var ottoLog *log.Logger = logging.NewLogger("Runtime")
 // TODO clean up the scripts. Make proper function objects.
 func BindDefaults(runtime *Runtime) {
 	vm := runtime.vm
-	
+
 	bindGo(vm)
-	
+
 	bindCore(vm)
 	bindNetworking(vm)
 	bindEvents(vm)
@@ -101,6 +102,58 @@ func bindGo(vm *otto.Otto) {
 		result, _ := vm.ToValue(ret)
 		return result
 	})
+	
+	vm.Set("LT", func(call otto.FunctionCall) otto.Value {
+		p0, p1, errP := parseBin(call)
+		if errP != nil {
+			return otto.UndefinedValue()
+		}
+		ret := false
+		if p0.Cmp(p1) < 0 {
+			ret = true
+		}
+		result, _ := vm.ToValue(ret)
+		return result
+	})
+	
+	vm.Set("LEQ", func(call otto.FunctionCall) otto.Value {
+		p0, p1, errP := parseBin(call)
+		if errP != nil {
+			return otto.UndefinedValue()
+		}
+		ret := false
+		if p0.Cmp(p1) <= 0 {
+			ret = true
+		}
+		result, _ := vm.ToValue(ret)
+		return result
+	})
+	
+	vm.Set("GT", func(call otto.FunctionCall) otto.Value {
+		p0, p1, errP := parseBin(call)
+		if errP != nil {
+			return otto.UndefinedValue()
+		}
+		ret := false
+		if p0.Cmp(p1) > 0 {
+			ret = true
+		}
+		result, _ := vm.ToValue(ret)
+		return result
+	})
+	
+	vm.Set("GEQ", func(call otto.FunctionCall) otto.Value {
+		p0, p1, errP := parseBin(call)
+		if errP != nil {
+			return otto.UndefinedValue()
+		}
+		ret := false
+		if p0.Cmp(p1) >= 0 {
+			ret = true
+		}
+		result, _ := vm.ToValue(ret)
+		return result
+	})
 
 	vm.Set("Exp", func(call otto.FunctionCall) otto.Value {
 		p0, p1, errP := parseBin(call)
@@ -168,6 +221,18 @@ func bindGo(vm *otto.Otto) {
 	vm.Set("TimeMS", func(call otto.FunctionCall) otto.Value {
 		ts := time.Now().UnixNano() >> 9
 		result, _ := vm.ToValue(ts)
+		return result
+	})
+	
+	// Millisecond time.
+	vm.Set("GetUserHome", func(call otto.FunctionCall) otto.Value {
+		fmt.Println("Getting user home.");
+		usr, err := user.Current();
+		if err != nil {
+			vv, _ := vm.ToValue("")
+			return vv
+		}
+		result, _ := vm.ToValue(usr.HomeDir)
 		return result
 	})
 
@@ -248,7 +313,7 @@ func bindGo(vm *otto.Otto) {
 	})
 }
 
-func bindCore(vm *otto.Otto){
+func bindCore(vm *otto.Otto) {
 	_, err := vm.Run(`
 		
 		// (Integer) math done on strings. The strings can be
@@ -316,7 +381,7 @@ func bindCore(vm *otto.Otto){
 		// Params: The number (as a string) to try
 		// Returns: true if equal to zero, otehrwise false
 		smath.isZero = function(sNum){
-			return IsZero(A,B);
+			return IsZero(sNum);
 		}
 		
 		// Calculates whether the two input number-strings are equal.
@@ -332,8 +397,8 @@ func bindCore(vm *otto.Otto){
 		
 		// A few easy-to-use string utility functions, such as converting
 		// between a string value and a hex representation of that string.
-		var sutil = {}; 
-		
+		var sutil = {};
+				
 		// Takes a string and converts it into a 32 byte left-padded 
 		// hex string. This is useful when passing strings as arguments
 		// to blockchain transactions.
@@ -373,7 +438,7 @@ func bindCore(vm *otto.Otto){
 	}
 }
 
-func bindNetworking(vm *otto.Otto){
+func bindNetworking(vm *otto.Otto) {
 
 	// Networking.
 	_, err := vm.Run(`
@@ -384,11 +449,11 @@ func bindNetworking(vm *otto.Otto){
 		// Http
 		
 		// Returns a default response object. Status is 0, header and body is empty.
-		network.getHttpResponse = function(){
+		network.getHttpResponse = function(status,header,body){
 			return {
-				"Status" : 0,
-				"Header" : {},
-				"Body" : ""
+				"Status" : status || 400,
+				"Header" : header || {},
+				"Body" : body || "Not supported."
 			};
 		}
 		
@@ -403,11 +468,11 @@ func bindNetworking(vm *otto.Otto){
 		
 		// Returns a http request with status 200, empty header, and (what should be) a json formatted
 		// string as body.
-		network.getHttpResponseJSON = function(jsonString){
+		network.getHttpResponseJSON = function(obj){
 			return {
 				"Status" : 200,
-				"Header" : {},
-				"Body" : jsonString
+				"Header" : {"Content-Type": "application/json"},
+				"Body" : JSON.stringify(obj)
 			};
 		}
 		
@@ -441,6 +506,7 @@ func bindNetworking(vm *otto.Otto){
 			if(typeof callback !== "function"){
 				throw Error("Attempting to register a non-function as incoming http callback");
 			}
+			Println("New http request callback registered");
 			network.incomingHttpCallback = callback;
 		}
 		
@@ -610,6 +676,46 @@ func bindNetworking(vm *otto.Otto){
 			}
 		}
 		
+		// Parse the url of a request into a formatted URL object.
+		// TODO document and handle errors.
+		network.parseUrl = function(httpReq){
+			// This would become ["apis", "dappname", "whatever", ... ]
+			var p = httpReq.URL.Path;
+			var pSplit = p.slice(1).split('/');
+			
+			// We cut out "apis" and "dappname".
+			if (pSplit.length < 2){
+				return network.newUrlObj([],{},"Invalid URL");
+			}
+			pSplit = pSplit.slice(2);
+			
+			var opts = {};
+			
+			var rawQuery = httpReq.URL.RawQuery.split('&');
+			
+			for(var i = 0; i < rawQuery.length; i++) {
+				var q = rawQuery[i].split('=');
+				// TODO error
+				opts[q[0]] = q[1]; 
+			}
+			
+			var urlObj = network.newUrlObj(pSplit,opts,"");
+			return urlObj;
+		}
+		
+		// Called by network.parseUrl()
+		// 'path' is an array of strings 
+		// 'opts' is a string->string map
+		// 'error' is a string
+		// TODO document and handle errors
+		network.newUrlObj = function(path,opts,error){
+			if(arguments.length === 1 && typeof(arguments[0]) === "string"){
+				return network.newUrlObj([],{},arguments[0]);
+			} else {
+				return {"path" : path || [], "options" : opts || {}, "error" : error || ""};
+			}
+		}
+		
 	`)
 
 	if err != nil {
@@ -619,7 +725,7 @@ func bindNetworking(vm *otto.Otto){
 	}
 }
 
-func bindEvents(vm *otto.Otto){
+func bindEvents(vm *otto.Otto) {
 	_, err := vm.Run(`
 		
 		// This is the events object. It handles events that comes
@@ -641,11 +747,12 @@ func bindEvents(vm *otto.Otto){
 		 *                Uid needs to be a string.
 		 */
 		events.subscribe = function(eventSource, eventType, eventTarget, callbackFn, uid){
-		
+			Println("Subscribing");
 			if(typeof(callbackFn) !== "function"){
 				throw new Error("Trying to register a non callback function as callback.");
 			}
 			var eventId = events.generateId(eventSource,eventType, uid);
+			Println("Adding sub: " + eventId);
 			// The jsr_events object has the go bindings to actually subscribe.
 			events_subscribe(eventSource, eventType, eventTarget, eventId);
 			this.callbacks[eventId] = callbackFn;
@@ -659,7 +766,7 @@ func bindEvents(vm *otto.Otto){
 		
 		// Called by the go event processor.
 		events.post = function(subId, eventJson){
-			var event = JSON.parse(eventJson)
+			var event = JSON.parse(eventJson);
 			var cfn = this.callbacks[subId];
 			if (typeof(cfn) === "function"){
 				cfn(event);
@@ -672,7 +779,7 @@ func bindEvents(vm *otto.Otto){
 		// used by events to generate unique subscriber Ids based on
 		// the event source and name.
 		events.generateId = function(evtSource,evtName, uid){
-			return RuntimeId + "_" + evtSource + "_" + evtName + "_" + uid; 
+			return RuntimeId + "_" + evtSource + "_" + evtName + "_" + uid;
 		}
 	`)
 
@@ -684,7 +791,7 @@ func bindEvents(vm *otto.Otto){
 }
 
 func bindUtilities(vm *otto.Otto) {
-	
+
 	_, err := vm.Run(`
 		
 		var STATUS_NORMAL = 0;
@@ -706,7 +813,7 @@ func bindUtilities(vm *otto.Otto) {
 		}		
 		
 		// This is a simple decerver API is for dapps. Gives access to monk, ipfs and legal markdown.
-		function DappCore(){
+		function LightApi(){
 			
 			// *************************** Variables *************************
 			

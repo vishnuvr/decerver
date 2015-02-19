@@ -83,7 +83,7 @@ func (dm *DappManager) RegisterDapps(directory, dbDir string) error {
 	//	dbDir = path.Join(dbDir,"dapp_stored_hashes")
 	//	dc.hashDB, _ = leveldb.OpenFile(dbDir,nil)
 	//	defer dc.hashDB.Close()
-	logger.Println("Loading dapps")
+	logger.Println("Registering dapps")
 	files, err := ioutil.ReadDir(directory)
 
 	if err != nil {
@@ -91,7 +91,7 @@ func (dm *DappManager) RegisterDapps(directory, dbDir string) error {
 	}
 
 	if len(files) == 0 {
-		logger.Println("No dapps has been downloaded.")
+		logger.Println("No dapps can be found.")
 		return nil
 	}
 
@@ -101,7 +101,7 @@ func (dm *DappManager) RegisterDapps(directory, dbDir string) error {
 			dm.RegisterDapp(pth)
 		}
 	}
-	logger.Println("Done loading dapps.")
+	logger.Println("Done registering dapps.")
 	return nil
 }
 
@@ -144,7 +144,7 @@ func (dm *DappManager) RegisterDapp(dir string) {
 	modelDir := path.Join(dir, dapps.MODELS_FOLDER_NAME)
 
 	modelFi, errMfi := os.Stat(modelDir)
-	logger.Print("## Loading dapp: " + packageFile.Name + " ##")
+	logger.Print("## Registering dapp: " + packageFile.Name + " ##")
 	if errMfi != nil {
 		logger.Printf("Error loading 'models' directory for dapp '%s'. Skipping.\n", dir)
 		logger.Println(errMfi.Error())
@@ -307,10 +307,6 @@ func (dm *DappManager) LoadDapp(dappId string) error {
 
 	rt := dm.rm.CreateRuntime(dappId)
 
-	for _, js := range dapp.Models() {
-		rt.AddScript(js)
-	}
-
 	// Monk hack until we script
 	deps := dapp.PackageFile().ModuleDependencies
 
@@ -347,6 +343,16 @@ func (dm *DappManager) LoadDapp(dappId string) error {
 					monkMod.SetProperty("RootDir", chains.ComposeRoot("thelonious", chainId))
 					monkMod.SetProperty("RemoteHost", addAndPort[0])
 					monkMod.SetProperty("RemotePort", port)
+<<<<<<< HEAD
+					monkMod.SetProperty("ChainId", monkData.ChainId)
+					
+					monkMod.Restart()
+					rc := monkData.RootContract
+					if(rc[1] != 'x'){
+						rc = "0x" + rc;
+					}
+					logger.Println("Root contract: " + rc )
+=======
 					monkMod.SetProperty("ChainId", chainId)
 					cr := make(chan bool)
 					go func() {
@@ -355,13 +361,18 @@ func (dm *DappManager) LoadDapp(dappId string) error {
 					}()
 					<-cr
 					logger.Println("Root contract: " + monkData.RootContract)
+>>>>>>> master
 					logger.Println("Runtime ID: " + rt.Id())
-					rt.BindScriptObject("RootContract", monkData.RootContract)
+					rt.BindScriptObject("RootContract", rc)
 				} else {
 					logger.Fatal("Blockchain will not work. Chain data for monk not available in dapp package file: " + dapp.PackageFile().Name)
 				}
 			}
 		}
+	}
+
+	for _, js := range dapp.Models() {
+		rt.AddScript(js)
 	}
 
 	dm.runningDapp = dapp
