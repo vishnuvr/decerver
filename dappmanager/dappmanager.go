@@ -342,15 +342,15 @@ func (dm *DappManager) LoadDapp(dappId string) error {
 					monkMod.SetProperty("RemoteHost", addAndPort[0])
 					monkMod.SetProperty("RemotePort", port)
 					monkMod.SetProperty("ChainId", monkData.ChainId)
-					cr := make(chan bool)
-					go func() {
-						monkMod.Restart()
-						cr <- true
-					}()
-					<-cr
-					logger.Println("Root contract: " + monkData.RootContract)
+					
+					monkMod.Restart()
+					rc := monkData.RootContract
+					if(rc[1] != 'x'){
+						rc = "0x" + rc;
+					}
+					logger.Println("Root contract: " + rc )
 					logger.Println("Runtime ID: " + rt.Id())
-					rt.BindScriptObject("RootContract", monkData.RootContract)
+					rt.BindScriptObject("RootContract", rc)
 				} else {
 					logger.Fatal("Blockchain will not work. Chain data for monk not available in dapp package file: " + dapp.PackageFile().Name)
 				}
