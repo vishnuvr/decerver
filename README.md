@@ -2,6 +2,8 @@
 
 This is the decerver repository.
 
+Note: We're transitioning to Docker right now, but we still need to add some script. For this reason, you need to either run an ipfs docker or just build the ipfs executable and run the daemon `ipfs daemon -writable` which will set up the web server.
+
 ## What is it?
 
 It is beta software.
