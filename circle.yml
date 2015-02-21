@@ -4,12 +4,14 @@ machine:
 
 dependencies:
   pre:
-    - "sudo apt-get update && sudo apt-get install -y libgmp3-dev"
+    # - "sudo apt-get update && sudo apt-get install -y libgmp3-dev"
 
   override:
-    - go get -t -d -v ./...
     - cd cmd/decerver
-    - go build -v
+    - pwd
+    - ls
+    - go get -t -d -v ./...
+    - go install -v
 
 test:
   override:
