@@ -1,13 +1,15 @@
+general:
+  build_dir: cmd/decerver
+
 machine:
   services:
     - docker
 
 dependencies:
   pre:
-    # - "sudo apt-get update && sudo apt-get install -y libgmp3-dev"
+    - "sudo apt-get update && sudo apt-get install -y libgmp3-dev"
 
   override:
-    - "cd ./cmd/decerver/ && pwd && ls"
     - "pwd && ls && go get -t -d -v ./..."
     - "pwd && ls && go build -v"
 
