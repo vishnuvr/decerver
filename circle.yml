@@ -1,0 +1,25 @@
+machine:
+  services:
+    - docker
+
+dependencies:
+  pre:
+    - "apt-get update && apt-get install -y libgmp3-dev"
+
+  override:
+    - go get -t -d -v ./...
+    - cd cmd/decerver
+    - go build -v
+
+test:
+  override:
+    - cd ../..
+    - go test -v ./... -race
+
+deployment:
+  hub:
+    branch: master
+    commands:
+      - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
+      - docker build -t eris/decerver:unstable .
+      - docker push eris/decerver:unstable
