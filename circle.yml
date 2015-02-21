@@ -8,10 +8,9 @@ machine:
 dependencies:
   pre:
     - "sudo apt-get update && sudo apt-get install -y libgmp3-dev"
-    - "ls ~ && rm -rf ~/.go_workspace"
+    - rm -rf ~/.go_workspace
 
   override:
-    - go help gopath
     - go get -d -v .
     - go build -a -race -work -x -v
 
