@@ -11,8 +11,8 @@ RUN apt-get update
 RUN apt-get install -y \
   libgmp3-dev
 
-## Copy In the Good Stuff
-COPY decerver $GOPATH/bin/decerver
+## Copy In the Good Stuff -- This depends on `go build` rather than `go install`
+COPY cmd/decerver/decerver $GOPATH/bin/decerver
 
 ## How Does It Run?
 EXPOSE 3000 3005 4001 30303 30304

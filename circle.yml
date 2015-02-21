@@ -8,6 +8,7 @@ machine:
 dependencies:
   pre:
     - "sudo apt-get update && sudo apt-get install -y libgmp3-dev"
+    - "ls ~ && rm -rf ~/.go_workspace"
 
   override:
     - go help gopath
@@ -22,6 +23,6 @@ deployment:
   hub:
     branch: master
     commands:
+      - "cd ../../ && docker build -t eris/decerver:unstable ."
       - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
-      - docker build -t eris/decerver:unstable .
       - docker push eris/decerver:unstable
