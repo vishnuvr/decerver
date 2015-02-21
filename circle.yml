@@ -7,11 +7,9 @@ dependencies:
     # - "sudo apt-get update && sudo apt-get install -y libgmp3-dev"
 
   override:
-    - cd cmd/decerver
-    - pwd
-    - ls
-    - go get -t -d -v ./...
-    - go install -v
+    - "cd ./cmd/decerver/ && pwd && ls"
+    - "pwd && ls && go get -t -d -v ./..."
+    - "pwd && ls && go build -v"
 
 test:
   override:
