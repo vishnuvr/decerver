@@ -12,7 +12,7 @@ RUN apt-get install -y \
   libgmp3-dev
 
 ## Copy In the Good Stuff
-COPY $GOPATH/bin/decerver $GOPATH/bin/decerver
+COPY decerver $GOPATH/bin/decerver
 
 ## How Does It Run?
 EXPOSE 3000 3005 4001 30303 30304

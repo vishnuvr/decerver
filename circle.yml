@@ -15,7 +15,6 @@ dependencies:
 
 test:
   override:
-    - cd ../..
     - go test -v ./... -race
 
 deployment:
