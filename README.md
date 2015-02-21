@@ -1,3 +1,5 @@
+[![Circle CI](https://circleci.com/gh/eris-ltd/decerver.svg?style=svg)](https://circleci.com/gh/eris-ltd/decerver)
+
 ## The deCerver
 
 This is the decerver repository.
