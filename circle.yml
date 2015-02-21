@@ -11,6 +11,9 @@ dependencies:
 
   override:
     - go version
+    - go get github.com/eris-ltd/thelonious
+    - go get github.com/eris-ltd/epm-go/cmd/epm
+    - "cd $GOPATH/src/github.com/eris-ltd/epm-go/cmd/epm && pwd && go get -d -v . && go install -v"
     - go get -d -v .
     - go build -v
 
