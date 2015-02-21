@@ -10,8 +10,8 @@ dependencies:
     - "sudo apt-get update && sudo apt-get install -y libgmp3-dev"
 
   override:
-    - "pwd && ls && go get -t -d -v ./..."
-    - "pwd && ls && go build -v"
+    - go get -t -d -v ./...
+    - go build -v
 
 test:
   override:
