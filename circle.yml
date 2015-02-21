@@ -10,9 +10,9 @@ dependencies:
     - "sudo apt-get update && sudo apt-get install -y libgmp3-dev"
 
   override:
+    - go help gopath
     - go get -d -v .
-    - "cd $GOPATH/src/github.com/eris-ltd/epm-go/cmd/epm && pwd && go get -d -v . && go install -v"
-    - go build -v
+    - go build -a -race -work -x -v
 
 test:
   override:
