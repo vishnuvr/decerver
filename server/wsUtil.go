@@ -54,36 +54,12 @@ func GetCloseMessage() *Message {
 	return &Message{Type: websocket.CloseMessage}
 }
 
-type WsConn struct {
-	sessionId         uint32
-	conn              *websocket.Conn
-	writeMsgChannel   chan *Message
-	writeCloseChannel chan *Message
-	// writeBroChannel   chan *Message
-}
-
-func (wc *WsConn) SessionId() uint32 {
-	return wc.sessionId
-}
-
-func (wc *WsConn) Connection() *websocket.Conn {
-	return wc.conn
-}
-
-func (wc *WsConn) WriteJsonMsg(msg []byte) {
-	wc.writeMsgChannel <- &Message{Data: msg, Type: websocket.TextMessage}
-}
-
-func (wc *WsConn) WriteCloseMsg() {
-	wc.writeCloseChannel <- &Message{Data: nil, Type: websocket.CloseMessage}
-}
-
 // Handle the reader
 func reader(ss *Session) {
-	conn := ss.wsConn.conn
+	conn := ss.conn
 
 	conn.SetReadLimit(maxMessageSize)
-	// TODO add for hosted. No need for 'bro -> down' packets when only on localhost...
+	// TODO re-add
 	//wsc.conn.SetReadDeadline(time.Now().Add(downWait))
 	conn.SetReadDeadline(time.Time{})
 	//wsc.ws.SetPongHandler(func(string) error { c.ws.SetReadDeadline(time.Now().Add(downWait)); return nil })
@@ -94,7 +70,7 @@ func reader(ss *Session) {
 		mType, message, err := conn.NextReader()
 
 		if err != nil {
-			ss.wsConn.writeCloseChannel <- GetCloseMessage()
+			ss.writeCloseChannel <- GetCloseMessage()
 			return
 		}
 
@@ -102,6 +78,7 @@ func reader(ss *Session) {
 			rpcReq, _ := ioutil.ReadAll(message)
 			ss.handleRequest(string(rpcReq))
 		} else if mType == websocket.CloseMessage {
+			conn.server.deleteSession(ss)
 			return
 		}
 
