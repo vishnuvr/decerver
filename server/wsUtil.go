@@ -7,14 +7,16 @@ import (
 	"github.com/gorilla/websocket"
 	"io/ioutil"
 	"time"
+	"net/http"
 )
 
 const (
+	
 	// Time allowed to write a message to the peer.
 	writeWait = 10 * time.Second
 
 	// Time allowed to read the next 'down' message from the peer.
-	downWait = 60 * time.Second
+	downWait = 180 * time.Second
 
 	// Send 'bro's to peer with this period. Must be less than downWait.
 	pingPeriod = (downWait * 9) / 10
@@ -27,6 +29,7 @@ const (
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  8192,
 	WriteBufferSize: 8192,
+	CheckOrigin: func(r *http.Request) bool {return true},
 }
 
 // Base message type we pass to writer. Text, Bro and close.
@@ -38,11 +41,10 @@ type Message struct {
 // A connection's writer can only be used by one process at a time.
 // To avoid any problems, no external process is allowed access
 // to the websocket connection object itself. All they can do is pass
-// messages via the WriteMsgChannel that the WsConn 'middle-man' provides.
-// Note that bro and close is not public, because no external process
-// should ever use it, but those messages still conflict with text
-// messages and must therefore be passed to the write-routine in the
-// same manner.
+// messages via the WriteMsgChannel. Note that bro and close are not 
+// public, because no external process should ever use it, but those 
+// messages still conflict with text messages and is therefore passed 
+// to the write-routine in the same manner.
 //
 // All text messages must be json formatted strings.
 
@@ -75,10 +77,16 @@ func reader(ss *Session) {
 		}
 
 		if mType == websocket.TextMessage {
-			rpcReq, _ := ioutil.ReadAll(message)
-			ss.handleRequest(string(rpcReq))
+			logger.Println("Receiving message.") 
+			rpcReq, err := ioutil.ReadAll(message)
+			if err != nil {
+				logger.Println("Error: " + err.Error() )
+			} else {
+				logger.Println(string(rpcReq))
+				ss.handleRequest(rpcReq)
+			}
 		} else if mType == websocket.CloseMessage {
-			conn.server.deleteSession(ss)
+			logger.Println("Receiving close message")
 			return
 		}
 
@@ -87,9 +95,9 @@ func reader(ss *Session) {
 
 // Handle the writer
 func writer(ss *Session) {
-	conn := ss.wsConn.conn
+	conn := ss.conn
 	for {
-		message, ok := <-ss.wsConn.writeMsgChannel
+		message, ok := <-ss.writeMsgChannel
 
 		if !ok {
 			conn.WriteMessage(websocket.CloseMessage, []byte{})

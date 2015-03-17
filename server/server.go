@@ -7,54 +7,89 @@ import (
 	"os"
 )
 
-var logger *log.Logger = log.New(os.Stdout,"[Server] ", log.LstdFlags)
+var logger *log.Logger = log.New(os.Stdout, "[Server] ", log.LstdFlags)
 
+// The server object.
 type Server struct {
+	// The maximum number of active connections that the server allows.
 	maxConnections uint32
-	host		   string
-	port           uint16
-	rootDir        string
-	cMartini       *martini.ClassicMartini
-	httpService    *HttpServer
-	wsService      *WsServer
+	// The host.
+	host string
+	// The port.
+	port uint16
+	// The root, or serving directory.
+	rootDir string
+	// The classic martini instance.
+	cMartini *martini.ClassicMartini
+	// The http service.
+	httpService *HttpService
+	// The websocket service.
+	wsService *WsService
 }
 
+// Create a new server.
 func NewServer(host string, port uint16, maxConnections uint32, rootDir string) *Server {
-	
+
 	cMartini := martini.Classic()
-	
+
 	// TODO remember to change to martini.Prod
-	cMartini.Env = martini.Dev
-	
+	martini.Env = martini.Dev
+
 	httpService := NewHttpService()
 	wsService := NewWsService(maxConnections)
-	
-	return &Server{
-			maxConnections,
-			host,
-			port,
-			rootDir,
-			cMartini,
-			httpService,
-			wsService,
-		}
 
-	return ws
+	return &Server{
+		maxConnections,
+		host,
+		port,
+		rootDir,
+		cMartini,
+		httpService,
+		wsService,
+	}
 }
 
-func (this *WebServer) Start() error {
+// Start running the server.
+func (this *Server) Start() error {
 
-	this.cMartini.Use(martini.Static(rootDir))
+	cm := this.cMartini
 
-	m.NotFound(this.httpService.handleNotFound)
+	// Static.
+	cm.Use(martini.Static(this.rootDir))
+
+	// Default 404 message.
+	cm.NotFound(this.httpService.handleNotFound)
+
+	// Handle websocket negotiation requests.
+	cm.Get("/socket", this.wsService.handleWs)
 	
-	// TODO Close down properly. Removed the third party stuff since 
+	cm.Get("/echo/:string",this.httpService.handleEcho)
+
+	// TODO Close down properly. Removed the third party stuff since
 	// it was a mess.
 	go func() {
-		ws.webServer.RunOnAddr(ws.host + ":" + fmt.Sprintf("%d", ws.port))
+		cm.RunOnAddr(this.host + ":" + fmt.Sprintf("%d", this.port))
 	}()
-	
-	
-	
+
 	return nil
+}
+
+// Get the maximum number of active connections/sessions that the server allows.
+func (this *Server) MaxConnections() uint32 {
+	return this.maxConnections
+}
+
+// Get the root, or served directory.
+func (this *Server) RootDir() string {
+	return this.rootDir
+}
+
+// Get the http service object.
+func (this *Server) HttpService() *HttpService {
+	return this.httpService
+}
+
+// Get the websocket service object.
+func (this *Server) WsService() *WsService {
+	return this.wsService
 }

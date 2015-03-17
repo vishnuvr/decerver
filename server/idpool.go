@@ -1,4 +1,4 @@
-package util
+package server
 
 // Simple id pool. Lets you get and release ids.
 import (
@@ -24,6 +24,7 @@ func (idp *IdPool) init(totNum uint32) {
 	}
 }
 
+// Get an id from the pool
 func (idp *IdPool) GetId() uint32 {
 	val := idp.ids.Front()
 	idp.ids.Remove(val)
@@ -31,6 +32,7 @@ func (idp *IdPool) GetId() uint32 {
 	return num
 }
 
+// Release an id back into the pool
 func (idp *IdPool) ReleaseId(id uint32) {
 	idp.ids.PushBack(id)
 }

@@ -1,20 +1,28 @@
 package server
 
 import (
-	"fmt"
+	"encoding/json"
 	"github.com/gorilla/websocket"
 	"net/http"
-	"path"
-	"sync"
-	"encoding/json"
 )
 
+const PARSE_ERROR = -32700
+const INVALID_REQUEST = -32600
+const METHOD_NOT_FOUND = -32601
+const INVALID_PARAMS = -32602
+const INTERNAL_ERROR = -32603
+
+type JsonRpcHandler func(*Request, *Response)
+
 // The websocket server handles connections.
+// NOTE currently all sessions use the same handlers, since you
+// can't run multiple EPMs (or you can, but there's no guarantee
+// that they don't try and compete for the same database).
 type WsService struct {
-	maxConnections    uint32
-	idPool            *IdPool
-	sessions          map[uint32]*Session
-	sMutex            *sync.Mutex
+	maxConnections uint32
+	idPool         *IdPool
+	sessions       map[uint32]*Session
+	handlers       map[string]JsonRpcHandler
 }
 
 func NewWsService(maxConnections uint32) *WsService {
@@ -22,60 +30,77 @@ func NewWsService(maxConnections uint32) *WsService {
 	srv.sessions = make(map[uint32]*Session)
 	srv.maxConnections = maxConnections
 	srv.idPool = NewIdPool(maxConnections)
+	srv.handlers = make(map[string]JsonRpcHandler)
+	
+	srv.handlers["echo"] = srv.echo
 	return srv
 }
 
-func (this *WsAPIServer) CurrentActiveConnections() uint32 {
-	return len(this.sessions)
+/***************************** Handlers ********************************/
+
+func (this *WsService) echo(req *Request, resp *Response) {
+	sVal := &StringValue{}
+	err := json.Unmarshal([]byte(*req.Params), &sVal)
+	if err != nil {
+		resp.Error = Error(INVALID_PARAMS, "Echo requires a string parameter.")
+	}
+	logger.Printf("Echo: %s", sVal.SVal)
+	resp.Result = &StringValue{sVal.SVal}
 }
 
-func (this *WsAPIServer) MaxConnections() uint32 {
+/***********************************************************************/
+
+func (this *WsService) CurrentActiveConnections() uint32 {
+	return uint32(len(this.sessions))
+}
+
+func (this *WsService) MaxConnections() uint32 {
 	return this.maxConnections
 }
 
 // This is passed to the Martini server to handle websocket requests.
 func (this *WsService) handleWs(w http.ResponseWriter, r *http.Request) {
-	
-	// TODO check scheme first.	
+
+	// TODO check scheme first.
 	logger.Println("New websocket connection.")
-	
-	if len(this.sessions) == this.maxConnections {
+
+	if uint32(len(this.sessions)) == this.maxConnections {
 		logger.Println("Connection failed: Already at capacity.")
 	}
-	u := r.URL
-	p := u.Path
-	
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		logger.Printf("Failed to upgrade to websocket (%s)\n", err.Error())
 		return
 	}
 
-	ss := this.createSession(conn)
-	
+	ss := this.newSession(conn)
+
 	go writer(ss)
 	reader(ss)
 	ss.writeMsgChannel <- &Message{Data: nil}
-	ss.Close()
+	ss.closeSession()
 }
 
 // Only called by the 'handleWs' function.
-func (this *WsService) newSession(conn *websocket.Conn) (newSession *Session, err error) {
-	newSession := &Session{}
+func (this *WsService) newSession(conn *websocket.Conn) *Session {
+	ss := &Session{}
 	ss.conn = conn
 	ss.server = this
-	id := srv.idPool.GetId()
-	ss.wsConn.sessionId = id
-	srv.sessions[id] = ss
-	ss.writeMsgChannel =   make(chan *Message, 256),
-	ss.writeCloseChannel: make(chan *Message, 256),
+	id := this.idPool.GetId()
+	ss.sessionId = id
+	ss.writeMsgChannel = make(chan *Message, 256)
+	ss.writeCloseChannel = make(chan *Message, 256)
+
+	this.sessions[id] = ss
+
 	return ss
 }
 
 func (this *WsService) deleteSession(sessionId uint32) {
 	if this.sessions[sessionId] == nil {
-		logger.Printf("Attempted to remove a session that does not exist (id: %d).",sessionId)
-		return;
+		logger.Printf("Attempted to remove a session that does not exist (id: %d).", sessionId)
+		return
 	}
 	delete(this.sessions, sessionId)
 	this.idPool.ReleaseId(sessionId)
@@ -96,7 +121,7 @@ func (ss *Session) SessionId() uint32 {
 func (ss *Session) WriteJson(obj interface{}) {
 	msg, err := json.Marshal(obj)
 	if err != nil {
-		// TODO Protocol stuff.	
+		// TODO Protocol stuff.
 		ss.WriteCloseMsg()
 	} else {
 		ss.writeMsgChannel <- &Message{Data: msg, Type: websocket.TextMessage}
@@ -109,24 +134,82 @@ func (ss *Session) WriteCloseMsg() {
 	ss.writeCloseChannel <- &Message{Data: nil, Type: websocket.CloseMessage}
 }
 
-func (ss *Session) Close() {
-	logger.Printf("CLOSING SESSION: %d\n", ss.wsConn.sessionId)
+func (ss *Session) closeSession() {
 	// Deregister ourselves.
-	ss.server.RemoveSession(ss)
-	ss.runtime.CallFuncOnObj("network", "deleteWsSession", int(ss.SessionId()))
-	if ss.wsConn.conn != nil {
-		err := ss.wsConn.conn.Close()
+	ss.server.deleteSession(ss.sessionId)
+	logger.Printf("Closing session: %d", ss.sessionId)
+	logger.Printf("Connections remaining: %d", len(ss.server.sessions))
+	if ss.conn != nil {
+		err := ss.conn.Close()
 		if err != nil {
-			logger.Printf("Failed to close websocket connection, already removed: %d\n", ss.wsConn.sessionId)
+			logger.Printf("Failed to close websocket connection, already removed: %d\n", ss.sessionId)
 		}
 	}
 }
 
-func (ss *Session) handleRequest(rpcReq string) {
-	logger.Println("RPC Message: " + rpcReq)
+func (ss *Session) handleRequest(msg []byte) {
+
+	req := &Request{}
+
+	err := json.Unmarshal(msg, req)
+
+	var resp *Response
+
+	if err != nil {
+		// Can't really say if it's bad json or not a proper request
+		// without looking at the error.
+		resp = ErrorResp(INVALID_REQUEST, err.Error())
+	} else {
+		handler, hExists := ss.server.handlers[req.Method]
+		if !hExists {
+			resp = ErrorResp(-32601, "Method not found: "+req.Method)
+		} else {
+			resp = &Response{}
+			resp.ID = req.ID
+			resp.JsonRpc = "2.0"
+			handler(req, resp)
+		}
+	}
+
+	ss.WriteJson(resp)
+}
+
+// Get an Error Object
+func Error(code int, err string) *ErrorObject {
+	return &ErrorObject{code, err}
+}
+
+// Get an error response with the fields already filled out.
+func ErrorResp(code int, err string) *Response {
+	return &Response{
+		-1,
+		"2.0",
+		nil,
+		&ErrorObject{code, err},
+	}
+}
+
+type( 
+	Request struct {
+		ID      interface{}     `json:"id"`
+		JsonRpc string          `json:"jsonrpc"`
+		Method  string          `json:"method"`
+		Params  *json.RawMessage `json:"params"`
+	}
 	
-	// TODO the protocol stuff.
+	Response struct {
+		ID      interface{}  `json:"id"`
+		JsonRpc string       `json:"jsonrpc"`
+		Result  interface{}  `json:"result"`
+		Error   *ErrorObject `json:"error"`
+	}
 	
-	// If there is a return value, pass to the write channel.
-	ss.wsConn.writeMsgChannel <- &Message{Data: []byte(retStr), Type: websocket.TextMessage}
+	ErrorObject struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+	}
+)
+
+type StringValue struct {
+	SVal string
 }
