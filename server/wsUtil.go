@@ -66,12 +66,10 @@ func reader(ss *Session) {
 		}
 
 		if mType == websocket.TextMessage {
-			logger.Println("Receiving message.") 
 			rpcReq, err := ioutil.ReadAll(message)
 			if err != nil {
 				logger.Println("Error: " + err.Error() )
 			} else {
-				logger.Println(string(rpcReq))
 				ss.handleRequest(rpcReq)
 			}
 		} else if mType == websocket.CloseMessage {

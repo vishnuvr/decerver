@@ -66,11 +66,7 @@ func (this *Server) Start() error {
 	// Simple echo for testing http
 	cm.Get("/echo/:message",this.httpService.handleEcho)
 
-	// TODO Close down properly. Removed the third party stuff since
-	// it was a mess.
-	go func() {
-		cm.RunOnAddr(this.host + ":" + fmt.Sprintf("%d", this.port))
-	}()
+	cm.RunOnAddr(this.host + ":" + fmt.Sprintf("%d", this.port))
 
 	return nil
 }
