@@ -22,6 +22,7 @@ func init() {
 	time.Sleep(1 * time.Second)
 }
 
+// Test sending a http request to the echo endpoint
 func TestHttpEcho(t *testing.T) {
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", "http://localhost:3000/echo/testmessage", bytes.NewBuffer([]byte{}))
@@ -44,6 +45,7 @@ func TestHttpEcho(t *testing.T) {
 	}
 }
 
+// Establish websocket connection and rpc to 'echo'
 func TestWsEcho(t *testing.T) {
 	origin := "http://localhost/"
 	url := "ws://localhost:3000/socket"

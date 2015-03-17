@@ -6,18 +6,30 @@ import (
 	"net/http"
 )
 
+// JSON RPC error codes.
 const PARSE_ERROR = -32700
 const INVALID_REQUEST = -32600
 const METHOD_NOT_FOUND = -32601
 const INVALID_PARAMS = -32602
 const INTERNAL_ERROR = -32603
 
+// Handler function template.
 type JsonRpcHandler func(*Request, *Response)
 
-// The websocket server handles connections.
-// NOTE currently all sessions use the same handlers, since you
-// can't run multiple EPMs (or you can, but there's no guarantee
-// that they don't try and compete for the same database).
+// The websocket service handles connections.
+// NOTE All sessions use the same handlers, since you can't run 
+// multiple EPMs on the same machine (or you can, but there's no 
+// guarantee that they don't try and compete for the same database).
+//
+// A connection's writer can only be used by one process at a time.
+// To avoid any problems, no external process is allowed access
+// to the websocket connection object itself. All they can do is pass
+// messages via the WriteMsgChannel. Note that bro and close are not 
+// public, because no external process should ever use it, but those 
+// messages still conflict with text messages and is therefore passed 
+// to the write-routine in the same manner.
+//
+// All text messages must be json formatted strings.
 type WsService struct {
 	maxConnections uint32
 	idPool         *IdPool
@@ -25,6 +37,7 @@ type WsService struct {
 	handlers       map[string]JsonRpcHandler
 }
 
+// Create a new websocket service
 func NewWsService(maxConnections uint32) *WsService {
 	srv := &WsService{}
 	srv.sessions = make(map[uint32]*Session)
@@ -32,12 +45,14 @@ func NewWsService(maxConnections uint32) *WsService {
 	srv.idPool = NewIdPool(maxConnections)
 	srv.handlers = make(map[string]JsonRpcHandler)
 	
+	// Register handlers here
 	srv.handlers["echo"] = srv.echo
 	return srv
 }
 
 /***************************** Handlers ********************************/
 
+// Simple echo
 func (this *WsService) echo(req *Request, resp *Response) {
 	sVal := &StringValue{}
 	err := json.Unmarshal([]byte(*req.Params), &sVal)
@@ -45,15 +60,17 @@ func (this *WsService) echo(req *Request, resp *Response) {
 		resp.Error = Error(INVALID_PARAMS, "Echo requires a string parameter.")
 	}
 	logger.Printf("Echo: %s", sVal.SVal)
-	resp.Result = &StringValue{sVal.SVal}
+	resp.Result = sVal
 }
 
 /***********************************************************************/
 
+// Get the current number of active connections.
 func (this *WsService) CurrentActiveConnections() uint32 {
 	return uint32(len(this.sessions))
 }
 
+// Get the maximum number of active connections.
 func (this *WsService) MaxConnections() uint32 {
 	return this.maxConnections
 }
@@ -82,7 +99,7 @@ func (this *WsService) handleWs(w http.ResponseWriter, r *http.Request) {
 	ss.closeSession()
 }
 
-// Only called by the 'handleWs' function.
+// Create a new session. Only called by the 'handleWs' function.
 func (this *WsService) newSession(conn *websocket.Conn) *Session {
 	ss := &Session{}
 	ss.conn = conn
@@ -97,6 +114,8 @@ func (this *WsService) newSession(conn *websocket.Conn) *Session {
 	return ss
 }
 
+// Delete a session. This happens automatically after a close message
+//  has been received.
 func (this *WsService) deleteSession(sessionId uint32) {
 	if this.sessions[sessionId] == nil {
 		logger.Printf("Attempted to remove a session that does not exist (id: %d).", sessionId)
@@ -106,6 +125,7 @@ func (this *WsService) deleteSession(sessionId uint32) {
 	this.idPool.ReleaseId(sessionId)
 }
 
+// Session wraps a websocket connection.
 type Session struct {
 	conn              *websocket.Conn
 	server            *WsService
@@ -114,10 +134,12 @@ type Session struct {
 	sessionId         uint32
 }
 
+// Get session ID
 func (ss *Session) SessionId() uint32 {
 	return ss.sessionId
 }
 
+// Write json object
 func (ss *Session) WriteJson(obj interface{}) {
 	msg, err := json.Marshal(obj)
 	if err != nil {
@@ -128,12 +150,12 @@ func (ss *Session) WriteJson(obj interface{}) {
 	}
 }
 
-// We don't call ss.conn.SendMessage right away as that will not register
-// with the writer. Instead we use the close channel.
+// Write close message
 func (ss *Session) WriteCloseMsg() {
 	ss.writeCloseChannel <- &Message{Data: nil, Type: websocket.CloseMessage}
 }
 
+// Close this websocket session.
 func (ss *Session) closeSession() {
 	// Deregister ourselves.
 	ss.server.deleteSession(ss.sessionId)
@@ -147,8 +169,10 @@ func (ss *Session) closeSession() {
 	}
 }
 
+// Handle an incomming request.
 func (ss *Session) handleRequest(msg []byte) {
 
+	// Start by unmarshalling into a Request object.
 	req := &Request{}
 
 	err := json.Unmarshal(msg, req)
@@ -160,17 +184,22 @@ func (ss *Session) handleRequest(msg []byte) {
 		// without looking at the error.
 		resp = ErrorResp(INVALID_REQUEST, err.Error())
 	} else {
+		// Get the handler for the method. If no handler exists then 
+		// return an error message
 		handler, hExists := ss.server.handlers[req.Method]
 		if !hExists {
-			resp = ErrorResp(-32601, "Method not found: "+req.Method)
+			resp = ErrorResp(METHOD_NOT_FOUND, "Method not found: "+req.Method)
 		} else {
+			// Set the ID to be the same as in the request, and set json rpc to 2.0.
 			resp = &Response{}
 			resp.ID = req.ID
 			resp.JsonRpc = "2.0"
+			// Pass the request and pre-prepared response to the handler.
+			// The handler needs to write the result (or error).
 			handler(req, resp)
 		}
 	}
-
+	// Write the response.
 	ss.WriteJson(resp)
 }
 
@@ -189,6 +218,7 @@ func ErrorResp(code int, err string) *Response {
 	}
 }
 
+// Basic json rpc structs
 type( 
 	Request struct {
 		ID      interface{}     `json:"id"`
@@ -210,6 +240,7 @@ type(
 	}
 )
 
+// Other types here
 type StringValue struct {
 	SVal string
 }

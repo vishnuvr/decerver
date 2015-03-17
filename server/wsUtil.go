@@ -38,16 +38,6 @@ type Message struct {
 	Type int
 }
 
-// A connection's writer can only be used by one process at a time.
-// To avoid any problems, no external process is allowed access
-// to the websocket connection object itself. All they can do is pass
-// messages via the WriteMsgChannel. Note that bro and close are not 
-// public, because no external process should ever use it, but those 
-// messages still conflict with text messages and is therefore passed 
-// to the write-routine in the same manner.
-//
-// All text messages must be json formatted strings.
-
 func GetBroMessage() *Message {
 	return &Message{Type: websocket.PingMessage}
 }
@@ -61,12 +51,11 @@ func reader(ss *Session) {
 	conn := ss.conn
 
 	conn.SetReadLimit(maxMessageSize)
-	// TODO re-add
-	//wsc.conn.SetReadDeadline(time.Now().Add(downWait))
 	conn.SetReadDeadline(time.Time{})
-	//wsc.ws.SetPongHandler(func(string) error { c.ws.SetReadDeadline(time.Now().Add(downWait)); return nil })
+	
+	// TODO re-add maybe
+	//conn.SetPongHandler(func(string) error { conn.SetReadDeadline(time.Now().Add(downWait)); return nil })
 
-	// TODO add back the reader timeout?
 	for {
 
 		mType, message, err := conn.NextReader()

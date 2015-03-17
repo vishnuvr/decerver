@@ -63,6 +63,7 @@ func (this *Server) Start() error {
 	// Handle websocket negotiation requests.
 	cm.Get("/socket", this.wsService.handleWs)
 	
+	// Simple echo for testing http
 	cm.Get("/echo/:string",this.httpService.handleEcho)
 
 	// TODO Close down properly. Removed the third party stuff since
