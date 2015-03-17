@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/gorilla/websocket"
 	"net/http"
+	"sync"
 )
 
 // JSON RPC error codes.
@@ -35,6 +36,7 @@ type WsService struct {
 	idPool         *IdPool
 	sessions       map[uint32]*Session
 	handlers       map[string]JsonRpcHandler
+	sessionLock    *sync.Mutex
 }
 
 // Create a new websocket service
@@ -43,8 +45,8 @@ func NewWsService(maxConnections uint32) *WsService {
 	srv.sessions = make(map[uint32]*Session)
 	srv.maxConnections = maxConnections
 	srv.idPool = NewIdPool(maxConnections)
+	srv.sessionLock = &sync.Mutex{}
 	srv.handlers = make(map[string]JsonRpcHandler)
-	
 	// Register handlers here
 	srv.handlers["echo"] = srv.echo
 	return srv
@@ -101,6 +103,7 @@ func (this *WsService) handleWs(w http.ResponseWriter, r *http.Request) {
 
 // Create a new session. Only called by the 'handleWs' function.
 func (this *WsService) newSession(conn *websocket.Conn) *Session {
+	this.sessionLock.Lock()
 	ss := &Session{}
 	ss.conn = conn
 	ss.server = this
@@ -110,7 +113,7 @@ func (this *WsService) newSession(conn *websocket.Conn) *Session {
 	ss.writeCloseChannel = make(chan *Message, 256)
 
 	this.sessions[id] = ss
-
+	this.sessionLock.Unlock()
 	return ss
 }
 
@@ -121,8 +124,12 @@ func (this *WsService) deleteSession(sessionId uint32) {
 		logger.Printf("Attempted to remove a session that does not exist (id: %d).", sessionId)
 		return
 	}
+	this.sessionLock.Lock()
 	delete(this.sessions, sessionId)
 	this.idPool.ReleaseId(sessionId)
+	logger.Printf("Closing session: %d", sessionId)
+	logger.Printf("Connections remaining: %d", len(this.sessions))
+	this.sessionLock.Unlock()
 }
 
 // Session wraps a websocket connection.
@@ -159,8 +166,7 @@ func (ss *Session) WriteCloseMsg() {
 func (ss *Session) closeSession() {
 	// Deregister ourselves.
 	ss.server.deleteSession(ss.sessionId)
-	logger.Printf("Closing session: %d", ss.sessionId)
-	logger.Printf("Connections remaining: %d", len(ss.server.sessions))
+	
 	if ss.conn != nil {
 		err := ss.conn.Close()
 		if err != nil {

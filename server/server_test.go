@@ -17,7 +17,7 @@ var srvr *Server
 func init() {
 	rootPath, _ := filepath.Abs("/public")
 
-	srvr = NewServer("localhost", 3000, 10, rootPath)
+	srvr = NewServer("localhost", 3000, 1000, rootPath)
 	srvr.Start()
 	time.Sleep(1 * time.Second)
 }
@@ -47,6 +47,7 @@ func TestHttpEcho(t *testing.T) {
 
 // Establish websocket connection and rpc to 'echo'
 func TestWsEcho(t *testing.T) {
+	
 	origin := "http://localhost/"
 	url := "ws://localhost:3000/socket"
 	ws, err := websocket.Dial(url, "", origin)
@@ -89,9 +90,9 @@ func TestWsEcho(t *testing.T) {
 	if retStr != "testmessage" {
 		t.Error("Expected: testmessage, Got: " + retStr)
 	} else {
-		fmt.Println("Websocket echo test: PASSED")
+		//fmt.Println("Websocket echo test: PASSED")
 	}
 	ws.Close()
-	time.Sleep(1 * time.Second)
-	
+		
+	time.Sleep(1*time.Second)
 }
