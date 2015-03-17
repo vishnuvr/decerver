@@ -64,7 +64,7 @@ func (this *Server) Start() error {
 	cm.Get("/socket", this.wsService.handleWs)
 	
 	// Simple echo for testing http
-	cm.Get("/echo/:string",this.httpService.handleEcho)
+	cm.Get("/echo/:message",this.httpService.handleEcho)
 
 	// TODO Close down properly. Removed the third party stuff since
 	// it was a mess.

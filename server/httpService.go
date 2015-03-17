@@ -25,7 +25,7 @@ func (this *HttpService) handleNotFound(w http.ResponseWriter, r *http.Request) 
 
 // Handler for echo.
 func (this *HttpService) handleEcho(params martini.Params, w http.ResponseWriter, r *http.Request) {
-	this.writeMsg(w, 200, params["string"])
+	this.writeMsg(w, 200, params["message"])
 }
 
 // Utility method for responding with an error.
