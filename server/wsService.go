@@ -61,7 +61,7 @@ func (this *WsService) echo(req *Request, resp *Response) {
 	if err != nil {
 		resp.Error = Error(INVALID_PARAMS, "Echo requires a string parameter.")
 	}
-	logger.Printf("Echo: %s", sVal.SVal)
+	logger.Printf("Echo: %s", sVal.Value)
 	resp.Result = sVal
 }
 
@@ -248,5 +248,5 @@ type(
 
 // Other types here
 type StringValue struct {
-	SVal string
+	Value string `json:"value"`
 }
