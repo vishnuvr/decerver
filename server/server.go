@@ -61,7 +61,7 @@ func (this *Server) Start() error {
 	cm.NotFound(this.httpService.handleNotFound)
 
 	// Handle websocket negotiation requests.
-	cm.Get("/socket", this.wsService.handleWs)
+	cm.Get("/websocket", this.wsService.handleWs)
 	
 	// Simple echo for testing http
 	cm.Get("/echo/:message",this.httpService.handleEcho)
