@@ -1,0 +1,17 @@
+{
+  "name": "decerver",
+  "version": "0.1.0",
+  "description": "Eris Decerver",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/eris-ltd/decerver.git"
+  },
+  "license": "LGPL",
+  "bugs": {
+    "url": "https://github.com/eris-ltd/decerver/issues"
+  },
+  "dependencies": {
+    "express": "^4.12.3",
+    "request": "^2.54.0"
+  }
+}

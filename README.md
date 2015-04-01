@@ -2,71 +2,41 @@
 
 ## Introduction
 
-Eris decentralized applications are written in [Node.js](https://nodejs.org/)
-and built with the [Cloud Foundry Node.js buildpack](http://docs.cloudfoundry.org/buildpacks/node/).  You may want to read Cloud Foundry's [Tips for Node.js Applications](http://docs.cloudfoundry.org/buildpacks/node/node-tips.html).
-
-The source code for your application is loaded via [IPFS](http://ipfs.io/).
-
-You need to use the `VCAP_APP_PORT` environment variable to determine which port
-your application should listen on:
-
-    app.listen(process.env.VCAP_APP_PORT);
+Eris decentralized applications are *front-end only* browser applications written in standard HTML, CSS, and JavaScript.  The source code for each application is loaded via [IPFS](http://ipfs.io/) and served via a web server at port 3000.
 
 ## Running Decerver
-
-### Source Code Format
-
-The source code for the application is bundled with [GNU Tar](https://www.gnu.org/software/tar/).  This is because IPFS doesn't yet support symbolic links.
 
 ### Environment Variables
 
 <table>
-<tr><td>SOURCE</td><td>the IPFS hash of the source code archive</td></tr>
-<tr><td>VCAP_APP_PORT</td><td>choose a non-system port</td></tr>
+<tr><td>SOURCE</td><td>the IPFS hash of the source code directory</td></tr>
 </table>
 
 The following examples assume the source code for the application is in a directory named `source`.
 
 ### Production
 
-Set the `SOURCE` environment variable to the IPFS hash of the source code archive.
+Set the `SOURCE` environment variable to the IPFS hash of the source code directory.
 
-	cd source
-	  tar --create --file=/tmp/source.tar *
-	cd ..
-	
-	export SOURCE=$(ipfs add -quiet /tmp/source.tar | tail -n -1)
-	export VCAP_APP_PORT=3000
+	export SOURCE=$(ipfs add -recursive -quiet source | tail -n -1)
 
     docker run \
       --name=hello-world \
+      --env SOURCE \
+      --publish 3000:3000 \
       --detach \
-      --env SOURCE --env VCAP_APP_PORT \
-      --publish 3000:$VCAP_APP_PORT \
-      eris/decerver:node
+      eris/decerver:browser
       
 ### Development
 
-When you want to make rapid changes to the source code, you can also load it from a local volume instead of from IPFS by mounting the volume `/home/node`:
+When you want to make rapid changes to the source code, you can also load it from a local volume instead of from IPFS by mapping the volume to `/usr/src/app/local`:
 
     docker run \
       --name=hello-world \
+      --volume $PWD/source:/usr/src/app/local \
+      --publish 3000:3000 \
       --detach \
-      --env SOURCE --env VCAP_APP_PORT \
-      --publish 3000:$VCAP_APP_PORT \
-      --volume $PWD/source:/home/node \
-      eris/decerver:node
-
-You may want to launch your application with a program that watches for changes in the source code and then restarts the application automatically, like [nodemon](http://nodemon.io/).  You would do this by adding nodemon as a dependency in your `package.json` file with an appropriate `start` script:
-
-```
-  "dependencies": {
-    "nodemon": "^1.3.7"
-  },
-  "scripts": {
-    "start": "nodemon server.js",
-  }
-```
+      eris/decerver:browser
 
 # Copyright
 

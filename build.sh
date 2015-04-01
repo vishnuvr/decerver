@@ -1,1 +1,1 @@
-docker build --tag=eris/decerver:node .
+docker build --tag=eris/decerver:browser .
