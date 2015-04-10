@@ -39,15 +39,22 @@ applicationServer.listen(3000, function () {
 proxy = httpProxy.createProxyServer({target: 'http://127.0.0.1:5000'});
 
 ipfsServer = http.createServer(function (request, response) {
-  // Work around restriction here:
-  // https://github.com/ipfs/go-ipfs/blob/79360bbd32d8a0b9c5ab633b5a0461d9acd0f477/commands/http/handler.go#L58-L70
-  // We should get a better understanding of the restriction instead of working
-  // around it.
-  delete request.headers.referer;
-
-  proxy.web(request, response);
   response.setHeader('Access-Control-Allow-Origin', '*');
   response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (request.method !== 'OPTIONS') {
+    // Work around restriction here:
+    // https://github.com/ipfs/go-ipfs/blob/79360bbd32d8a0b9c5ab633b5a0461d9acd0f477/commands/http/handler.go#L58-L70
+    // We should get a better understanding of the restriction instead of
+    // working around it.
+    delete request.headers.referer;
+
+    proxy.web(request, response);
+  }
+  else
+    // Handle CORS preflight check ourselves because IPFS doesn't correctly.
+    // See: https://github.com/ipfs/go-ipfs/issues/1049
+    response.end();
 });
 
 ipfsServer.listen(5001, function () {
