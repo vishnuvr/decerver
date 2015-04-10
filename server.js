@@ -47,6 +47,7 @@ ipfsServer = http.createServer(function (request, response) {
 
   proxy.web(request, response);
   response.setHeader('Access-Control-Allow-Origin', '*');
+  response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 });
 
 ipfsServer.listen(5001, function () {
