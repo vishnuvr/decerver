@@ -49,7 +49,9 @@ ipfsServer = http.createServer(function (request, response) {
     // working around it.
     delete request.headers.referer;
 
-    proxy.web(request, response);
+    proxy.web(request, response, {}, function (error) {
+      console.error(error);
+    });
   }
   else
     // Handle CORS preflight check ourselves because IPFS doesn't correctly.
