@@ -27,10 +27,7 @@ WORKDIR /usr/src/app
 
 
 # Install IPFS (http://ipfs.io/docs/install/).
-
 RUN go get -u github.com/jbenet/go-ipfs/cmd/ipfs
-RUN ipfs init
-RUN ipfs config Addresses.API /ip4/0.0.0.0/tcp/5000
 
 ## Allow access to the API from the browser.
 ENV API_ORIGIN *
