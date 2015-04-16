@@ -34,9 +34,11 @@ When you want to make rapid changes to the source code, you can also load it fro
     docker run \
       --name=hello-world \
       --volume $PWD/source:/usr/src/app/local \
-      --publish 3000:3000 \
+      --publish 3000:3000 5001:5001 \
       --detach \
       eris/decerver:browser
+      
+You can see an IPFS diagnostics application by visiting `http://\<Docker host>:5001/webui/`.
 
 # Copyright
 
