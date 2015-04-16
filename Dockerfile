@@ -36,6 +36,12 @@ ENV API_ORIGIN *
 COPY . /usr/src/app
 RUN npm install
 
+# Serve README by default.
+ENV DEBIAN_FRONTEND noninteractive
+RUN apt-get update && apt-get upgrade -qy && apt-get install -qy markdown
+RUN mkdir local
+RUN markdown README.md > local/index.html
+
 # application web server
 EXPOSE 3000
 
